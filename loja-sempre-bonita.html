@@ -40,9 +40,10 @@ button{cursor:pointer}
 a{color:var(--accent);text-decoration:none}
 
 /* ── SCROLLBAR ── */
-::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
 
 /* ── LAYOUT ── */
 #app{display:flex;height:100vh;overflow:hidden}
@@ -65,7 +66,7 @@ a{color:var(--accent);text-decoration:none}
 .user-area{padding:12px;border-top:1px solid var(--border)}
 .user-card{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius);background:var(--bg3);cursor:pointer}
 .user-av{width:30px;height:30px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
-.user-name{font-size:13px;font-weight:500;color:var(--text)}
+.user-name{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px}
 .user-role{font-size:11px;color:var(--text3)}
 .logout-btn{margin-left:auto;color:var(--text3);font-size:16px;padding:4px;border-radius:6px;border:none;background:none;transition:color .15s}
 .logout-btn:hover{color:var(--red)}
@@ -89,7 +90,7 @@ a{color:var(--accent);text-decoration:none}
 .btn-icon{padding:7px;gap:0}
 
 /* ── CARDS ── */
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px}
 .card-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:14px;display:flex;align-items:center;gap:8px}
 .card-title i{font-size:16px}
 
@@ -105,6 +106,13 @@ a{color:var(--accent);text-decoration:none}
 .metric-value{font-size:24px;font-weight:600;color:var(--text);letter-spacing:-.5px;font-family:var(--mono)}
 .metric-sub{font-size:11px;color:var(--text3);margin-top:3px}
 .metric-icon{position:absolute;right:14px;top:14px;font-size:22px;opacity:.15}
+
+/* ── PROGRESS BAR ── */
+.progress-container{margin-top:8px}
+.progress-bar-bg{background:var(--bg4);border-radius:99px;height:8px;width:100%;overflow:hidden;margin-bottom:4px}
+.progress-bar-fill{background:var(--accent);height:100%;width:0%;transition:width 0.4s ease}
+.progress-bar-fill.green{background:var(--green)}
+.progress-text{display:flex;justify-content:between;font-size:11px;color:var(--text2)}
 
 /* ── BADGES ── */
 .badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600}
@@ -142,7 +150,7 @@ a{color:var(--accent);text-decoration:none}
 .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
 
 /* ── PDV ── */
-.pdv-wrap{display:grid;grid-template-columns:1fr 360px;gap:16px;height:calc(100vh - 104px)}
+.pdv-wrap{display:grid;grid-template-columns:1fr 380px;gap:16px;height:calc(100vh - 104px)}
 .pdv-left{display:flex;flex-direction:column;gap:12px;min-height:0}
 .pdv-search-row{display:flex;gap:8px}
 .pdv-search{flex:1;padding:10px 14px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:14px;outline:none}
@@ -165,28 +173,23 @@ a{color:var(--accent);text-decoration:none}
 .cart-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .cart-head-title{font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
 .cart-head-count{font-size:11px;font-weight:600;background:var(--accent);color:#fff;padding:1px 7px;border-radius:99px}
-.cart-client{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
-.cart-client-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;flex-shrink:0}
-.cart-client-select{flex:1;padding:6px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:12px;outline:none}
+.cart-client{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+.cart-client-header{display:flex;align-items:center;justify-content:between;width:100%}
+.cart-client-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
+.cart-client-credit{font-size:11px;color:var(--amber);font-weight:500}
+.cart-client-select{width:100%;padding:6px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:12px;outline:none}
 .cart-client-select option{background:var(--bg3)}
 .cart-items{flex:1;overflow-y:auto;padding:10px}
-.cart-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;transition:border-color .15s}
-.cart-item:hover{border-color:var(--border2)}
-.cart-item-info{flex:1;min-width:0}
-.cart-item-name{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cart-item-unit{font-size:11px;color:var(--text3)}
-.qty-ctrl{display:flex;align-items:center;gap:5px}
-.qty-btn{width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;cursor:pointer;color:var(--text);font-size:14px;font-weight:700;transition:all .1s;flex-shrink:0}
-.qty-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff}
-.qty-num{font-size:13px;font-weight:700;color:var(--text);min-width:22px;text-align:center;font-family:var(--mono)}
-.cart-item-total{font-size:13px;font-weight:700;color:var(--text);font-family:var(--mono);min-width:65px;text-align:right}
+.cart-table{width:100%;border-collapse:collapse}
+.cart-table th{font-size:10px;color:var(--text3);text-transform:uppercase;padding-bottom:6px;text-align:left}
+.cart-table td{padding:6px 0;border-bottom:1px solid var(--border);vertical-align:middle}
 .cart-foot{padding:14px 16px;border-top:1px solid var(--border)}
 .cart-discount{display:flex;gap:6px;margin-bottom:10px}
 .cart-discount input{flex:1;padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:12px;outline:none}
 .cart-discount input:focus{border-color:var(--accent)}
 .total-lines{margin-bottom:12px}
 .total-line{display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-bottom:4px}
-.total-line.main{font-size:18px;font-weight:700;color:var(--text);font-family:var(--mono);margin-top:6px;padding-top:8px;border-top:1px solid var(--border)}
+.total-line.main{font-size:20px;font-weight:700;color:var(--green);font-family:var(--mono);margin-top:6px;padding-top:8px;border-top:1px solid var(--border)}
 .total-line.discount{color:var(--red)}
 .pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
 .pay-opt{padding:9px 6px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);cursor:pointer;text-align:center;transition:all .15s;color:var(--text2);font-size:12px;font-weight:500}
@@ -240,26 +243,15 @@ a{color:var(--accent);text-decoration:none}
 .toast-info{background:var(--accent);color:#fff}
 .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
 
-/* ── LOGIN ── */
+/* ── LOGIN REFORMULADO ── */
 .login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)}
-.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-xl);padding:36px;width:360px;text-align:center}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-xl);padding:36px;width:380px;box-shadow:var(--shadow)}
 .login-logo{width:56px;height:56px;background:var(--accent);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;margin:0 auto 16px}
-.login-title{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-bottom:4px}
-.login-sub{font-size:13px;color:var(--text3);margin-bottom:24px}
-.op-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
-.op-card{padding:14px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-lg);cursor:pointer;text-align:center;transition:all .15s}
-.op-card:hover{border-color:var(--accent);background:var(--accent-glow)}
-.op-av{width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;margin:0 auto 8px}
-.op-name{font-size:13px;font-weight:600;color:var(--text)}
-.op-role{font-size:11px;color:var(--text3)}
-.pin-display{display:flex;justify-content:center;gap:10px;margin:16px 0}
-.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border2);transition:all .2s}
-.pin-dot.filled{background:var(--accent);border-color:var(--accent)}
-.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.key-btn{padding:14px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);font-size:18px;font-weight:600;color:var(--text);cursor:pointer;transition:all .15s;font-family:var(--mono)}
-.key-btn:hover{background:var(--bg4);border-color:var(--border2)}
-.key-btn:active{transform:scale(.95)}
-.key-del{font-size:20px}
+.login-title{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-bottom:4px;text-align:center}
+.login-sub{font-size:13px;color:var(--text3);margin-bottom:24px;text-align:center}
+.password-wrapper{position:relative;display:flex;align-items:center}
+.password-toggle{position:absolute;right:12px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px}
+.password-toggle:hover{color:var(--text)}
 
 /* ── SUCCESS MODAL ── */
 .success-icon{width:64px;height:64px;background:var(--green-bg);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--green);margin:0 auto 14px;border:2px solid rgba(52,211,153,.3)}
@@ -285,10 +277,14 @@ a{color:var(--accent);text-decoration:none}
 .cstat-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
 .cstat-val{font-size:15px;font-weight:700;color:var(--text);font-family:var(--mono);margin-top:2px}
 
+/* ── DASHBOARD GRID ── */
+.dash-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+
 /* ── RESPONSIVE ── */
 @media(max-width:900px){
   .metrics{grid-template-columns:repeat(2,1fr)}
   .pdv-wrap{grid-template-columns:1fr}
+  .dash-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -299,17 +295,29 @@ a{color:var(--accent);text-decoration:none}
     <div class="login-logo"><i class="ti ti-building-store"></i></div>
     <div class="login-title">Loja Sempre Bonita</div>
     <div class="login-sub">Sistema de Gestão</div>
-    <div id="step-ops">
-      <p style="font-size:12px;color:var(--text3);margin-bottom:12px;">Selecione seu perfil</p>
-      <div class="op-grid" id="op-list"></div>
-    </div>
-    <div id="step-pin" style="display:none">
-      <p style="font-size:13px;color:var(--text2);margin-bottom:2px;" id="pin-label">Digite seu PIN</p>
-      <div class="pin-display" id="pin-dots"></div>
-      <div class="pin-keypad" id="pin-keypad"></div>
-      <button class="btn" style="width:100%;justify-content:center;" onclick="backToOps()"><i class="ti ti-arrow-left"></i>Voltar</button>
-      <p id="pin-error" style="color:var(--red);font-size:12px;margin-top:8px;display:none;">PIN incorreto. Tente novamente.</p>
-    </div>
+    
+    <form id="login-form" onsubmit="executeLogin(event)">
+      <div class="form-group" style="text-align: left;">
+        <label class="form-label">Usuário</label>
+        <select class="form-input" id="login-username" required>
+          <option value="" disabled selected>Selecione seu usuário</option>
+          <option value="Diego">Diego (Administrador)</option>
+          <option value="Kamilly">Kamilly (Funcionário)</option>
+          <option value="Giovanna">Giovanna (Funcionário)</option>
+        </select>
+      </div>
+      <div class="form-group" style="text-align: left; margin-bottom: 20px;">
+        <label class="form-label">Senha</label>
+        <div class="password-wrapper">
+          <input class="form-input" id="login-password" type="password" placeholder="••••••••" required>
+          <button type="button" class="password-toggle" onclick="toggleLoginPassword()"><i class="ti ti-eye" id="pass-icon"></i></button>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:12px; font-weight:600;">
+        Entrar no Sistema <i class="ti ti-arrow-right"></i>
+      </button>
+      <p id="login-error" style="color:var(--red); font-size:12px; margin-top:12px; display:none; text-align:center;">Senha incorreta. Tente novamente.</p>
+    </form>
   </div>
 </div>
 
@@ -327,8 +335,8 @@ a{color:var(--accent);text-decoration:none}
     <nav class="nav">
       <div class="nav-section">
         <div class="nav-section-label">Principal</div>
-        <div class="nav-item active" onclick="goPage('dashboard',this)"><i class="ti ti-dashboard"></i>Dashboard</div>
-        <div class="nav-item" onclick="goPage('pdv',this)"><i class="ti ti-shopping-cart"></i>PDV</div>
+        <div class="nav-item active" id="menu-dashboard" onclick="goPage('dashboard',this)"><i class="ti ti-dashboard"></i>Dashboard</div>
+        <div class="nav-item" id="menu-pdv" onclick="goPage('pdv',this)"><i class="ti ti-shopping-cart"></i>PDV</div>
       </div>
       <div class="nav-section">
         <div class="nav-section-label">Gestão</div>
@@ -337,16 +345,21 @@ a{color:var(--accent);text-decoration:none}
         <div class="nav-item" onclick="goPage('caixa',this)"><i class="ti ti-cash"></i>Caixa</div>
       </div>
       <div class="nav-section">
+        <div class="nav-section-label">Financeiro</div>
+        <div class="nav-item" onclick="goPage('receber',this)"><i class="ti ti-arrow-up-right"></i>Contas a Receber</div>
+        <div class="nav-item" onclick="goPage('pagar',this)"><i class="ti ti-arrow-down-left"></i>Contas a Pagar</div>
+      </div>
+      <div class="nav-section">
         <div class="nav-section-label">Análise</div>
         <div class="nav-item" onclick="goPage('relatorios',this)"><i class="ti ti-chart-bar"></i>Relatórios</div>
       </div>
     </nav>
     <div class="user-area">
       <div class="user-card">
-        <div class="user-av" id="sb-av">AD</div>
+        <div class="user-av" id="sb-av">DG</div>
         <div>
-          <div class="user-name" id="sb-name">Admin</div>
-          <div class="user-role" id="sb-role">Gerente</div>
+          <div class="user-name" id="sb-name">Diego</div>
+          <div class="user-role" id="sb-role">Admin</div>
         </div>
         <button class="logout-btn" onclick="logout()" title="Sair"><i class="ti ti-logout"></i></button>
       </div>
@@ -374,9 +387,9 @@ a{color:var(--accent);text-decoration:none}
       <button class="modal-close" onclick="closeModal('m-produto')"><i class="ti ti-x"></i></button>
     </div>
     <div class="form-row"><div class="form-group"><label class="form-label">Nome</label><input class="form-input" id="fp-nome" placeholder="Nome do produto"></div><div class="form-group"><label class="form-label">SKU / Código</label><input class="form-input" id="fp-sku" placeholder="SKU001"></div></div>
-    <div class="form-row"><div class="form-group"><label class="form-label">Categoria</label><select class="form-input" id="fp-cat"><option>Roupas</option><option>Calçados</option><option>Acessórios</option><option>Eletrônicos</option><option>Outros</option></select></div><div class="form-group"><label class="form-label">Fornecedor</label><input class="form-input" id="fp-forn" placeholder="Nome do fornecedor"></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Categoria</label><select class="form-input" id="fp-cat"><option>Roupas</option><option>Calçados</option><option>Acessórios</option><option>Outros</option></select></div><div class="form-group"><label class="form-label">Fornecedor</label><input class="form-input" id="fp-forn" placeholder="Nome do fornecedor"></div></div>
     <div class="form-row-3"><div class="form-group"><label class="form-label">Preço Venda</label><input class="form-input" id="fp-preco" type="number" step="0.01" placeholder="0,00"></div><div class="form-group"><label class="form-label">Custo</label><input class="form-input" id="fp-custo" type="number" step="0.01" placeholder="0,00"></div><div class="form-group"><label class="form-label">Estoque</label><input class="form-input" id="fp-qtd" type="number" placeholder="0"></div></div>
-    <div class="form-row"><div class="form-group"><label class="form-label">Estoque mínimo</label><input class="form-input" id="fp-min" type="number" placeholder="5"></div><div class="form-group"><label class="form-label">Localização</label><input class="form-input" id="fp-loc" placeholder="Ex: Prateleira A3"></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Estoque mínimo</label><input class="form-input" id="fp-min" type="number" placeholder="5"></div><div class="form-group"><label class="form-label">Localização</label><input class="form-input" id="fp-loc" placeholder="Ex: Arara 1"></div></div>
     <div class="modal-footer"><button class="btn" onclick="closeModal('m-produto')">Cancelar</button><button class="btn btn-primary" onclick="salvarProduto()"><i class="ti ti-check"></i>Salvar Produto</button></div>
   </div>
 </div>
@@ -385,9 +398,9 @@ a{color:var(--accent);text-decoration:none}
   <div class="modal">
     <div class="modal-header"><span class="modal-title">Novo Cliente</span><button class="modal-close" onclick="closeModal('m-cliente')"><i class="ti ti-x"></i></button></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Nome completo</label><input class="form-input" id="fc-nome" placeholder="Nome completo"></div><div class="form-group"><label class="form-label">CPF</label><input class="form-input" id="fc-cpf" placeholder="000.000.000-00"></div></div>
-    <div class="form-row"><div class="form-group"><label class="form-label">Telefone</label><input class="form-input" id="fc-tel" placeholder="(16) 99999-9999"></div><div class="form-group"><label class="form-label">E-mail</label><input class="form-input" id="fc-email" placeholder="email@exemplo.com"></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Telefone</label><input class="form-input" id="fc-tel" placeholder="(16) 99999-9999"></div><div class="form-group"><label class="form-label">Limite de Crédito (R$)</label><input class="form-input" id="fc-limite" type="number" step="0.01" placeholder="500.00"></div></div>
     <div class="form-group"><label class="form-label">Endereço</label><input class="form-input" id="fc-end" placeholder="Rua, número, bairro, cidade"></div>
-    <div class="form-group"><label class="form-label">Observações</label><textarea class="form-input" id="fc-obs" rows="2" placeholder="Preferências, informações especiais..."></textarea></div>
+    <div class="form-group"><label class="form-label">Observações</label><textarea class="form-input" id="fc-obs" rows="2" placeholder="Preferências..."></textarea></div>
     <div class="modal-footer"><button class="btn" onclick="closeModal('m-cliente')">Cancelar</button><button class="btn btn-primary" onclick="salvarCliente()"><i class="ti ti-check"></i>Salvar Cliente</button></div>
   </div>
 </div>
@@ -407,6 +420,16 @@ a{color:var(--accent);text-decoration:none}
     <div class="form-group"><label class="form-label">Troco inicial (R$)</label><input class="form-input" id="ab-val" type="number" step="0.01" value="200.00"></div>
     <div class="form-group"><label class="form-label">Operador</label><input class="form-input" id="ab-op" readonly></div>
     <div class="modal-footer"><button class="btn" onclick="closeModal('m-abertura')">Cancelar</button><button class="btn btn-primary" onclick="confirmarAbertura()"><i class="ti ti-lock-open"></i>Abrir Caixa</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="m-pagar">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Nova Conta a Pagar</span><button class="modal-close" onclick="closeModal('m-pagar')"><i class="ti ti-x"></i></button></div>
+    <div class="form-group"><label class="form-label">Fornecedor / Descrição</label><input class="form-input" id="fpa-forn" placeholder="Ex: Fornecedor de Blusas"></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-input" id="fpa-val" type="number" step="0.01" placeholder="0,00"></div><div class="form-group"><label class="form-label">Vencimento</label><input class="form-input" id="fpa-data" type="date"></div></div>
+    <div class="form-group"><label class="form-label">Forma de Pagamento</label><select class="form-input" id="fpa-forma"><option>Dinheiro</option><option>Pix</option><option>Cartão de Crédito</option><option>Boleto</option></select></div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('m-pagar')">Cancelar</button><button class="btn btn-primary" onclick="salvarContaPagar()"><i class="ti ti-check"></i>Salvar Conta</button></div>
   </div>
 </div>
 
@@ -442,15 +465,19 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// ── OPERATORS ──
-const OPERATORS = [
-  {id:'admin', nome:'Administrador', initials:'AD', role:'Gerente', pin:'1234', color:'#4f8ef7'},
-  {id:'func1', nome:'Funcionário 1', initials:'F1', role:'Operador', pin:'1111', color:'#34d399'},
-  {id:'func2', nome:'Funcionário 2', initials:'F2', role:'Operador', pin:'2222', color:'#fbbf24'},
-  {id:'estq', nome:'Estoquista', initials:'ES', role:'Estoquista', pin:'3333', color:'#f87171'},
-];
+// ── CREDENCIAIS DE ACESSO DEFINIDAS ──
+const USERS = {
+  "Diego": { senha: "Djw2023!", role: "Admin", initials: "DG" },
+  "Kamilly": { senha: "Ka2026", role: "Funcionário", initials: "KM" },
+  "Giovanna": { senha: "Gi2026", role: "Funcionário", initials: "GV" }
+};
 
-let currentOp = null, pinBuffer = '', cartItems = [], selectedPay = 'dinheiro', caixaMoveType = 'sangria', editProdId = null;
+// METAS DO PAINEL
+const META_DIARIA = 1000;
+const META_MENSAL = 30000;
+
+let currentOp = null, cartItems = [], selectedPay = 'dinheiro', parcelasCrediario = 1;
+let localProdutos = [], localClientes = [], localVendas = [], localReceber = [], localPagar = [], localCaixa = [];
 
 // ── UTILS ──
 function R(n){return 'R$ '+parseFloat(n||0).toFixed(2).replace('.',',')}
@@ -471,626 +498,863 @@ function setSyncStatus(ok){
   l.textContent=ok?'Conectado ao Firebase':'Reconectando...';
 }
 
-// ── LOGIN ──
-function initLogin(){
-  const list=document.getElementById('op-list');
-  list.innerHTML=OPERATORS.map(op=>`
-    <div class="op-card" onclick="selectOp('${op.id}')">
-      <div class="op-av" style="background:${op.color}">${op.initials}</div>
-      <div class="op-name">${op.nome.split(' ')[0]}</div>
-      <div class="op-role">${op.role}</div>
-    </div>`).join('');
-  buildKeypad();
-}
-function selectOp(id){
-  currentOp=OPERATORS.find(o=>o.id===id);
-  pinBuffer='';
-  document.getElementById('pin-label').textContent='PIN de '+currentOp.nome.split(' ')[0];
-  document.getElementById('pin-error').style.display='none';
-  renderPinDots();
-  document.getElementById('step-ops').style.display='none';
-  document.getElementById('step-pin').style.display='block';
-}
-function buildKeypad(){
-  const kp=document.getElementById('pin-keypad');
-  const keys=[1,2,3,4,5,6,7,8,9,'',0,'⌫'];
-  kp.innerHTML=keys.map(k=>k===''?'<div></div>':`<button class="key-btn${k==='⌫'?' key-del':''}" onclick="pinKey('${k}')">${k}</button>`).join('');
-}
-function pinKey(k){
-  if(k==='⌫'){pinBuffer=pinBuffer.slice(0,-1);}
-  else if(pinBuffer.length<4){pinBuffer+=k;}
-  renderPinDots();
-  if(pinBuffer.length===4) checkPin();
-}
-function renderPinDots(){
-  document.getElementById('pin-dots').innerHTML=[0,1,2,3].map(i=>`<div class="pin-dot${i<pinBuffer.length?' filled':''}"></div>`).join('');
-}
-function checkPin(){
-  setTimeout(()=>{
-    if(pinBuffer===currentOp.pin){
-      document.getElementById('login-screen').style.display='none';
-      document.getElementById('app').style.display='flex';
-      document.getElementById('sb-av').textContent=currentOp.initials;
-      document.getElementById('sb-av').style.background=currentOp.color;
-      document.getElementById('sb-name').textContent=currentOp.nome.split(' ')[0];
-      document.getElementById('sb-role').textContent=currentOp.role;
-      goPage('dashboard', document.querySelector('.nav-item'));
-      checkStockAlerts();
-    } else {
-      document.getElementById('pin-error').style.display='block';
-      pinBuffer=''; renderPinDots();
-    }
-  },200);
-}
-function backToOps(){
-  pinBuffer='';
-  document.getElementById('step-pin').style.display='none';
-  document.getElementById('step-ops').style.display='block';
-}
-function logout(){
-  document.getElementById('app').style.display='none';
-  document.getElementById('login-screen').style.display='flex';
-  currentOp=null; pinBuffer='';
-  document.getElementById('step-pin').style.display='none';
-  document.getElementById('step-ops').style.display='block';
-}
-
-// ── FIRESTORE HELPERS ──
-async function getCol(col){
-  try{
-    const snap=await db.collection(col).get();
-    return snap.docs.map(d=>({id:d.id,...d.data()}));
-  }catch(e){setSyncStatus(false);return[];}
-}
-async function setDoc(col,id,data){
-  try{await db.collection(col).doc(String(id)).set(data,{merge:true});setSyncStatus(true);}
-  catch(e){setSyncStatus(false);throw e;}
-}
-async function addDoc2(col,data){
-  try{const r=await db.collection(col).add(data);setSyncStatus(true);return r.id;}
-  catch(e){setSyncStatus(false);throw e;}
-}
-async function delDoc(col,id){
-  try{await db.collection(col).doc(String(id)).delete();setSyncStatus(true);}
-  catch(e){setSyncStatus(false);}
-}
-
-// ── SEED DEFAULTS ──
-async function seedIfEmpty(){
-  const prods=await getCol('produtos');
-  if(prods.length>0)return;
-  const defaults=[
-    {nome:'Camiseta Básica P',sku:'CAM001',cat:'Roupas',preco:49.90,custo:18,qtd:42,min:10,forn:'TxtBrasil',loc:'Prateleira A1'},
-    {nome:'Camiseta Básica M',sku:'CAM002',cat:'Roupas',preco:49.90,custo:18,qtd:38,min:10,forn:'TxtBrasil',loc:'Prateleira A1'},
-    {nome:'Calça Jeans 40',sku:'CAL001',cat:'Roupas',preco:129.90,custo:52,qtd:15,min:5,forn:'DenimCo',loc:'Prateleira B2'},
-    {nome:'Tênis Casual 39',sku:'TEN001',cat:'Calçados',preco:199.90,custo:85,qtd:8,min:3,forn:'Solado',loc:'Estante C1'},
-    {nome:'Tênis Casual 40',sku:'TEN002',cat:'Calçados',preco:199.90,custo:85,qtd:4,min:3,forn:'Solado',loc:'Estante C1'},
-    {nome:'Boné Aba Curva',sku:'BON001',cat:'Acessórios',preco:39.90,custo:12,qtd:2,min:5,forn:'CapHat',loc:'Balcão'},
-    {nome:'Meia Kit 3x',sku:'MEI001',cat:'Roupas',preco:24.90,custo:8,qtd:60,min:15,forn:'TxtBrasil',loc:'Gaveta D1'},
-    {nome:'Cinto de Couro',sku:'CIN001',cat:'Acessórios',preco:59.90,custo:22,qtd:12,min:4,forn:'LeatherBR',loc:'Balcão'},
-    {nome:'Vestido Floral P',sku:'VES001',cat:'Roupas',preco:89.90,custo:32,qtd:7,min:3,forn:'ModaBR',loc:'Prateleira A3'},
-    {nome:'Shorts Jeans 38',sku:'SHO001',cat:'Roupas',preco:69.90,custo:25,qtd:18,min:5,forn:'DenimCo',loc:'Prateleira B3'},
-  ];
-  for(const p of defaults) await addDoc2('produtos',p);
-  const clientesDef=[
-    {nome:'Ana Souza',cpf:'123.456.789-00',tel:'(16) 99999-0001',email:'ana@email.com',end:'Rua das Flores, 10',obs:'',desde:'2024-01',compras:8,totalGasto:843.20},
-    {nome:'Carlos Lima',cpf:'987.654.321-00',tel:'(16) 98888-0002',email:'carlos@email.com',end:'Av Brasil, 200',obs:'',desde:'2024-03',compras:3,totalGasto:389.70},
-    {nome:'Mariana Costa',cpf:'111.222.333-44',tel:'(16) 97777-0003',email:'mari@email.com',end:'Rua SP, 55',obs:'VIP',desde:'2023-11',compras:14,totalGasto:1892.50},
-    {nome:'Pedro Alves',cpf:'555.666.777-88',tel:'(16) 96666-0004',email:'pedro@email.com',end:'Rua Boa Vista, 30',obs:'',desde:'2025-01',compras:2,totalGasto:149.80},
-  ];
-  for(const c of clientesDef) await addDoc2('clientes',c);
-}
-
-// ── NAVIGATION ──
-function goPage(name, el){
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  if(el) el.classList.add('active');
-  const titles={dashboard:'Dashboard',pdv:'PDV — Ponto de Venda',estoque:'Controle de Estoque',clientes:'Clientes',caixa:'Caixa',relatorios:'Relatórios'};
-  document.getElementById('page-title').textContent=titles[name]||name;
-  const content=document.getElementById('content');
-  const actions=document.getElementById('topbar-actions');
-  actions.innerHTML='';
-  content.innerHTML='<div class="empty"><div class="spinner" style="width:24px;height:24px;border-color:var(--border2);border-top-color:var(--accent)"></div></div>';
-  if(name==='dashboard') renderDashboard(content,actions);
-  else if(name==='pdv') renderPDV(content,actions);
-  else if(name==='estoque') renderEstoque(content,actions);
-  else if(name==='clientes') renderClientes(content,actions);
-  else if(name==='caixa') renderCaixa(content,actions);
-  else if(name==='relatorios') renderRelatorios(content,actions);
-}
-
-// ── STOCK ALERTS ──
-async function checkStockAlerts(){
-  const prods=await getCol('produtos');
-  const low=prods.filter(p=>p.qtd<=p.min).length;
-  const badge=document.getElementById('badge-stock');
-  if(badge) badge.style.display=low>0?'':'none';
-}
-
-// ── DASHBOARD ──
-async function renderDashboard(area,actions){
-  const [vendas,prods,caixaSnap]=await Promise.all([getCol('vendas'),getCol('produtos'),db.collection('caixa').doc('estado').get()]);
-  const estado=caixaSnap.exists?caixaSnap.data():{aberto:false,saldo:0};
-  const hoje=vendas.filter(v=>v.data&&v.data.slice(0,10)===todayStr());
-  const totalHoje=hoje.reduce((s,v)=>s+v.total,0);
-  const ticket=hoje.length?totalHoje/hoje.length:0;
-  const baixo=prods.filter(p=>p.qtd<=p.min).length;
-  const recentes=[...vendas].reverse().slice(0,5);
-  area.innerHTML=`
-  <div class="metrics">
-    <div class="metric metric-sales"><div class="metric-label">Vendas hoje</div><div class="metric-value">${R(totalHoje)}</div><div class="metric-sub">${hoje.length} transações</div><i class="ti ti-trending-up metric-icon"></i></div>
-    <div class="metric metric-ticket"><div class="metric-label">Ticket médio</div><div class="metric-value">${R(ticket)}</div><div class="metric-sub">hoje</div><i class="ti ti-receipt metric-icon"></i></div>
-    <div class="metric metric-stock"><div class="metric-label">Estoque baixo</div><div class="metric-value" style="color:${baixo>0?'var(--amber)':'var(--green)'}">${baixo}</div><div class="metric-sub">produtos abaixo do mínimo</div><i class="ti ti-package metric-icon"></i></div>
-    <div class="metric metric-cash"><div class="metric-label">Caixa</div><div class="metric-value" style="color:${estado.aberto?'var(--green)':'var(--red)'};font-size:18px">${estado.aberto?'Aberto':'Fechado'}</div><div class="metric-sub">${R(estado.saldo)}</div><i class="ti ti-cash metric-icon"></i></div>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-    <div class="card">
-      <div class="card-title"><i class="ti ti-clock-hour-4"></i>Últimas vendas</div>
-      ${recentes.length?`<table class="data-table"><thead><tr><th>Cliente</th><th>Pagamento</th><th>Total</th><th></th></tr></thead><tbody>
-      ${recentes.map(v=>`<tr><td>${v.cliente||'—'}</td><td>${v.pagamento}</td><td style="font-family:var(--mono);font-weight:600">${R(v.total)}</td><td><span class="badge badge-green">Pago</span></td></tr>`).join('')}
-      </tbody></table>`:'<div class="empty"><i class="ti ti-receipt-off"></i><span class="empty-title">Nenhuma venda hoje</span></div>'}
-    </div>
-    <div class="card">
-      <div class="card-title"><i class="ti ti-alert-triangle"></i>Alertas de estoque</div>
-      ${baixo>0?`<table class="data-table"><thead><tr><th>Produto</th><th>Qtd</th><th>Mín</th><th></th></tr></thead><tbody>
-      ${prods.filter(p=>p.qtd<=p.min).slice(0,6).map(p=>`<tr><td>${p.nome}</td><td style="font-family:var(--mono);color:${p.qtd===0?'var(--red)':'var(--amber)'};font-weight:700">${p.qtd}</td><td style="color:var(--text3)">${p.min}</td><td>${p.qtd===0?'<span class="badge badge-red">Zerado</span>':'<span class="badge badge-amber">Baixo</span>'}</td></tr>`).join('')}
-      </tbody></table>`:'<div class="empty" style="padding:24px"><i class="ti ti-circle-check" style="color:var(--green);opacity:1"></i><span class="empty-title" style="color:var(--green)">Estoque OK</span></div>'}
-    </div>
-  </div>`;
-}
-
-// ── PDV ──
-async function renderPDV(area,actions){
-  const [prods,clientes]=await Promise.all([getCol('produtos'),getCol('clientes')]);
-  const caixaSnap=await db.collection('caixa').doc('estado').get();
-  const caixaAberto=caixaSnap.exists&&caixaSnap.data().aberto;
-  area.innerHTML=`
-  <div class="pdv-wrap">
-    <div class="pdv-left">
-      <div class="pdv-search-row">
-        <input class="pdv-search" id="pdv-q" placeholder="Buscar produto por nome ou SKU..." oninput="pdvFilter()">
-        <select class="pdv-cat-select" id="pdv-cat" onchange="pdvFilter()">
-          <option value="">Todas as categorias</option>
-          <option>Roupas</option><option>Calçados</option><option>Acessórios</option><option>Eletrônicos</option><option>Outros</option>
-        </select>
-      </div>
-      <div class="prod-grid" id="pdv-grid"></div>
-    </div>
-    <div class="cart">
-      <div class="cart-head">
-        <div class="cart-head-title"><i class="ti ti-shopping-cart" style="font-size:18px"></i>Carrinho <span class="cart-head-count" id="cart-count" style="display:none">0</span></div>
-        <button class="btn btn-sm" style="color:var(--red);border-color:var(--red-bg);background:var(--red-bg)" onclick="limparCart()"><i class="ti ti-trash" style="font-size:15px"></i></button>
-      </div>
-      <div class="cart-client">
-        <span class="cart-client-label">Cliente</span>
-        <select class="cart-client-select" id="cart-cliente">
-          <option value="">— Consumidor final —</option>
-          ${clientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('')}
-        </select>
-      </div>
-      <div class="cart-items" id="cart-list"></div>
-      <div class="cart-foot">
-        <div class="cart-discount">
-          <input type="number" id="desc-val" placeholder="Desconto R$" min="0" oninput="renderCartFoot()">
-          <input type="number" id="desc-pct" placeholder="% desc" min="0" max="100" oninput="renderCartFoot()">
-        </div>
-        <div class="total-lines" id="cart-totals"></div>
-        <div class="pay-grid">
-          <div class="pay-opt sel" id="pay-dinheiro" onclick="setPay('dinheiro')"><i class="ti ti-cash"></i>Dinheiro</div>
-          <div class="pay-opt" id="pay-pix" onclick="setPay('pix')"><i class="ti ti-qrcode"></i>PIX</div>
-          <div class="pay-opt" id="pay-credito" onclick="setPay('credito')"><i class="ti ti-credit-card"></i>Crédito</div>
-          <div class="pay-opt" id="pay-debito" onclick="setPay('debito')"><i class="ti ti-credit-card"></i>Débito</div>
-        </div>
-        <button class="btn-checkout" onclick="finalizarVenda()" ${!caixaAberto?'disabled title="Abra o caixa primeiro"':''}>
-          ${!caixaAberto?'<i class="ti ti-lock"></i>Abra o caixa primeiro':'<i class="ti ti-check"></i>Finalizar Venda'}
-        </button>
-      </div>
-    </div>
-  </div>`;
-  window._pdvProds=prods;
-  pdvFilter();
-  renderCartList();
-}
-
-function pdvFilter(){
-  const q=(document.getElementById('pdv-q')||{}).value||'';
-  const cat=(document.getElementById('pdv-cat')||{}).value||'';
-  const prods=(window._pdvProds||[]).filter(p=>{
-    const mq=p.nome.toLowerCase().includes(q.toLowerCase())||p.sku.toLowerCase().includes(q.toLowerCase());
-    const mc=!cat||p.cat===cat;
-    return mq&&mc;
-  });
-  const grid=document.getElementById('pdv-grid');
-  if(!grid)return;
-  grid.innerHTML=prods.map(p=>`
-    <div class="prod-tile ${p.qtd===0?'':''}${p.qtd<=p.min&&p.qtd>0?' style="border-color:rgba(251,191,36,.3)"':''}" onclick="addCart('${p.id}')">
-      <div class="prod-tile-cat">${p.cat}</div>
-      <div class="prod-tile-name">${p.nome}</div>
-      <div class="prod-tile-price">${R(p.preco)}</div>
-      <div class="prod-tile-stock ${p.qtd===0?'zero':p.qtd<=p.min?'low':''}">
-        ${p.qtd===0?'<i class="ti ti-ban" style="font-size:11px"></i> Sem estoque':'Estoque: '+p.qtd}
-      </div>
-    </div>`).join('');
-}
-
-function addCart(id){
-  const p=(window._pdvProds||[]).find(x=>x.id===id);
-  if(!p||p.qtd===0){toast('Produto sem estoque!','err');return;}
-  const ex=cartItems.find(c=>c.id===id);
-  if(ex){if(ex.qty>=p.qtd){toast('Limite de estoque atingido!','err');return;}ex.qty++;}
-  else{cartItems.push({id:p.id,nome:p.nome,preco:p.preco,qty:1});}
-  renderCartList();
-}
-
-function changeQty(id,d){
-  const i=cartItems.findIndex(c=>c.id===id);
-  if(i<0)return;
-  cartItems[i].qty+=d;
-  if(cartItems[i].qty<=0)cartItems.splice(i,1);
-  renderCartList();
-}
-
-function limparCart(){cartItems=[];renderCartList();}
-
-function renderCartList(){
-  const el=document.getElementById('cart-list');
-  if(!el)return;
-  const cc=document.getElementById('cart-count');
-  const total=cartItems.reduce((s,c)=>s+c.qty,0);
-  if(cc){cc.textContent=total;cc.style.display=total?'':'none';}
-  el.innerHTML=cartItems.length?cartItems.map(c=>`
-    <div class="cart-item">
-      <div class="cart-item-info">
-        <div class="cart-item-name">${c.nome}</div>
-        <div class="cart-item-unit">${R(c.preco)} cada</div>
-      </div>
-      <div class="qty-ctrl">
-        <div class="qty-btn" onclick="changeQty('${c.id}',-1)">−</div>
-        <div class="qty-num">${c.qty}</div>
-        <div class="qty-btn" onclick="changeQty('${c.id}',1)">+</div>
-      </div>
-      <div class="cart-item-total">${R(c.preco*c.qty)}</div>
-    </div>`).join(''):'<div class="empty" style="padding:32px 16px"><i class="ti ti-shopping-cart-off"></i><span class="empty-title">Carrinho vazio</span><span class="empty-sub">Clique nos produtos</span></div>';
-  renderCartFoot();
-}
-
-function renderCartFoot(){
-  const el=document.getElementById('cart-totals');
-  if(!el)return;
-  const sub=cartItems.reduce((s,c)=>s+c.preco*c.qty,0);
-  const dv=parseFloat((document.getElementById('desc-val')||{}).value)||0;
-  const dp=parseFloat((document.getElementById('desc-pct')||{}).value)||0;
-  const desc=dv+sub*(dp/100);
-  const total=Math.max(0,sub-desc);
-  el.innerHTML=`
-    <div class="total-line"><span>Subtotal</span><span>${R(sub)}</span></div>
-    ${desc>0?`<div class="total-line discount"><span>Desconto</span><span>− ${R(desc)}</span></div>`:''}
-    <div class="total-line main"><span>Total</span><span>${R(total)}</span></div>`;
-}
-
-function setPay(t){
-  selectedPay=t;
-  ['dinheiro','pix','credito','debito'].forEach(x=>{const el=document.getElementById('pay-'+x);if(el)el.className='pay-opt'+(x===t?' sel':'');});
-}
-
-async function finalizarVenda(){
-  if(!cartItems.length){toast('Carrinho vazio!','err');return;}
-  const caixaSnap=await db.collection('caixa').doc('estado').get();
-  if(!caixaSnap.exists||!caixaSnap.data().aberto){toast('Abra o caixa primeiro!','err');return;}
-  const sub=cartItems.reduce((s,c)=>s+c.preco*c.qty,0);
-  const dv=parseFloat((document.getElementById('desc-val')||{}).value)||0;
-  const dp=parseFloat((document.getElementById('desc-pct')||{}).value)||0;
-  const desc=dv+sub*(dp/100);
-  const total=Math.max(0,sub-desc);
-  const clienteId=(document.getElementById('cart-cliente')||{}).value||'';
-  const clientes=await getCol('clientes');
-  const clienteNome=clienteId?((clientes.find(c=>c.id===clienteId)||{}).nome||''):('');
-  const prods=await getCol('produtos');
-  for(const ci of cartItems){
-    const p=prods.find(x=>x.id===ci.id);
-    if(p) await setDoc('produtos',ci.id,{...p,qtd:Math.max(0,p.qtd-ci.qty)});
-  }
-  await addDoc2('vendas',{data:new Date().toISOString(),itens:[...cartItems],total,desconto:desc,pagamento:selectedPay,operador:currentOp.nome,cliente:clienteNome,clienteId});
-  const estado=caixaSnap.data();
-  await setDoc('caixa','estado',{...estado,saldo:(estado.saldo||0)+total});
-  await addDoc2('caixa_moves',{tipo:'venda',valor:total,desc:`Venda — ${clienteNome||'Consumidor'}`,hora:nowStr(),data:todayStr(),operador:currentOp.nome});
-  if(clienteId){
-    const cli=clientes.find(c=>c.id===clienteId);
-    if(cli) await setDoc('clientes',clienteId,{...cli,compras:(cli.compras||0)+1,totalGasto:(cli.totalGasto||0)+total});
-  }
-  document.getElementById('venda-ok-info').textContent=R(total)+' — '+selectedPay.charAt(0).toUpperCase()+selectedPay.slice(1);
-  document.getElementById('venda-ok-cliente').textContent=clienteNome?'Cliente: '+clienteNome:'';
-  openModal('m-venda-ok');
-  checkStockAlerts();
-}
-
-function novaVenda(){
-  cartItems=[];
-  closeModal('m-venda-ok');
-  goPage('pdv',document.querySelectorAll('.nav-item')[1]);
-}
-
-// ── ESTOQUE ──
-async function renderEstoque(area,actions){
-  actions.innerHTML=`<button class="btn btn-primary" onclick="abrirModalProduto()"><i class="ti ti-plus"></i>Novo Produto</button>`;
-  const prods=await getCol('produtos');
-  area.innerHTML=`
-  <div class="filter-bar">
-    <input class="filter-input" id="est-q" placeholder="Buscar por nome ou SKU..." oninput="filterEstoque()">
-    <select class="filter-select" id="est-cat" onchange="filterEstoque()"><option value="">Todas as categorias</option><option>Roupas</option><option>Calçados</option><option>Acessórios</option><option>Eletrônicos</option><option>Outros</option></select>
-    <select class="filter-select" id="est-status" onchange="filterEstoque()"><option value="">Todos os status</option><option value="ok">Estoque OK</option><option value="baixo">Estoque baixo</option><option value="zero">Sem estoque</option></select>
-  </div>
-  <div class="table-wrap">
-    <table class="data-table"><thead><tr><th>Produto</th><th>SKU</th><th>Categoria</th><th>Preço</th><th>Custo</th><th>Margem</th><th>Estoque</th><th>Mín</th><th>Status</th><th>Ações</th></tr></thead><tbody id="est-body"></tbody></table>
-  </div>`;
-  window._estProds=prods;
-  filterEstoque();
-}
-
-function filterEstoque(){
-  const q=(document.getElementById('est-q')||{}).value||'';
-  const cat=(document.getElementById('est-cat')||{}).value||'';
-  const status=(document.getElementById('est-status')||{}).value||'';
-  const prods=(window._estProds||[]).filter(p=>{
-    const mq=p.nome.toLowerCase().includes(q.toLowerCase())||(p.sku||'').toLowerCase().includes(q.toLowerCase());
-    const mc=!cat||p.cat===cat;
-    const ms=!status||(status==='ok'&&p.qtd>p.min)||(status==='baixo'&&p.qtd>0&&p.qtd<=p.min)||(status==='zero'&&p.qtd===0);
-    return mq&&mc&&ms;
-  });
-  const body=document.getElementById('est-body');
-  if(!body)return;
-  const margem=(p)=>p.preco>0?Math.round((p.preco-p.custo)/p.preco*100):0;
-  body.innerHTML=prods.map(p=>`<tr>
-    <td style="font-weight:600">${p.nome}</td>
-    <td style="font-family:var(--mono);color:var(--text3);font-size:12px">${p.sku||'—'}</td>
-    <td>${p.cat||'—'}</td>
-    <td style="font-family:var(--mono);font-weight:600">${R(p.preco)}</td>
-    <td style="font-family:var(--mono);color:var(--text3)">${R(p.custo)}</td>
-    <td style="color:${margem(p)>30?'var(--green)':margem(p)>15?'var(--amber)':'var(--red)'};font-weight:600">${margem(p)}%</td>
-    <td style="font-family:var(--mono);font-weight:700;color:${p.qtd===0?'var(--red)':p.qtd<=p.min?'var(--amber)':'var(--green)'}">${p.qtd}</td>
-    <td style="color:var(--text3)">${p.min||0}</td>
-    <td>${p.qtd===0?'<span class="badge badge-red">Zerado</span>':p.qtd<=p.min?'<span class="badge badge-amber">Baixo</span>':'<span class="badge badge-green">OK</span>'}</td>
-    <td style="display:flex;gap:6px">
-      <button class="btn btn-sm btn-icon" onclick="editarProduto('${p.id}')"><i class="ti ti-edit"></i></button>
-      <button class="btn btn-sm btn-icon btn-danger" onclick="deletarProduto('${p.id}')"><i class="ti ti-trash"></i></button>
-    </td>
-  </tr>`).join('');
-}
-
-function abrirModalProduto(){
-  editProdId=null;
-  document.getElementById('m-produto-title').textContent='Novo Produto';
-  ['fp-nome','fp-sku','fp-preco','fp-custo','fp-qtd','fp-min','fp-forn','fp-loc'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  openModal('m-produto');
-}
-
-function editarProduto(id){
-  const p=(window._estProds||[]).find(x=>x.id===id);
-  if(!p)return;
-  editProdId=id;
-  document.getElementById('m-produto-title').textContent='Editar Produto';
-  document.getElementById('fp-nome').value=p.nome||'';
-  document.getElementById('fp-sku').value=p.sku||'';
-  document.getElementById('fp-cat').value=p.cat||'Roupas';
-  document.getElementById('fp-preco').value=p.preco||0;
-  document.getElementById('fp-custo').value=p.custo||0;
-  document.getElementById('fp-qtd').value=p.qtd||0;
-  document.getElementById('fp-min').value=p.min||0;
-  document.getElementById('fp-forn').value=p.forn||'';
-  document.getElementById('fp-loc').value=p.loc||'';
-  openModal('m-produto');
-}
-
-async function salvarProduto(){
-  const nome=document.getElementById('fp-nome').value.trim();
-  const sku=document.getElementById('fp-sku').value.trim();
-  if(!nome||!sku){toast('Preencha nome e SKU!','err');return;}
-  const data={nome,sku,cat:document.getElementById('fp-cat').value,preco:parseFloat(document.getElementById('fp-preco').value)||0,custo:parseFloat(document.getElementById('fp-custo').value)||0,qtd:parseInt(document.getElementById('fp-qtd').value)||0,min:parseInt(document.getElementById('fp-min').value)||0,forn:document.getElementById('fp-forn').value,loc:document.getElementById('fp-loc').value};
-  if(editProdId){
-    await setDoc('produtos',editProdId,data);
-    const i=(window._estProds||[]).findIndex(x=>x.id===editProdId);
-    if(i>=0) window._estProds[i]={id:editProdId,...data};
-    toast('Produto atualizado!');
+// ── AUTENTICAÇÃO DE LOGIN ──
+function toggleLoginPassword() {
+  const input = document.getElementById('login-password');
+  const icon = document.getElementById('pass-icon');
+  if(input.type === 'password') {
+    input.type = 'text';
+    icon.className = 'ti ti-eye-off';
   } else {
-    const id=await addDoc2('produtos',data);
-    (window._estProds=window._estProds||[]).push({id,...data});
-    toast('Produto cadastrado!');
+    input.type = 'password';
+    icon.className = 'ti ti-eye';
   }
-  closeModal('m-produto');
-  filterEstoque();
-  checkStockAlerts();
 }
 
-async function deletarProduto(id){
-  if(!confirm('Remover este produto?'))return;
-  await delDoc('produtos',id);
-  window._estProds=(window._estProds||[]).filter(x=>x.id!==id);
-  filterEstoque();
-  toast('Produto removido.');
+function executeLogin(e) {
+  e.preventDefault();
+  const user = document.getElementById('login-username').value;
+  const pass = document.getElementById('login-password').value;
+  const err = document.getElementById('login-error');
+
+  if(USERS[user] && USERS[user].senha === pass) {
+    err.style.display = 'none';
+    currentOp = { id: user.toLowerCase(), nome: user, role: USERS[user].role, initials: USERS[user].initials };
+    
+    document.getElementById('sb-name').textContent = currentOp.nome;
+    document.getElementById('sb-role').textContent = currentOp.role;
+    document.getElementById('sb-av').textContent = currentOp.initials;
+    
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    
+    toast(`Bem-vindo(a), ${currentOp.nome}!`);
+    startListeners();
+  } else {
+    err.style.display = 'block';
+  }
 }
 
-// ── CLIENTES ──
-async function renderClientes(area,actions){
-  actions.innerHTML=`<button class="btn btn-primary" onclick="openModal('m-cliente')"><i class="ti ti-plus"></i>Novo Cliente</button>`;
-  const clientes=await getCol('clientes');
-  window._cliList=clientes;
-  area.innerHTML=`
-  <div class="filter-bar"><input class="filter-input" id="cli-q" placeholder="Buscar cliente por nome, CPF ou telefone..." oninput="filterClientes()" style="max-width:340px"></div>
-  <div class="client-grid" id="cli-grid"></div>`;
-  renderClientGrid(clientes);
+function logout() {
+  currentOp = null;
+  document.getElementById('login-password').value = '';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
 }
 
-function filterClientes(){
-  const q=(document.getElementById('cli-q')||{}).value||'';
-  const filtered=(window._cliList||[]).filter(c=>c.nome.toLowerCase().includes(q.toLowerCase())||(c.cpf||'').includes(q)||(c.tel||'').includes(q));
-  renderClientGrid(filtered);
+// ── BANCO DE DADOS SINC ──
+function startListeners() {
+  db.collection('produtos').onSnapshot(snap => {
+    localProdutos = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    renderCurrentPage();
+  }, () => setSyncStatus(false));
+
+  db.collection('clientes').onSnapshot(snap => {
+    localClientes = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    renderCurrentPage();
+  }, () => setSyncStatus(false));
+
+  db.collection('vendas').onSnapshot(snap => {
+    localVendas = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    renderCurrentPage();
+  }, () => setSyncStatus(false));
+
+  db.collection('contas_receber').onSnapshot(snap => {
+    localReceber = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    renderCurrentPage();
+  }, () => setSyncStatus(false));
+
+  db.collection('contas_pagar').onSnapshot(snap => {
+    localPagar = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    renderCurrentPage();
+  }, () => setSyncStatus(false));
+
+  db.collection('caixa').onSnapshot(snap => {
+    localCaixa = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    setSyncStatus(true);
+    renderCurrentPage();
+  }, () => setSyncStatus(false));
 }
 
-function renderClientGrid(list){
-  const g=document.getElementById('cli-grid');
-  if(!g)return;
-  g.innerHTML=list.length?list.map(c=>`
-    <div class="client-card">
-      <div class="client-head">
-        <div class="client-av">${c.nome.split(' ').map(x=>x[0]).slice(0,2).join('')}</div>
-        <div><div class="client-name">${c.nome}</div><div class="client-since">Cliente desde ${c.desde||'—'}</div></div>
+// ── ROTEAMENTO INTERNO ──
+let currentPage = 'dashboard';
+function goPage(page, element) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  if(element) element.classList.add('active');
+  else {
+    const target = document.getElementById('menu-' + page);
+    if(target) target.classList.add('active');
+  }
+  renderCurrentPage();
+}
+
+function renderCurrentPage() {
+  const content = document.getElementById('content');
+  const title = document.getElementById('page-title');
+  const actions = document.getElementById('topbar-actions');
+  
+  title.textContent = currentPage.toUpperCase();
+  actions.innerHTML = '';
+
+  if (currentPage === 'dashboard') renderDashboard(content, actions);
+  else if (currentPage === 'pdv') renderPDV(content, actions);
+  else if (currentPage === 'estoque') renderEstoque(content, actions);
+  else if (currentPage === 'clientes') renderClientes(content, actions);
+  else if (currentPage === 'caixa') renderCaixa(content, actions);
+  else if (currentPage === 'receber') renderContasReceber(content, actions);
+  else if (currentPage === 'pagar') renderContasPagar(content, actions);
+  else if (currentPage === 'relatorios') renderRelatorios(content, actions);
+}
+
+// ── 1. TELA: DASHBOARD COMPLETO ──
+function renderDashboard(content, actions) {
+  const hoje = todayStr();
+  const mesAtual = hoje.substring(0,7);
+
+  // Cálculos de Indicadores
+  const vendasHoje = localVendas.filter(v => v.data === hoje).reduce((acc, v) => acc + (v.total || 0), 0);
+  const vendasMes = localVendas.filter(v => v.data && v.data.startsWith(mesAtual)).reduce((acc, v) => acc + (v.total || 0), 0);
+  
+  const faltaDia = Math.max(0, META_DIARIA - vendasHoje);
+  const faltaMes = Math.max(0, META_MENSAL - vendasMes);
+  
+  const pctDia = Math.min(100, (vendasHoje / META_DIARIA) * 100);
+  const pctMes = Math.min(100, (vendasMes / META_MENSAL) * 100);
+
+  const contasPagarHoje = localPagar.filter(p => p.vencimento === hoje && p.status === 'Pendente').reduce((acc, p) => acc + (p.valor || 0), 0);
+  const contasReceberHoje = localReceber.filter(r => r.vencimento === hoje && r.status === 'Pendente').reduce((acc, r) => acc + (r.valor || 0), 0);
+
+  content.innerHTML = `
+    <!-- CARDS DE MÉTRICAS -->
+    <div class="metrics">
+      <div class="metric metric-sales">
+        <div class="metric-label">Vendas do Dia</div>
+        <div class="metric-value">${R(vendasHoje)}</div>
+        <div class="progress-container">
+          <div class="progress-bar-bg"><div class="progress-bar-fill green" style="width: ${pctDia}%"></div></div>
+          <div class="progress-text"><span>Meta: ${R(META_DIARIA)}</span><span style="margin-left:auto">${pctDia.toFixed(0)}%</span></div>
+        </div>
+        <i class="ti ti-cash metric-icon"></i>
       </div>
-      <div class="client-info">${c.tel||''}<br>${c.email||''}<br>${c.end||''}</div>
-      <div class="client-stats">
-        <div class="cstat"><div class="cstat-label">Compras</div><div class="cstat-val">${c.compras||0}</div></div>
-        <div class="cstat"><div class="cstat-label">Total gasto</div><div class="cstat-val" style="font-size:13px">${R(c.totalGasto||0)}</div></div>
+
+      <div class="metric metric-ticket">
+        <div class="metric-label">Falta para Meta Diária</div>
+        <div class="metric-value" style="color:var(--amber)">${R(faltaDia)}</div>
+        <div class="metric-sub">${faltaDia === 0 ? 'Meta do dia batida! 🎉' : 'Foco nas vendas!'}</div>
+        <i class="ti ti-trending-up metric-icon"></i>
       </div>
-    </div>`).join(''):'<div class="empty" style="padding:48px;grid-column:1/-1"><i class="ti ti-users-off"></i><span class="empty-title">Nenhum cliente encontrado</span></div>';
-}
 
-async function salvarCliente(){
-  const nome=document.getElementById('fc-nome').value.trim();
-  if(!nome){toast('Digite o nome!','err');return;}
-  const data={nome,cpf:document.getElementById('fc-cpf').value,tel:document.getElementById('fc-tel').value,email:document.getElementById('fc-email').value,end:document.getElementById('fc-end').value,obs:document.getElementById('fc-obs').value,desde:new Date().toISOString().slice(0,7),compras:0,totalGasto:0};
-  await addDoc2('clientes',data);
-  closeModal('m-cliente');
-  toast('Cliente cadastrado!');
-  renderClientes(document.getElementById('content'),document.getElementById('topbar-actions'));
-}
-
-// ── CAIXA ──
-async function renderCaixa(area,actions){
-  const [caixaSnap,moves]=await Promise.all([db.collection('caixa').doc('estado').get(),getCol('caixa_moves')]);
-  const estado=caixaSnap.exists?caixaSnap.data():{aberto:false,saldo:0};
-  const aberto=estado.aberto;
-  actions.innerHTML=aberto
-    ?`<button class="btn" onclick="openSangria()"><i class="ti ti-arrow-bar-down"></i>Sangria</button>
-      <button class="btn" onclick="openSuprimento()"><i class="ti ti-arrow-bar-up"></i>Suprimento</button>
-      <button class="btn btn-danger" onclick="fecharCaixa()"><i class="ti ti-lock"></i>Fechar Caixa</button>`
-    :`<button class="btn btn-primary" onclick="abrirCaixa()"><i class="ti ti-lock-open"></i>Abrir Caixa</button>`;
-  const vendas=await getCol('vendas');
-  const hoje=vendas.filter(v=>v.data&&v.data.slice(0,10)===todayStr());
-  const totalDia=hoje.reduce((s,v)=>s+v.total,0);
-  const porPag={Dinheiro:0,PIX:0,Crédito:0,Débito:0};
-  hoje.forEach(v=>{const k={dinheiro:'Dinheiro',pix:'PIX',credito:'Crédito',debito:'Débito'}[v.pagamento]||v.pagamento;if(porPag[k]!==undefined)porPag[k]+=v.total;});
-  const movesHoje=[...moves].filter(m=>m.data===todayStr()).reverse().slice(0,12);
-  area.innerHTML=`
-  <div style="max-width:800px">
-    <div class="caixa-status-bar ${aberto?'caixa-open':'caixa-closed'}">
-      <div class="caixa-dot ${aberto?'dot-green':'dot-red'}"></div>
-      <div><div style="font-size:15px;font-weight:700;color:${aberto?'var(--green)':'var(--red)'}">Caixa ${aberto?'Aberto':'Fechado'}</div><div style="font-size:12px;color:var(--text3)">Operador: ${currentOp?currentOp.nome:'—'}</div></div>
-      <div style="margin-left:auto;text-align:right"><div style="font-size:22px;font-weight:700;font-family:var(--mono);color:var(--text)">${R(estado.saldo)}</div><div style="font-size:12px;color:var(--text3)">saldo atual</div></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-      <div class="card"><div class="card-title"><i class="ti ti-chart-pie"></i>Resumo do dia</div>
-        <table class="data-table" style="font-size:13px">
-          <tr><td>Vendas realizadas</td><td style="text-align:right;font-family:var(--mono);font-weight:700">${hoje.length}</td></tr>
-          <tr><td>Total em vendas</td><td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--green)">${R(totalDia)}</td></tr>
-          ${Object.entries(porPag).map(([k,v])=>`<tr><td style="color:var(--text3)">${k}</td><td style="text-align:right;font-family:var(--mono)">${R(v)}</td></tr>`).join('')}
-        </table>
+      <div class="metric metric-stock">
+        <div class="metric-label">Vendas do Mês</div>
+        <div class="metric-value">${R(vendasMes)}</div>
+        <div class="progress-container">
+          <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${pctMes}%"></div></div>
+          <div class="progress-text"><span>Meta: ${R(META_MENSAL)}</span><span style="margin-left:auto">${pctMes.toFixed(0)}%</span></div>
+        </div>
+        <i class="ti ti-calendar-stats metric-icon"></i>
       </div>
-      <div class="card"><div class="card-title"><i class="ti ti-history"></i>Movimentações de hoje</div>
-        ${movesHoje.length?movesHoje.map(m=>`
-          <div class="move-row">
-            <i class="ti ${m.tipo==='venda'?'ti-shopping-cart':m.tipo==='suprimento'?'ti-arrow-bar-up':'ti-arrow-bar-down'} move-icon" style="color:${m.tipo==='sangria'?'var(--red)':'var(--green)'}"></i>
-            <div class="move-desc">${m.desc}</div>
-            <div class="move-time">${m.hora}</div>
-            <div class="move-val" style="color:${m.tipo==='sangria'?'var(--red)':'var(--green)'}">${m.tipo==='sangria'?'−':'+'} ${R(m.valor)}</div>
-          </div>`).join(''):'<div class="empty" style="padding:24px"><i class="ti ti-history-off"></i><span class="empty-title">Sem movimentações</span></div>'}
-      </div>
-    </div>
-  </div>`;
-}
 
-function abrirCaixa(){document.getElementById('ab-op').value=currentOp?currentOp.nome:'';openModal('m-abertura');}
-async function confirmarAbertura(){
-  const val=parseFloat(document.getElementById('ab-val').value)||0;
-  await setDoc('caixa','estado',{aberto:true,saldo:val,abertura:new Date().toISOString(),operador:currentOp.nome});
-  await addDoc2('caixa_moves',{tipo:'suprimento',valor:val,desc:'Abertura de caixa — troco inicial',hora:nowStr(),data:todayStr(),operador:currentOp.nome});
-  closeModal('m-abertura');
-  toast('Caixa aberto!');
-  renderCaixa(document.getElementById('content'),document.getElementById('topbar-actions'));
-}
-async function fecharCaixa(){
-  if(!confirm('Confirmar fechamento do caixa?'))return;
-  const snap=await db.collection('caixa').doc('estado').get();
-  const est=snap.data();
-  await setDoc('caixa','estado',{...est,aberto:false,fechamento:new Date().toISOString()});
-  toast('Caixa fechado!');
-  renderCaixa(document.getElementById('content'),document.getElementById('topbar-actions'));
-}
-let _caixaMoveType='sangria';
-function openSangria(){_caixaMoveType='sangria';document.getElementById('m-cmove-title').textContent='Sangria';document.getElementById('cm-val').value='';document.getElementById('cm-desc').value='';openModal('m-caixa-move');}
-function openSuprimento(){_caixaMoveType='suprimento';document.getElementById('m-cmove-title').textContent='Suprimento';document.getElementById('cm-val').value='';document.getElementById('cm-desc').value='';openModal('m-caixa-move');}
-async function confirmarMove(){
-  const val=parseFloat(document.getElementById('cm-val').value)||0;
-  const desc=document.getElementById('cm-desc').value||_caixaMoveType;
-  if(!val){toast('Digite um valor!','err');return;}
-  const snap=await db.collection('caixa').doc('estado').get();
-  const est=snap.data();
-  const novoSaldo=_caixaMoveType==='sangria'?est.saldo-val:est.saldo+val;
-  await setDoc('caixa','estado',{...est,saldo:novoSaldo});
-  await addDoc2('caixa_moves',{tipo:_caixaMoveType,valor:val,desc,hora:nowStr(),data:todayStr(),operador:currentOp.nome});
-  closeModal('m-caixa-move');
-  toast(_caixaMoveType==='sangria'?'Sangria registrada!':'Suprimento registrado!');
-  renderCaixa(document.getElementById('content'),document.getElementById('topbar-actions'));
-}
-
-// ── RELATÓRIOS ──
-async function renderRelatorios(area,actions){
-  actions.innerHTML=`<button class="btn" onclick="exportarCSV()"><i class="ti ti-download"></i>Exportar CSV</button>`;
-  const [vendas,prods]=await Promise.all([getCol('vendas'),getCol('produtos')]);
-  const totalV=vendas.reduce((s,v)=>s+v.total,0);
-  const totalC=vendas.reduce((s,v)=>s+v.itens.reduce((a,i)=>{const p=prods.find(x=>x.id===i.id);return a+(p?p.custo*i.qty:0);},0),0);
-  const lucro=totalV-totalC;
-  const margem=totalV?lucro/totalV*100:0;
-  const ticket=vendas.length?totalV/vendas.length:0;
-  const prodCount={};
-  vendas.forEach(v=>v.itens.forEach(i=>{if(!prodCount[i.id])prodCount[i.id]={nome:i.nome,qty:0,total:0};prodCount[i.id].qty+=i.qty;prodCount[i.id].total+=i.preco*i.qty;}));
-  const topProds=Object.values(prodCount).sort((a,b)=>b.total-a.total).slice(0,7);
-  const maxP=topProds.length?topProds[0].total:1;
-  const porPag={Dinheiro:0,PIX:0,Crédito:0,Débito:0};
-  vendas.forEach(v=>{const k={dinheiro:'Dinheiro',pix:'PIX',credito:'Crédito',debito:'Débito'}[v.pagamento]||v.pagamento;if(porPag[k]!==undefined)porPag[k]+=v.total;});
-  const maxPag=Math.max(...Object.values(porPag),1);
-  area.innerHTML=`
-  <div class="metrics">
-    <div class="metric metric-sales"><div class="metric-label">Total em vendas</div><div class="metric-value">${R(totalV)}</div><div class="metric-sub">${vendas.length} transações</div></div>
-    <div class="metric metric-ticket"><div class="metric-label">Ticket médio</div><div class="metric-value">${R(ticket)}</div></div>
-    <div class="metric metric-stock"><div class="metric-label">Lucro bruto</div><div class="metric-value" style="color:var(--green)">${R(lucro)}</div></div>
-    <div class="metric metric-cash"><div class="metric-label">Margem bruta</div><div class="metric-value">${margem.toFixed(1)}%</div></div>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-    <div class="card"><div class="card-title"><i class="ti ti-award"></i>Produtos mais vendidos (R$)</div>
-      <div class="bar-chart">
-        ${topProds.length?topProds.map(p=>`<div class="bar-row"><div class="bar-label" title="${p.nome}">${p.nome.length>14?p.nome.slice(0,14)+'…':p.nome}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(p.total/maxP*100)}%"></div></div><div class="bar-val">${R(p.total)}</div></div>`).join(''):'<div class="empty" style="padding:24px"><i class="ti ti-chart-bar-off"></i><span class="empty-title">Sem dados</span></div>'}
+      <div class="metric metric-cash">
+        <div class="metric-label">Falta para Meta Mensal</div>
+        <div class="metric-value" style="color:var(--red)">${R(faltaMes)}</div>
+        <div class="metric-sub">Faltam ${pctMes < 100 ? (100-pctMes).toFixed(0) : 0}%</div>
+        <i class="ti ti-target metric-icon"></i>
       </div>
     </div>
-    <div class="card"><div class="card-title"><i class="ti ti-credit-card"></i>Formas de pagamento</div>
-      <div class="bar-chart">
-        ${Object.entries(porPag).map(([k,v])=>`<div class="bar-row"><div class="bar-label">${k}</div><div class="bar-track"><div class="bar-fill bar-fill-green" style="width:${Math.round(v/maxPag*100)}%"></div></div><div class="bar-val">${R(v)}</div></div>`).join('')}
+
+    <div class="dash-grid">
+      <!-- DETALHES DO DIA -->
+      <div class="card">
+        <div class="card-title"><i class="ti ti-alert-circle"></i> Compromissos Financeiros de Hoje</div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
+          <div style="background:var(--bg3); padding:16px; border-radius:var(--radius); border-left:4px solid var(--green)">
+            <div class="metric-label">A Receber Hoje</div>
+            <div class="metric-value" style="font-size:18px; color:var(--green);">${R(contasReceberHoje)}</div>
+          </div>
+          <div style="background:var(--bg3); padding:16px; border-radius:var(--radius); border-left:4px solid var(--red)">
+            <div class="metric-label">A Pagar Hoje</div>
+            <div class="metric-value" style="font-size:18px; color:var(--red);">${R(contasPagarHoje)}</div>
+          </div>
+        </div>
       </div>
-      <div style="margin-top:16px">
-        <table class="data-table">
-          <thead><tr><th>Produto</th><th>Qtd</th><th>Receita</th></tr></thead>
-          <tbody>${topProds.slice(0,5).map(p=>`<tr><td>${p.nome}</td><td style="font-family:var(--mono)">${p.qty}</td><td style="font-family:var(--mono);font-weight:600">${R(p.total)}</td></tr>`).join('')}</tbody>
-        </table>
+
+      <!-- STATUS DO SISTEMA -->
+      <div class="card">
+        <div class="card-title"><i class="ti ti-activity"></i> Operação Ativa</div>
+        <p style="font-size:13px; color:var(--text2); margin-bottom:6px;">Operador logado: <strong>${currentOp.nome}</strong></p>
+        <p style="font-size:13px; color:var(--text2);">Data operacional: <strong>${hoje.split('-').reverse().join('/')}</strong></p>
       </div>
     </div>
-  </div>`;
-  window._relVendas=vendas;
+  `;
 }
 
-function exportarCSV(){
-  const v=window._relVendas||[];
-  if(!v.length){toast('Sem dados para exportar','err');return;}
-  const header='Data,Cliente,Pagamento,Total,Operador';
-  const rows=v.map(x=>`${x.data?x.data.slice(0,10):''},${x.cliente||''},${x.pagamento},${x.total.toFixed(2)},${x.operador||''}`);
-  const csv=[header,...rows].join('\n');
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
-  a.download='vendas_loja_sempre_bonita.csv';
-  a.click();
-  toast('CSV exportado!');
+// ── 2. TELA: PDV PROFISSIONAL ──
+let pdvBusca = '', pdvCat = 'Todos';
+
+function renderPDV(content, actions) {
+  const caixaAberto = localCaixa.find(c => c.status === 'Aberto');
+  if(!caixaAberto) {
+    content.innerHTML = `
+      <div class="empty">
+        <i class="ti ti-lock"></i>
+        <div class="empty-title">O Caixa está Fechado</div>
+        <div class="empty-sub">Abra o caixa na aba lateral de gestão antes de realizar vendas.</div>
+        <button class="btn btn-primary" style="margin-top:10px" onclick="goPage('caixa')">Ir para Caixa</button>
+      </div>
+    `;
+    return;
+  }
+
+  // Filtragem dos itens do PDV
+  const filtrados = localProdutos.filter(p => {
+    const matchBusca = p.nome.toLowerCase().includes(pdvBusca.toLowerCase()) || (p.sku && p.sku.toLowerCase().includes(pdvBusca.toLowerCase()));
+    const matchCat = pdvCat === 'Todos' || p.categoria === pdvCat;
+    return matchBusca && matchCat;
+  });
+
+  const totalCarrinho = cartItems.reduce((acc, i) => acc + (i.preco * i.qtd), 0);
+  
+  // Localiza limite do cliente selecionado no PDV
+  const clSelect = document.getElementById('cart-cl-id');
+  const clId = clSelect ? clSelect.value : '';
+  const clienteData = localClientes.find(c => c.id === clId);
+  const limiteDisponivel = clienteData ? (parseFloat(clienteData.limite || 0) - calcularDebitoCrediario(clId)) : 0;
+
+  content.innerHTML = `
+    <div class="pdv-wrap">
+      <div class="pdv-left">
+        <div class="pdv-search-row">
+          <input class="pdv-search" id="pdv-search" placeholder="Pesquise por nome do produto ou SKU..." value="${pdvBusca}" oninput="pdvBusca=this.value; renderPDVList()">
+          <select class="pdv-cat-select" id="pdv-cat" onchange="pdvCat=this.value; renderPDVList()">
+            <option>Todos</option><option>Roupas</option><option>Calçados</option><option>Acessórios</option><option>Outros</option>
+          </select>
+        </div>
+        <div class="prod-grid" id="pdv-prod-list"></div>
+      </div>
+
+      <!-- CARRINHO PROFISSIONAL E COMPLETO -->
+      <div class="cart">
+        <div class="cart-head">
+          <div class="cart-head-title"><i class="ti ti-shopping-cart"></i> Carrinho</div>
+          <span class="cart-head-count">${cartItems.reduce((acc,i)=>acc+i.qtd,0)} itens</span>
+        </div>
+        <div class="cart-client">
+          <div class="cart-client-header">
+            <span class="cart-client-label">Cliente da Venda</span>
+            ${clienteData ? `<span class="cart-client-credit">Lim. Disp: ${R(limiteDisponivel)}</span>` : ''}
+          </div>
+          <select class="cart-client-select" id="cart-cl-id" onchange="renderPDV(document.getElementById('content'))">
+            <option value="">Consumidor Final / Geral</option>
+            ${localClientes.map(c => `<option value="${c.id}" ${clId===c.id?'selected':''}>${c.nome}</option>`).join('')}
+          </select>
+        </div>
+        
+        <!-- CORREÇÃO DE ROLAGEM E ORGANIZAÇÃO -->
+        <div class="cart-items">
+          <table class="cart-table">
+            <thead>
+              <tr>
+                <th style="width:45%">Item</th>
+                <th style="width:30%; text-align:center;">Qtd</th>
+                <th style="width:25%; text-align:right;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${cartItems.map(item => `
+                <tr>
+                  <td>
+                    <div style="font-weight:600; font-size:12px; max-width:130px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.nome}</div>
+                    <div style="font-size:10px; color:var(--text3);">${R(item.preco)}</div>
+                  </td>
+                  <td align="center">
+                    <div class="qty-ctrl">
+                      <button class="qty-btn" onclick="updateCartQtd('${item.id}', -1)">-</button>
+                      <span class="qty-num">${item.qtd}</span>
+                      <button class="qty-btn" onclick="updateCartQtd('${item.id}', 1)">+</button>
+                    </div>
+                  </td>
+                  <td align="right" class="cart-item-total">${R(item.preco * item.qtd)}</td>
+                </tr>
+              `).join('')}
+              ${cartItems.length === 0 ? '<tr><td colspan="3" align="center" style="color:var(--text3); padding:20px;">Carrinho Vazio</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="cart-foot">
+          <div class="total-lines">
+            <div class="total-line main">
+              <span>VALOR TOTAL</span>
+              <span id="cart-total-val">${R(totalCarrinho)}</span>
+            </div>
+          </div>
+          
+          <div class="form-group" style="margin-bottom:10px;">
+            <label class="form-label" style="font-size:10px;">Forma de Pagamento</label>
+            <div class="pay-grid">
+              <div class="pay-opt ${selectedPay==='dinheiro'?'sel':''}" onclick="setPDVPay('dinheiro')"><i class="ti ti-cash"></i>Dinheiro</div>
+              <div class="pay-opt ${selectedPay==='pix'?'sel':''}" onclick="setPDVPay('pix')"><i class="ti ti-qrcode"></i>Pix</div>
+              <div class="pay-opt ${selectedPay==='cartao'?'sel':''}" onclick="setPDVPay('cartao')"><i class="ti ti-credit-card"></i>Cartão</div>
+              <div class="pay-opt ${selectedPay==='crediario'?'sel':''}" onclick="setPDVPay('crediario')"><i class="ti ti-notebook"></i>Crediário</div>
+            </div>
+          </div>
+
+          <!-- OPÇÕES DE PARCELAMENTO CREDIÁRIO ATÉ 6X -->
+          <div id="div-crediario" style="display:${selectedPay==='crediario'?'block':'none'}; margin-bottom:12px; background:var(--bg3); padding:10px; border-radius:var(--radius);">
+            <div class="form-group" style="margin:0">
+              <label class="form-label" style="font-size:10px;">Parcelamento Crediário</label>
+              <select class="form-input" id="cart-parcelas" style="padding:6px; font-size:12px;" onchange="parcelasCrediario=parseInt(this.value); renderPDV(document.getElementById('content'))">
+                ${[1,2,3,4,5,6].map(x => `<option value="${x}" ${parcelasCrediario===x?'selected':''}>${x}x de ${R(totalCarrinho/x)}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+
+          <button class="btn-checkout" onclick="finalizarVenda()" ${cartItems.length===0?'disabled':''}>
+            <i class="ti ti-circle-check"></i>Concluir Venda
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  renderPDVList();
 }
 
-// ── INIT ──
-initLogin();
-seedIfEmpty().catch(()=>{});
+function renderPDVList() {
+  const container = document.getElementById('pdv-prod-list');
+  if(!container) return;
+  
+  const filtrados = localProdutos.filter(p => {
+    const matchBusca = p.nome.toLowerCase().includes(pdvBusca.toLowerCase()) || (p.sku && p.sku.toLowerCase().includes(pdvBusca.toLowerCase()));
+    const matchCat = pdvCat === 'Todos' || p.categoria === pdvCat;
+    return matchBusca && matchCat;
+  });
+
+  if(filtrados.length === 0) {
+    container.innerHTML = '<div class="empty" style="grid-column:1/-1"><i class="ti ti-search"></i>Nenhum produto encontrado.</div>';
+    return;
+  }
+
+  container.innerHTML = filtrados.map(p => {
+    const s = p.estoque || 0;
+    const low = s <= (p.estoqueMin || 5);
+    return `
+      <div class="prod-tile" onclick="addToCart('${p.id}')">
+        <div class="prod-tile-cat">${p.categoria || 'Geral'}</div>
+        <div class="prod-tile-name">${p.nome}</div>
+        <div class="prod-tile-price">${R(p.precoVenda)}</div>
+        <div class="prod-tile-stock ${s===0?'zero':(low?'low':'')}">${s===0?'Sem Estoque':`Estoque: ${s}`}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function addToCart(id) {
+  const p = localProdutos.find(prod => prod.id === id);
+  if(!p) return;
+  if((p.estoque || 0) <= 0) { toast("Produto sem estoque disponível!", "err"); return; }
+  
+  const existe = cartItems.find(i => i.id === id);
+  if(existe) {
+    if(existe.qtd >= p.estoque) { toast("Quantidade excede o estoque físico!", "err"); return; }
+    existe.qtd++;
+  } else {
+    cartItems.push({ id: p.id, nome: p.nome, preco: p.precoVenda, qtd: 1 });
+  }
+  renderPDV(document.getElementById('content'));
+}
+
+function updateCartQtd(id, delta) {
+  const i = cartItems.find(item => item.id === id);
+  if(!i) return;
+  const p = localProdutos.find(prod => prod.id === id);
+  
+  i.qtd += delta;
+  if(i.qtd > p.estoque) { toast("Quantidade excede o estoque físico!", "err"); i.qtd = p.estoque; }
+  if(i.qtd <= 0) cartItems = cartItems.filter(item => item.id !== id);
+  renderPDV(document.getElementById('content'));
+}
+
+function setPDVPay(type) {
+  selectedPay = type;
+  renderPDV(document.getElementById('content'));
+}
+
+function calcularDebitoCrediario(clienteId) {
+  return localReceber.filter(r => r.clienteId === clienteId && r.status === 'Pendente').reduce((acc, r) => acc + (r.valor || 0), 0);
+}
+
+function finalizarVenda() {
+  const cId = document.getElementById('cart-cl-id').value;
+  const total = cartItems.reduce((acc, i) => acc + (i.preco * i.qtd), 0);
+  
+  if(selectedPay === 'crediario') {
+    if(!cId) { toast("Selecione um cliente para realizar vendas por Crediário!", "err"); return; }
+    const cliente = localClientes.find(c => c.id === cId);
+    const limite = parseFloat(cliente.limite || 0);
+    const debitoAtual = calcularDebitoCrediario(cId);
+    if(debitoAtual + total > limite) {
+      toast(`Venda recusada! Limite de crédito excedido. Disponível: ${R(limite - debitoAtual)}`, "err");
+      return;
+    }
+  }
+
+  const batch = db.batch();
+  const vRef = db.collection('vendas').doc();
+  const dataHoje = todayStr();
+
+  batch.set(vRef, {
+    data: dataHoje,
+    hora: nowStr(),
+    itens: cartItems,
+    total: total,
+    formaPagamento: selectedPay,
+    clienteId: cId || 'Consumidor Geral',
+    vendedor: currentOp.nome
+  });
+
+  // Atualização física de estoque
+  cartItems.forEach(i => {
+    const pRef = db.collection('produtos').doc(i.id);
+    const pOrig = localProdutos.find(pr => pr.id === i.id);
+    const nEstoque = Math.max(0, (pOrig.estoque || 0) - i.qtd);
+    batch.update(pRef, { estoque: nEstoque });
+  });
+
+  // GERAÇÃO AUTOMÁTICA EM CONTAS A RECEBER SE FOR CREDIÁRIO
+  if(selectedPay === 'crediario') {
+    const clienteName = localClientes.find(c => c.id === cId).nome;
+    const vlrParcela = total / parcelasCrediario;
+    
+    for(let x=1; x<=parcelasCrediario; x++) {
+      const recRef = db.collection('contas_receber').doc();
+      const venc = new Date();
+      venc.setMonth(venc.getMonth() + x);
+      
+      batch.set(recRef, {
+        clienteId: cId,
+        cliente: clienteName,
+        valor: vlrParcela,
+        vencimento: venc.toISOString().slice(0,10),
+        parcela: `${x}/${parcelasCrediario}`,
+        status: 'Pendente',
+        origemVenda: vRef.id
+      });
+    }
+  }
+
+  // Fluxo de caixa interno automático se for pago em dinheiro no ato
+  if(selectedPay === 'dinheiro') {
+    const cxAberto = localCaixa.find(c => c.status === 'Aberto');
+    if(cxAberto) {
+      const cxRef = db.collection('caixa').doc(cxAberto.id);
+      batch.set(db.collection('caixa_movimentos').doc(), {
+        caixaId: cxAberto.id,
+        tipo: 'entrada',
+        valor: total,
+        descricao: `Venda PDV Ref #${vRef.id.slice(0,5)}`,
+        hora: nowStr()
+      });
+      batch.update(cxRef, { saldoAtual: (cxAberto.saldoAtual || 0) + total });
+    }
+  }
+
+  batch.commit().then(() => {
+    document.getElementById('venda-ok-info').textContent = `Total: ${R(total)} em ${selectedPay.toUpperCase()}`;
+    document.getElementById('venda-ok-cliente').textContent = cId ? `Cliente: ${localClientes.find(c=>c.id===cId).nome}` : 'Consumidor Geral';
+    openModal('m-venda-ok');
+    cartItems = [];
+    selectedPay = 'dinheiro';
+    parcelasCrediario = 1;
+  }).catch(() => toast("Erro ao registrar a venda", "err"));
+}
+
+function novaVenda() {
+  closeModal('m-venda-ok');
+  renderCurrentPage();
+}
+
+// ── 3. TELA: ESTOQUE ──
+let estqBusca = '';
+function renderEstoque(content, actions) {
+  actions.innerHTML = `<button class="btn btn-primary btn-sm" onclick="editProdId=null; openModal('m-produto')"><i class="ti ti-plus"></i>Novo Produto</button>`;
+  
+  const filtrados = localProdutos.filter(p => p.nome.toLowerCase().includes(estqBusca.toLowerCase()));
+
+  content.innerHTML = `
+    <div class="filter-bar">
+      <input class="filter-input" placeholder="Buscar por produto..." value="${estqBusca}" oninput="estqBusca=this.value; renderCurrentPage()">
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Nome</th>
+            <th>Categoria</th>
+            <th>Preço Custo</th>
+            <th>Preço Venda</th>
+            <th>Estoque</th>
+            <th>Status</th>
+            <th style="text-align:right">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filtrados.map(p => {
+            const low = (p.estoque || 0) <= (p.estoqueMin || 5);
+            return `
+              <tr>
+                <td style="font-family:var(--mono)">${p.sku || '-'}</td>
+                <td><strong>${p.nome}</strong></td>
+                <td><span class="badge badge-blue">${p.categoria}</span></td>
+                <td>${R(p.precoCusto)}</td>
+                <td style="color:var(--accent); font-weight:600">${R(p.precoVenda)}</td>
+                <td style="font-family:var(--mono)">${p.estoque || 0}</td>
+                <td><span class="badge ${(p.estoque||0)===0?'badge-red':(low?'badge-amber':'badge-green')}">${(p.estoque||0)===0?'Zerado':(low?'Baixo':'Ok')}</span></td>
+                <td align="right">
+                  <button class="btn btn-icon btn-sm" onclick="carregarEditarProduto('${p.id}')"><i class="ti ti-edit"></i></button>
+                  <button class="btn btn-icon btn-danger btn-sm" onclick="excluirProduto('${p.id}')"><i class="ti ti-trash"></i></button>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function salvarProduto() {
+  const nome = document.getElementById('fp-nome').value;
+  const sku = document.getElementById('fp-sku').value;
+  const cat = document.getElementById('fp-cat').value;
+  const forn = document.getElementById('fp-forn').value;
+  const preco = parseFloat(document.getElementById('fp-preco').value || 0);
+  const custo = parseFloat(document.getElementById('fp-custo').value || 0);
+  const qtd = parseInt(document.getElementById('fp-qtd').value || 0);
+  const min = parseInt(document.getElementById('fp-min').value || 5);
+  const loc = document.getElementById('fp-loc').value;
+
+  if(!nome) { toast("Nome do produto é obrigatório!", "err"); return; }
+
+  const dados = { nome, sku, categoria: cat, fornecedor: forn, preçoVenda: preco, precoVenda: preco, precoCusto: custo, estoque: qtd, estoqueMin: min, localizacao: loc };
+
+  if(editProdId) {
+    db.collection('produtos').doc(editProdId).update(dados).then(() => { closeModal('m-produto'); toast("Alterado!"); });
+  } else {
+    db.collection('produtos').add(dados).then(() => { closeModal('m-produto'); toast("Cadastred!"); });
+  }
+}
+
+function carregarEditarProduto(id) {
+  const p = localProdutos.find(pr => pr.id === id);
+  if(!p) return;
+  editProdId = id;
+  document.getElementById('m-produto-title').textContent = "Editar Produto";
+  document.getElementById('fp-nome').value = p.nome || '';
+  document.getElementById('fp-sku').value = p.sku || '';
+  document.getElementById('fp-cat').value = p.categoria || 'Roupas';
+  document.getElementById('fp-forn').value = p.fornecedor || '';
+  document.getElementById('fp-preco').value = p.precoVenda || '';
+  document.getElementById('fp-custo').value = p.precoCusto || '';
+  document.getElementById('fp-qtd').value = p.estoque || '';
+  document.getElementById('fp-min').value = p.estoqueMin || '';
+  document.getElementById('fp-loc').value = p.localizacao || '';
+  openModal('m-produto');
+}
+
+function excluirProduto(id) {
+  if(confirm("Confirma a remoção do produto do estoque?")) {
+    db.collection('produtos').doc(id).delete().then(() => toast("Removido com sucesso."));
+  }
+}
+
+// ── 4. TELA: CLIENTES COM LIMITE DE CRÉDITO ──
+let clBusca = '';
+function renderClientes(content, actions) {
+  actions.innerHTML = `<button class="btn btn-primary btn-sm" onclick="openModal('m-cliente')"><i class="ti ti-plus"></i>Novo Cliente</button>`;
+
+  const filtrados = localClientes.filter(c => c.nome.toLowerCase().includes(clBusca.toLowerCase()));
+
+  content.innerHTML = `
+    <div class="filter-bar">
+      <input class="filter-input" placeholder="Buscar por cliente..." value="${clBusca}" oninput="clBusca=this.value; renderCurrentPage()">
+    </div>
+    <div class="client-grid">
+      ${filtrados.map(c => {
+        const deb = calcularDebitoCrediario(c.id);
+        const lim = parseFloat(c.limite || 0);
+        return `
+          <div class="client-card">
+            <div class="client-head">
+              <div class="client-av">${c.nome.slice(0,2).toUpperCase()}</div>
+              <div>
+                <div class="client-name">${c.nome}</div>
+                <div class="client-since">CPF: ${c.cpf || 'Não informado'}</div>
+              </div>
+            </div>
+            <div class="client-info">
+              <i class="ti ti-phone"></i> ${c.telefone || 'Sem telefone'}<br>
+              <i class="ti ti-map-pin"></i> ${c.endereco || 'Sem endereço'}
+            </div>
+            <div class="client-stats">
+              <div class="cstat">
+                <div class="cstat-label">Limite de Crédito</div>
+                <div class="cstat-val" style="color:var(--accent)">${R(lim)}</div>
+              </div>
+              <div class="cstat">
+                <div class="cstat-label">Uso / Débito</div>
+                <div class="cstat-val" style="color:${deb > lim ? 'var(--red)' : 'var(--amber)'}">${R(deb)}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function salvarCliente() {
+  const nome = document.getElementById('fc-nome').value;
+  const cpf = document.getElementById('fc-cpf').value;
+  const tel = document.getElementById('fc-tel').value;
+  const limite = parseFloat(document.getElementById('fc-limite').value || 0);
+  const end = document.getElementById('fc-end').value;
+  const obs = document.getElementById('fc-obs').value;
+
+  if(!nome) { toast("Nome do cliente é obrigatório!", "err"); return; }
+
+  db.collection('clientes').add({ nome, cpf, telefone: tel, limite, endereco: end, observacoes: obs })
+    .then(() => { closeModal('m-cliente'); toast("Cliente registrado!"); });
+}
+
+// ── 5. NOVA TELA: CONTAS A RECEBER (CREDIÁRIOS) ──
+function renderContasReceber(content, actions) {
+  content.innerHTML = `
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Vencimento</th>
+            <th>Parcela</th>
+            <th>Valor</th>
+            <th>Status</th>
+            <th style="text-align:right">Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${localReceber.map(r => `
+            <tr>
+              <td><strong>${r.cliente}</strong></td>
+              <td>${r.vencimento.split('-').reverse().join('/')}</td>
+              <td><span class="badge badge-blue">${r.parcela}</span></td>
+              <td style="font-family:var(--mono); font-weight:600; color:var(--green)">${R(r.valor)}</td>
+              <td><span class="badge ${r.status==='Pago'?'badge-green':'badge-amber'}">${r.status}</span></td>
+              <td align="right">
+                ${r.status === 'Pendente' ? `<button class="btn btn-success btn-sm" onclick="baixarContaReceber('${r.id}')"><i class="ti ti-check"></i> Baixar Pago</button>` : '<span style="font-size:11px; color:var(--text3)">Compensado</span>'}
+              </td>
+            </tr>
+          `).join('')}
+          ${localReceber.length === 0 ? '<tr><td colspan="6" align="center" style="color:var(--text3); padding:24px;">Nenhum crediário cadastrado ou pendente.</td></tr>' : ''}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function baixarContaReceber(id) {
+  if(confirm("Marcar esta parcela do crediário como PAGA e dar entrada em caixa?")) {
+    const item = localReceber.find(r => r.id === id);
+    const batch = db.batch();
+    
+    batch.update(db.collection('contas_receber').doc(id), { status: 'Pago' });
+    
+    // Entrada automática no fluxo do caixa ativo
+    const cxAberto = localCaixa.find(c => c.status === 'Aberto');
+    if(cxAberto) {
+      batch.set(db.collection('caixa_movimentos').doc(), {
+        caixaId: cxAberto.id,
+        tipo: 'entrada',
+        valor: item.valor,
+        descricao: `Receb. Crediário — ${item.cliente} (${item.parcela})`,
+        hora: nowStr()
+      });
+      batch.update(db.collection('caixa').doc(cxAberto.id), { saldoAtual: (cxAberto.saldoAtual || 0) + item.valor });
+    }
+
+    batch.commit().then(() => toast("Parcela liquidada!"));
+  }
+}
+
+// ── 6. NOVA TELA: CONTAS A PAGAR ──
+function renderContasPagar(content, actions) {
+  actions.innerHTML = `<button class="btn btn-danger btn-sm" onclick="openModal('m-pagar')"><i class="ti ti-plus"></i>Nova Conta a Pagar</button>`;
+
+  content.innerHTML = `
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Fornecedor / Despesa</th>
+            <th>Vencimento</th>
+            <th>Forma de Pagto</th>
+            <th>Valor</th>
+            <th>Status</th>
+            <th style="text-align:right">Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${localPagar.map(p => `
+            <tr>
+              <td><strong>${p.fornecedor}</strong></td>
+              <td>${p.vencimento.split('-').reverse().join('/')}</td>
+              <td><span class="badge badge-blue">${p.formaPagamento}</span></td>
+              <td style="font-family:var(--mono); font-weight:600; color:var(--red)">${R(p.valor)}</td>
+              <td><span class="badge ${p.status==='Pago'?'badge-green':'badge-red'}">${p.status}</span></td>
+              <td align="right">
+                ${p.status === 'Pendente' ? `<button class="btn btn-danger btn-sm" onclick="baixarContaPagar('${p.id}')"><i class="ti ti-wallet"></i> Pagar</button>` : '<span style="font-size:11px; color:var(--text3)">Pago e Processado</span>'}
+              </td>
+            </tr>
+          `).join('')}
+          ${localPagar.length === 0 ? '<tr><td colspan="6" align="center" style="color:var(--text3); padding:24px;">Nenhuma conta registrada a pagar.</td></tr>' : ''}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function salvarContaPagar() {
+  const forn = document.getElementById('fpa-forn').value;
+  const val = parseFloat(document.getElementById('fpa-val').value || 0);
+  const data = document.getElementById('fpa-data').value;
+  const forma = document.getElementById('fpa-forma').value;
+
+  if(!forn || val <= 0 || !data) { toast("Preencha todos os campos da despesa!", "err"); return; }
+
+  db.collection('contas_pagar').add({ fornecedor: forn, valor: val, vencimento: data, formaPagamento: forma, status: 'Pendente' })
+    .then(() => { closeModal('m-pagar'); toast("Conta registrada!"); });
+}
+
+function baixarContaPagar(id) {
+  if(confirm("Confirma o pagamento e baixa desta despesa?")) {
+    db.collection('contas_pagar').doc(id).update({ status: 'Pago' }).then(() => toast("Despesa baixada!"));
+  }
+}
+
+// ── TELA: CAIXA CONTROLE DE FLUXO ──
+let movsCaixaLocal = [];
+function renderCaixa(content, actions) {
+  const aberto = localCaixa.find(c => c.status === 'Aberto');
+  
+  if(!aberto) {
+    content.innerHTML = `
+      <div class="empty">
+        <i class="ti ti-lock-open"></i>
+        <div class="empty-title">Caixa Fechado</div>
+        <div class="empty-sub">Insira o saldo inicial de troco para iniciar as movimentações do dia.</div>
+        <button class="btn btn-primary" style="margin-top:10px;" onclick="document.getElementById('ab-op').value=currentOp.nome; openModal('m-abertura');">Abrir Caixa</button>
+      </div>
+    `;
+    return;
+  }
+
+  // Carrega movimentos do caixa ativo
+  db.collection('caixa_movimentos').where('caixaId', '==', aberto.id).get().then(snap => {
+    movsCaixaLocal = snap.docs.map(d => d.data());
+    const mList = document.getElementById('movs-dinamico');
+    if(mList) {
+      mList.innerHTML = movsCaixaLocal.map(m => `
+        <div class="move-row">
+          <span class="move-icon" style="color:${m.tipo==='entrada'?'var(--green)':'var(--red)'}"><i class="ti ti-circle-arrow-${m.tipo==='entrada'?'up':'down'}"></i></span>
+          <div class="move-desc"><strong>${m.descricao}</strong><div class="move-time">${m.hora}</div></div>
+          <div class="move-val" style="color:${m.tipo==='entrada'?'var(--green)':'var(--red)'}">${m.tipo==='entrada'?'+':'-'} ${R(m.valor)}</div>
+        </div>
+      `).join('');
+    }
+  });
+
+  content.innerHTML = `
+    <div class="caixa-status-bar caixa-open">
+      <div class="caixa-dot dot-green"></div>
+      <div style="font-size:13px">Caixa Aberto por <strong>${aberto.operador}</strong> em ${aberto.data} às ${aberto.horaAbertura}</div>
+      <button class="btn btn-danger btn-sm" style="margin-left:auto" onclick="fecharCaixa('${aberto.id}')"><i class="ti ti-lock"></i> Fechar Caixa</button>
+    </div>
+
+    <div class="metrics">
+      <div class="metric metric-sales"><div class="metric-label">Troco Inicial</div><div class="metric-value">${R(aberto.saldoAbertura)}</div></div>
+      <div class="metric metric-ticket"><div class="metric-label">Saldo Atual em Dinheiro</div><div class="metric-value" style="color:var(--green)">${R(aberto.saldoAtual)}</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px">
+        <span>Fluxo de Caixa / Movimentações Avulsas</span>
+        <div style="margin-left:auto; display:flex; gap:6px;">
+          <button class="btn btn-success btn-sm" onclick="caixaMoveType='entrada'; document.getElementById('m-cmove-title').textContent='Suprimento'; openModal('m-caixa-move')">Suprimento (Entrada)</button>
+          <button class="btn btn-danger btn-sm" onclick="caixaMoveType='sangria'; document.getElementById('m-cmove-title').textContent='Sangria'; openModal('m-caixa-move')">Sangria (Retirada)</button>
+        </div>
+      </div>
+      <div id="movs-dinamico"><div class="spinner"></div></div>
+    </div>
+  `;
+}
+
+function confirmarAbertura() {
+  const val = parseFloat(document.getElementById('ab-val').value || 0);
+  db.collection('caixa').add({
+    data: todayStr(),
+    horaAbertura: nowStr(),
+    operador: currentOp.nome,
+    saldoAbertura: val,
+    saldoAtual: val,
+    status: 'Aberto'
+  }).then(() => { closeModal('m-abertura'); toast("Caixa aberto!"); });
+}
+
+function confirmarMove() {
+  const val = parseFloat(document.getElementById('cm-val').value || 0);
+  const desc = document.getElementById('cm-desc').value;
+  const aberto = localCaixa.find(c => c.status === 'Aberto');
+
+  if(val <= 0 || !desc) { toast("Preencha o valor e descrição!", "err"); return; }
+
+  const nSaldo = caixaMoveType === 'entrada' ? (aberto.saldoAtual + val) : (aberto.saldoAtual - val);
+  const batch = db.batch();
+  
+  batch.set(db.collection('caixa_movimentos').doc(), { caixaId: aberto.id, tipo: caixaMoveType, valor: val, descricao: desc, hora: nowStr() });
+  batch.update(db.collection('caixa').doc(aberto.id), { saldoAtual: nSaldo });
+  
+  batch.commit().then(() => { closeModal('m-caixa-move'); document.getElementById('cm-val').value=''; document.getElementById('cm-desc').value=''; toast("Movimentado!"); });
+}
+
+function fecharCaixa(id) {
+  if(confirm("Deseja encerrar e fechar o caixa corrente?")) {
+    db.collection('caixa').doc(id).update({ status: 'Fechado', horaFechamento: nowStr() }).then(() => toast("Caixa fechado com sucesso!"));
+  }
+}
+
+// ── TELA: RELATÓRIOS ──
+function renderRelatorios(content, actions) {
+  const faturamento = localVendas.reduce((acc,v)=>acc+(v.total||0),0);
+  const totalItens = localVendas.reduce((acc,v)=>acc+v.itens.reduce((s,i)=>s+i.qtd,0),0);
+  
+  content.innerHTML = `
+    <div class="metrics">
+      <div class="metric metric-sales"><div class="metric-label">Faturamento Acumulado</div><div class="metric-value">${R(faturamento)}</div></div>
+      <div class="metric metric-ticket"><div class="metric-label">Vendas Efetuadas</div><div class="metric-value">${localVendas.length}</div></div>
+      <div class="metric metric-stock"><div class="metric-label">Peças Comercializadas</div><div class="metric-value">${totalItens}</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="ti ti-chart-bar"></i> Distribuição de Formas de Pagamento</div>
+      <p style="color:var(--text3); font-size:13px;">Geração de gráficos em desenvolvimento.</p>
+    </div>
+  `;
+}
+
+// Inicialização automática do Login
+window.onload = () => {
+  document.getElementById('login-screen').style.display = 'flex';
+};
 </script>
 </body>
 </html>
