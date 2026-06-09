@@ -409,11 +409,62 @@ a{color:var(--accent);text-decoration:none}
       <span class="modal-title" id="m-prod-title">Novo Produto</span>
       <button class="modal-close" onclick="closeModal('m-produto')"><i class="ti ti-x"></i></button>
     </div>
+
+    <!-- 1. NOME + SKU -->
     <div class="form-row">
       <div class="form-group"><label class="form-label">Nome do Produto *</label><input class="form-input" id="fp-nome" placeholder="Ex: Blusa Estela"></div>
-      <div class="form-group"><label class="form-label">Código / SKU *</label><input class="form-input" id="fp-sku" placeholder="Ex: 3022"></div>
+      <div class="form-group"><label class="form-label">Código SKU *</label><input class="form-input" id="fp-sku" placeholder="Ex: 3022"></div>
     </div>
+
+    <!-- 2. GRADE DE COR E TAMANHO -->
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+        <i class="ti ti-color-swatch" style="font-size:14px;color:var(--accent)"></i> Grade — Cor e Tamanho
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Cor</label>
+          <input class="form-input" id="fp-cor" placeholder="Ex: Preto, Verde, Nude">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Tamanho</label>
+          <select class="form-input" id="fp-tam">
+            <option value="">Sem tamanho / Único</option>
+            <optgroup label="Tamanho letra">
+              <option>PP</option><option>P</option><option>M</option><option>G</option><option>GG</option><option>XG</option>
+            </optgroup>
+            <optgroup label="Tamanho número">
+              <option>34</option><option>36</option><option>38</option><option>40</option><option>42</option><option>44</option><option>46</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. PREÇOS -->
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+        <i class="ti ti-coin" style="font-size:14px;color:var(--green)"></i> Precificação
+      </div>
+      <div class="form-row-3">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Preço de Venda (R$)</label>
+          <input class="form-input" id="fp-preco" type="number" step="0.01" placeholder="0,00" oninput="calcMarkup()" style="font-size:15px;font-weight:600;color:var(--accent)">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Preço de Custo (R$)</label>
+          <input class="form-input" id="fp-custo" type="number" step="0.01" placeholder="0,00" oninput="calcMarkup()">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Markup (%)</label>
+          <input class="form-input" id="fp-markup" type="number" step="0.01" placeholder="—" readonly style="background:var(--bg4);color:var(--amber);font-weight:700">
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. FORNECEDOR + CATEGORIA -->
     <div class="form-row">
+      <div class="form-group"><label class="form-label">Fornecedor</label><input class="form-input" id="fp-marca" placeholder="Ex: Monami, Desery"></div>
       <div class="form-group"><label class="form-label">Categoria</label>
         <select class="form-input" id="fp-cat">
           <option>Blusas</option><option>Vestidos</option><option>Conjuntos</option>
@@ -422,32 +473,19 @@ a{color:var(--accent);text-decoration:none}
           <option>Colete</option><option>Macacão</option><option>Acessórios</option><option>Outros</option>
         </select>
       </div>
-      <div class="form-group"><label class="form-label">Marca / Fornecedor</label><input class="form-input" id="fp-marca" placeholder="Ex: Monami"></div>
     </div>
+
+    <!-- 5. ESTOQUE -->
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Cor</label><input class="form-input" id="fp-cor" placeholder="Ex: Preto, Verde, Nude"></div>
-      <div class="form-group"><label class="form-label">Tamanho</label>
-        <select class="form-input" id="fp-tam">
-          <option value="">Sem tamanho</option>
-          <option>PP</option><option>P</option><option>M</option><option>G</option>
-          <option>GG</option><option>XG</option><option>34</option><option>36</option>
-          <option>38</option><option>40</option><option>42</option><option>44</option><option>46</option>
-        </select>
-      </div>
+      <div class="form-group"><label class="form-label">Qtd. em Estoque</label><input class="form-input" id="fp-qtd" type="number" placeholder="0" min="0"></div>
+      <div class="form-group"><label class="form-label">Estoque Mínimo</label><input class="form-input" id="fp-min" type="number" placeholder="2" min="0"></div>
     </div>
-    <div class="form-row-3">
-      <div class="form-group"><label class="form-label">Custo (R$)</label><input class="form-input" id="fp-custo" type="number" step="0.01" placeholder="0,00" oninput="calcMarkup()"></div>
-      <div class="form-group"><label class="form-label">Preço Venda (R$)</label><input class="form-input" id="fp-preco" type="number" step="0.01" placeholder="0,00" oninput="calcMarkup()"></div>
-      <div class="form-group"><label class="form-label">Markup (%)</label><input class="form-input" id="fp-markup" type="number" step="0.01" placeholder="Auto" readonly style="background:var(--bg4);color:var(--amber)"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Qtd. Estoque</label><input class="form-input" id="fp-qtd" type="number" placeholder="0" min="0"></div>
-      <div class="form-group"><label class="form-label">Estoque mínimo</label><input class="form-input" id="fp-min" type="number" placeholder="2" min="0"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Código de Barras</label><input class="form-input" id="fp-barras" placeholder="EAN/código de barras"></div>
+
+    <div class="form-group"><label class="form-label">Código de Barras</label><input class="form-input" id="fp-barras" placeholder="EAN / código de barras"></div>
+
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('m-produto')">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarProduto()"><i class="ti ti-check"></i>Salvar</button>
+      <button class="btn btn-primary" onclick="salvarProduto()"><i class="ti ti-check"></i>Salvar Produto</button>
     </div>
   </div>
 </div>
@@ -1047,29 +1085,61 @@ function novaVenda(){closeModal('m-venda-ok');renderCurrentPage();}
 function renderEstoque(c,a){
   a.innerHTML=`<button class="btn btn-sm" onclick="openModal('m-imp-est')"><i class="ti ti-file-import"></i><span>Importar CSV</span></button>
     <button class="btn btn-primary btn-sm" onclick="editProdId=null;abrirProd()"><i class="ti ti-plus"></i><span>Novo Produto</span></button>`;
-  const f=localProdutos.filter(p=>(p.nome||'').toLowerCase().includes(estqBusca.toLowerCase()));
+  const f=localProdutos.filter(p=>(p.nome||'').toLowerCase().includes(estqBusca.toLowerCase())||
+    (p.sku||'').toLowerCase().includes(estqBusca.toLowerCase())||
+    (p.cor||'').toLowerCase().includes(estqBusca.toLowerCase())||
+    (p.fornecedor||p.marca||'').toLowerCase().includes(estqBusca.toLowerCase())
+  );
   c.innerHTML=`<div class="filter-bar">
-    <input class="filter-input" placeholder="Buscar produto..." value="${estqBusca}" oninput="estqBusca=this.value;renderCurrentPage()" style="min-width:200px">
+    <input class="filter-input" placeholder="Buscar por nome, SKU, cor ou fornecedor..." value="${estqBusca}" oninput="estqBusca=this.value;renderCurrentPage()" style="min-width:260px">
+    <span style="font-size:12px;color:var(--text3);margin-left:4px">${f.length} produto(s)</span>
   </div>
   <div class="table-wrap">
     <table class="data-table">
-      <thead><tr><th>SKU</th><th>Produto</th><th>Cor/Tam</th><th>Categoria</th><th>Custo</th><th>Venda</th><th>Markup</th><th>Estoque</th><th>Status</th><th style="text-align:right">Ações</th></tr></thead>
-      <tbody>${!f.length?`<tr><td colspan="10"><div class="empty"><i class="ti ti-package"></i><div class="empty-title">Nenhum produto</div></div></td></tr>`:
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>SKU</th>
+          <th>Grade (Cor / Tam)</th>
+          <th>Preço Venda</th>
+          <th>Preço Custo</th>
+          <th>Markup</th>
+          <th>Fornecedor</th>
+          <th>Estoque</th>
+          <th>Status</th>
+          <th style="text-align:right">Ações</th>
+        </tr>
+      </thead>
+      <tbody>${!f.length?`<tr><td colspan="10"><div class="empty"><i class="ti ti-package"></i><div class="empty-title">Nenhum produto encontrado</div></div></td></tr>`:
         f.map(p=>{
           const custo=parseFloat(p.custo||0),venda=parseFloat(p.precoVenda||0);
           const markup=custo>0?((venda-custo)/custo*100):0;
           const est=p.estoque||0;
-          const varStr=[p.cor,p.tamanho].filter(Boolean).join(' / ')||'—';
-          const status=est===0?'<span class="badge badge-red">Sem Estoque</span>':est===1?'<span class="badge badge-amber">Crítico</span>':'<span class="badge badge-green">OK</span>';
+          const cor=p.cor||'';
+          const tam=p.tamanho||'';
+          const gradeStr=cor&&tam?`${cor} / ${tam}`:cor||tam||'<span style="color:var(--text3)">—</span>';
+          const status=est===0
+            ?'<span class="badge badge-red">Sem Estoque</span>'
+            :est===1
+              ?'<span class="badge badge-amber">Crítico</span>'
+              :'<span class="badge badge-green">OK</span>';
+          const markupColor=markup<=0?'var(--red)':markup<50?'var(--amber)':'var(--green)';
           return `<tr>
-            <td><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">${p.sku||'—'}</span></td>
-            <td><span style="font-weight:600">${p.nome}</span><br><span style="font-size:10px;color:var(--text3)">${p.marca||p.fornecedor||''}</span></td>
-            <td style="font-size:12px;color:var(--text2)">${varStr}</td>
-            <td><span class="badge badge-blue" style="font-size:10px">${p.categoria||'—'}</span></td>
-            <td style="font-family:var(--mono);font-size:12px">${R(custo)}</td>
-            <td style="font-family:var(--mono);font-size:12px">${R(venda)}</td>
-            <td style="font-family:var(--mono);font-size:12px;font-weight:600;color:${markup>=50?'var(--green)':markup>=20?'var(--amber)':'var(--red)'}">${markup.toFixed(0)}%</td>
-            <td style="font-family:var(--mono);font-weight:600">${est}</td>
+            <td>
+              <div style="font-weight:600;color:var(--text)">${p.nome}</div>
+              <div style="font-size:10px;color:var(--text3)">${p.categoria||'—'}</div>
+            </td>
+            <td><span style="font-family:var(--mono);font-size:12px;color:var(--text3)">${p.sku||'—'}</span></td>
+            <td>
+              ${cor?`<span class="badge badge-blue" style="font-size:10px;margin-right:3px">${cor}</span>`:''}
+              ${tam?`<span class="badge badge-purple" style="font-size:10px">${tam}</span>`:''}
+              ${!cor&&!tam?'<span style="color:var(--text3);font-size:12px">—</span>':''}
+            </td>
+            <td style="font-family:var(--mono);font-weight:700;color:var(--accent)">${R(venda)}</td>
+            <td style="font-family:var(--mono);font-size:12px;color:var(--text2)">${custo>0?R(custo):'<span style="color:var(--text3)">—</span>'}</td>
+            <td style="font-family:var(--mono);font-size:13px;font-weight:700;color:${markupColor}">${custo>0?markup.toFixed(0)+'%':'<span style="color:var(--text3)">—</span>'}</td>
+            <td style="font-size:12px;color:var(--text2)">${p.marca||p.fornecedor||'<span style="color:var(--text3)">—</span>'}</td>
+            <td style="font-family:var(--mono);font-weight:600;font-size:14px">${est}</td>
             <td>${status}</td>
             <td align="right" style="white-space:nowrap">
               <button class="btn btn-sm" onclick="editarProd('${p.id}')"><i class="ti ti-edit"></i></button>
@@ -1100,7 +1170,7 @@ function editarProd(id){
   document.getElementById('m-prod-title').textContent='Editar Produto';
   document.getElementById('fp-nome').value=p.nome||'';
   document.getElementById('fp-sku').value=p.sku||'';
-  document.getElementById('fp-marca').value=p.marca||p.fornecedor||'';
+  document.getElementById('fp-marca').value=p.fornecedor||p.marca||'';
   document.getElementById('fp-cor').value=p.cor||'';
   document.getElementById('fp-preco').value=p.precoVenda||'';
   document.getElementById('fp-custo').value=p.custo||'';
@@ -1119,6 +1189,7 @@ function salvarProduto(){
     nome:document.getElementById('fp-nome').value.trim(),
     sku:document.getElementById('fp-sku').value.trim(),
     categoria:document.getElementById('fp-cat').value,
+    fornecedor:document.getElementById('fp-marca').value.trim(),
     marca:document.getElementById('fp-marca').value.trim(),
     cor:document.getElementById('fp-cor').value.trim(),
     tamanho:document.getElementById('fp-tam').value,
