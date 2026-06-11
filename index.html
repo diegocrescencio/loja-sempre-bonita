@@ -372,6 +372,7 @@ a{color:var(--accent);text-decoration:none}
       <div class="nav-section">
         <div class="nav-label">Sistema</div>
         <div class="nav-item" id="m-configuracoes" onclick="goPage('configuracoes',this)"><i class="ti ti-settings"></i>Configurações</div>
+        <div class="nav-item" id="m-importar" onclick="seedEstoque()"><i class="ti ti-database-import"></i>Importar Estoque</div>
       </div>
     </nav>
     <div class="user-area">
@@ -839,7 +840,7 @@ function renderDashboard(c,a){
   const semDatas=['','dias 1–7','dias 8–14','dias 15–21','dia 22+'][semAtual];
   const metaAtingida=vMes>=sm?'Super Meta 🏆':vMes>=m3?'Meta 3 🥇':vMes>=m2?'Meta 2 🥈':vMes>=m1?'Meta 1 🥉':'Abaixo da Meta 1';
   const corMeta=vMes>=sm?'var(--accent)':vMes>=m3?'var(--green)':vMes>=m2?'var(--amber)':'var(--red)';
-  const seedBanner=`<div class="seed-banner" style="cursor:pointer;margin-bottom:14px" onclick="seedEstoque()"><i class="ti ti-database-import" style="font-size:20px;color:var(--amber);flex-shrink:0"></i><div style="flex:1"><strong style="color:var(--amber)">${localProdutos.length===0?'Estoque vazio':'Produtos: '+localProdutos.length+' / Awise: '+AWISE_SEED.length}</strong><br><span style="font-size:11px;color:var(--text2)">${localProdutos.length===0?'Importar '+AWISE_SEED.length+' produtos':'Clique para reimportar o estoque'}</span></div><button class="btn btn-primary btn-sm" onclick="event.stopPropagation();seedEstoque()"><i class="ti ti-refresh"></i>${localProdutos.length===0?'Carregar':'Reimportar'}</button></div>`;
+  const seedBanner='';
   c.innerHTML=`
 ${seedBanner}
 <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">📅 Hoje — ${hoje.split('-').reverse().join('/')}</div>
