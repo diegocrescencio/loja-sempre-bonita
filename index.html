@@ -1490,7 +1490,7 @@ function renderClientes(c,a){
   a.innerHTML=`<button class="btn btn-sm" onclick="openModal('m-imp-cl')"><i class="ti ti-file-import"></i><span>Importar CSV</span></button>
     <button class="btn btn-primary btn-sm" onclick="editClId=null;abrirCliente()"><i class="ti ti-plus"></i><span>Novo Cliente</span></button>`;
   const f=localClientes.filter(cl=>(cl.nome||'').toLowerCase().includes(clBusca.toLowerCase()));
-  c.innerHTML=`<div class="filter-bar"><input class="filter-input" placeholder="Buscar cliente..." value="${clBusca}" oninput="clBusca=this.value;renderCurrentPage()" style="min-width:200px"></div>
+  c.innerHTML=`<div class="filter-bar"><input class="filter-input" placeholder="Buscar cliente... (Enter para buscar)" value="${clBusca}" onkeydown="if(event.key==='Enter'){clBusca=this.value;renderCurrentPage()}" style="min-width:200px"></div>
   <div class="client-grid">${!f.length?'<div class="empty" style="grid-column:1/-1"><i class="ti ti-users"></i><div class="empty-title">Nenhum cliente</div></div>':
     f.map(cl=>{
       const deb=calcDebCrediario(cl.id),lim=parseFloat(cl.limite||0),disp=lim-deb;
