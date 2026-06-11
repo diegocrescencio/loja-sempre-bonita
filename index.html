@@ -1320,7 +1320,7 @@ function renderEstoque(c,a){
     </div>
   </div>
   <div class="filter-bar">
-    <input class="filter-input" id="estq-busca-input" placeholder="Buscar por nome, SKU, cor ou fornecedor..." value="${estqBusca}" oninput="estqBusca=this.value;renderEstoqueLista()" style="min-width:260px">
+    <input class="filter-input" id="estq-busca-input" placeholder="Buscar... (pressione Enter)" value="${estqBusca}" oninput="estqBusca=this.value" onkeydown="if(event.key==='Enter')renderEstoqueLista()" style="min-width:260px">
     <label style="display:flex;align-items:center;gap:7px;cursor:pointer;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:7px 12px;font-size:13px;color:var(--text2);user-select:none;white-space:nowrap">
       <input type="checkbox" id="chk-estoque" ${estqSoComEstoque?'checked':''} onchange="estqSoComEstoque=this.checked;renderCurrentPage()" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer">
       Apenas com estoque
