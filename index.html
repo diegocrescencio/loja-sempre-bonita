@@ -675,7 +675,7 @@ let relInicio='', relFim='';
 let pdvBusca='', pdvCat='Todos', pdvClienteId='', pdvSoComEstoque=true;
 let estqBusca='', estqSoComEstoque=false, clBusca='';
 let _debounceTimer=null;
-function debounce(fn, ms=300){
+function debounce(fn, ms=30){
   clearTimeout(_debounceTimer);
   _debounceTimer=setTimeout(fn, ms);
 }
