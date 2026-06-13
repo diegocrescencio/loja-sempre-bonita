@@ -618,10 +618,13 @@ a{color:var(--accent);text-decoration:none}
       </div>
       <div class="form-group"><label class="form-label">Produtos (opcional)</label><select class="form-input" id="map-prod"><option value="">— Não importar produtos —</option></select></div>
     </div>
-    <div id="imp-vendas-prev" style="display:none;max-height:200px;overflow-y:auto;margin-top:8px"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;margin-bottom:4px">
+      <button class="btn btn-sm" id="btn-refiltrar" style="display:none" onclick="refiltrarVendas()"><i class="ti ti-filter"></i>Aplicar Filtro</button>
+    </div>
+    <div id="imp-vendas-prev" style="display:none;max-height:240px;overflow-y:auto;margin-top:4px"></div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('m-imp-vendas')">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmarImpVendas()" id="btn-imp-vendas" disabled><i class="ti ti-upload"></i>Importar Vendas</button>
+      <button class="btn btn-primary" onclick="confirmarImpVendas()" id="btn-imp-vendas" disabled><i class="ti ti-upload"></i>Importar Vendas Filtradas</button>
     </div>
   </div>
 </div>
@@ -1608,152 +1611,277 @@ function salvarLimite(){
 let impVendasData=[], impVendasHeaders=[], impVendasRows=[];
 
 function lerArquivoVendas(file){
-  const ext = file.name.split('.').pop().toLowerCase();
-  const reader = new FileReader();
-  reader.onload = e => {
+  const ext=file.name.split('.').pop().toLowerCase();
+  const reader=new FileReader();
+  reader.onload=e=>{
     let headers=[], rows=[];
     if(ext==='csv'||ext==='txt'){
-      const lines = e.target.result.split('\n').map(l=>l.trim()).filter(l=>l);
-      if(!lines.length) return;
-      headers = lines[0].split(',').map(h=>h.replace(/^"|"$/g,'').trim());
+      const lines=e.target.result.split('\n').map(l=>l.trim()).filter(l=>l);
+      if(!lines.length)return;
+      headers=lines[0].split(',').map(h=>h.replace(/^"|"$/g,'').trim());
       for(let i=1;i<lines.length;i++){
         const cols=(lines[i].match(/(".*?"|[^,]+)(?=,|$)/g)||lines[i].split(',')).map(c=>c.replace(/^"|"$/g,'').trim());
-        if(cols.some(c=>c)) rows.push(cols);
+        if(cols.some(c=>c))rows.push(cols);
       }
     } else {
-      // XLS / XLSX via SheetJS
-      const data = new Uint8Array(e.target.result);
-      const wb   = XLSX.read(data,{type:'array',cellDates:true});
-      const ws   = wb.Sheets[wb.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-      if(!json.length) return;
-      headers = json[0].map(h=>String(h).trim());
-      rows    = json.slice(1).filter(r=>r.some(c=>c!==''));
+      const data=new Uint8Array(e.target.result);
+      const wb=XLSX.read(data,{type:'array',cellDates:false});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const json=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if(!json.length)return;
+      headers=json[0].map(h=>String(h).trim());
+      rows=json.slice(1).filter(r=>r.some(c=>c!==''));
     }
-    impVendasHeaders = headers;
-    impVendasRows    = rows;
-    preencherMapColunas(headers, rows);
+    impVendasHeaders=headers;
+    impVendasRows=rows;
+    processarVendasXLS(headers,rows);
   };
-  if(ext==='csv'||ext==='txt') reader.readAsText(file);
+  if(ext==='csv'||ext==='txt')reader.readAsText(file);
   else reader.readAsArrayBuffer(file);
 }
 
-function preencherMapColunas(headers, rows){
-  const mapDiv = document.getElementById('imp-vendas-map');
-  const prev   = document.getElementById('imp-vendas-prev');
-  const btn    = document.getElementById('btn-imp-vendas');
-  if(!headers.length){ toast('Arquivo sem colunas válidas','err'); return; }
+// Converte "2 de jun. de 2025, 21:47" para {data:"2025-06-02", hora:"21:47"}
+function parseDateBR(s){
+  if(!s)return{data:today(),hora:''};
+  s=String(s).trim();
+  const meses={jan:'01',fev:'02',mar:'03',abr:'04',mai:'05',jun:'06',jul:'07',ago:'08',set:'09',out:'10',nov:'11',dez:'12'};
+  // Formato "2 de jun. de 2025, 21:47"
+  const m=s.match(/(\d+)\s+de\s+(\w+)\.?\s+de\s+(\d{4}),?\s*(\d{2}:\d{2})?/i);
+  if(m){
+    const dia=m[1].padStart(2,'0');
+    const mes=meses[m[2].toLowerCase().slice(0,3)]||'01';
+    const ano=m[3];
+    const hora=m[4]||'';
+    return{data:`${ano}-${mes}-${dia}`,hora};
+  }
+  // DD/MM/YYYY
+  const m2=s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if(m2)return{data:`${m2[3]}-${m2[2]}-${m2[1]}`,hora:''};
+  // YYYY-MM-DD
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))return{data:s.slice(0,10),hora:''};
+  return{data:today(),hora:''};
+}
 
-  // Auto-detectar colunas por nome comum
-  const guess = (keywords) => {
-    const idx = headers.findIndex(h=>keywords.some(k=>h.toLowerCase().includes(k)));
-    return idx>=0?idx:0;
+function processarVendasXLS(headers, rows){
+  const prev=document.getElementById('imp-vendas-prev');
+  const btn=document.getElementById('btn-imp-vendas');
+  const mapDiv=document.getElementById('imp-vendas-map');
+  if(!headers.length){toast('Arquivo sem colunas validas','err');return;}
+
+  // Auto-detectar colunas pelo nome exato do relatorio
+  const idx=kws=>headers.findIndex(h=>kws.some(k=>h.toLowerCase().includes(k)));
+  const iNumVenda = idx(['numero da venda','número da venda','num venda','numero venda']);
+  const iData     = idx(['data de compet','data compet','data da venda','data venda','data']);
+  const iCliente  = idx(['nome do cliente','cliente','client']);
+  const iProduto  = idx(['produto','product','item','descri']);
+  const iQtd      = idx(['quantidade','qtd','qty']);
+  const iValUnit  = idx(['valor unitário','valor unitario','unitário','unitario','preco unit','preço unit']);
+  const iTotal    = idx(['valor total','total']);
+  const iVendedor = idx(['vendedor','seller']);
+
+  // Detectou numero da venda? Agrupar por ele
+  const temNumVenda = iNumVenda >= 0;
+  const temData     = iData >= 0;
+
+  if(temNumVenda){
+    // Agrupar linhas por numero da venda (formato do sistema Awise/atual)
+    const vendasMap={};
+    rows.forEach(r=>{
+      const numVenda=String(r[iNumVenda]||'').trim();
+      if(!numVenda)return;
+      if(!vendasMap[numVenda]){
+        const {data,hora}=temData?parseDateBR(r[iData]):{data:today(),hora:''};
+        vendasMap[numVenda]={
+          numVenda,
+          data,hora,
+          cliente:String(r[iCliente]>=0?r[iCliente]:'Consumidor Final').trim(),
+          vendedor:iVendedor>=0?String(r[iVendedor]||'').trim():'',
+          itens:[],
+          total:0,
+          formaPagamento:'dinheiro',
+          importado:true,
+        };
+      }
+      const preco=parseFloat(String(iValUnit>=0?r[iValUnit]:0).replace(',','.'))||0;
+      const qtd=parseInt(r[iQtd]>=0?r[iQtd]:1)||1;
+      const subtotal=parseFloat(String(iTotal>=0?r[iTotal]:preco*qtd).replace(',','.'))||0;
+      if(iProduto>=0&&r[iProduto]){
+        vendasMap[numVenda].itens.push({nome:String(r[iProduto]).trim(),qtd,preco});
+      }
+      vendasMap[numVenda].total+=subtotal;
+    });
+    impVendasData=Object.values(vendasMap).map(v=>({...v,total:Math.round(v.total*100)/100})).filter(v=>v.total>0);
+  impVendasBruto=[...impVendasData]; // guardar copia para refiltrar
+  // Mostrar botao refiltrar
+  const btnRef=document.getElementById('btn-refiltrar');
+  if(btnRef)btnRef.style.display='inline-flex';
+  } else {
+    // Sem numero de venda: cada linha e uma venda
+    impVendasBruto=[];
+  impVendasData=rows.map(r=>{
+      const {data,hora}=temData?parseDateBR(r[iData]):{data:today(),hora:''};
+      const total=parseFloat(String(iTotal>=0?r[iTotal]:0).replace(',','.'))||0;
+      return{
+        data,hora,
+        cliente:String(iCliente>=0?r[iCliente]:'Consumidor Final').trim(),
+        vendedor:iVendedor>=0?String(r[iVendedor]||'').trim():'',
+        itens:iProduto>=0&&r[iProduto]?[{nome:String(r[iProduto]).trim(),qtd:1,preco:total}]:[],
+        total,
+        formaPagamento:'dinheiro',
+        importado:true,
+      };
+    }).filter(v=>v.total>0);
+  }
+
+  // Aplicar filtro de periodo
+  const filtroInicio = document.getElementById('imp-v-inicio')?.value||'';
+  const filtroFim    = document.getElementById('imp-v-fim')?.value||'';
+  if(filtroInicio||filtroFim){
+    impVendasData = impVendasData.filter(v=>{
+      if(!v.data) return false;
+      if(filtroInicio && v.data < filtroInicio) return false;
+      if(filtroFim   && v.data > filtroFim)     return false;
+      return true;
+    });
+  }
+
+  if(!impVendasData.length){
+    prev.innerHTML='<p style="color:var(--red);font-size:12px">Nenhuma venda encontrada no periodo selecionado.</p>';
+    btn.disabled=true;
+  } else {
+    const totalGeral=impVendasData.reduce((s,v)=>s+v.total,0);
+    prev.innerHTML=`
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px">VENDAS</div>
+          <div style="font-size:18px;font-weight:700;color:var(--text)">${impVendasData.length}</div>
+        </div>
+        <div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px">TOTAL</div>
+          <div style="font-size:16px;font-weight:700;color:var(--green)">${R(totalGeral)}</div>
+        </div>
+        <div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px">TICKET MEDIO</div>
+          <div style="font-size:16px;font-weight:700;color:var(--accent)">${R(totalGeral/impVendasData.length)}</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Previa (primeiras 6):</div>
+      <table class="data-table" style="font-size:11px">
+        <thead><tr><th>Data</th><th>Cliente</th><th>Itens</th><th>Total</th></tr></thead>
+        <tbody>${impVendasData.slice(0,6).map(v=>`<tr>
+          <td>${v.data?v.data.split('-').reverse().join('/'):'-'} ${v.hora}</td>
+          <td>${v.cliente}</td>
+          <td>${v.itens.length} item(s)</td>
+          <td style="font-family:var(--mono);font-weight:600;color:var(--green)">${R(v.total)}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+      ${impVendasData.length>6?`<p style="font-size:11px;color:var(--text3);margin-top:4px">...e mais ${impVendasData.length-6} venda(s)</p>`:''}`;
+    btn.disabled=false;
+  }
+  prev.style.display='block';
+  if(mapDiv)mapDiv.style.display='none'; // Nao precisa de mapeamento manual
+}
+
+function confirmarImpVendas(){
+  if(!impVendasData.length){toast('Nenhum dado para importar','err');return;}
+  const BATCH=400;
+  const salvar=async()=>{
+    for(let i=0;i<impVendasData.length;i+=BATCH){
+      const batch=db.batch();
+      impVendasData.slice(i,i+BATCH).forEach(v=>{
+        const ref=db.collection('vendas').doc();
+        batch.set(ref,{
+          data:           v.data||today(),
+          hora:           v.hora||'',
+          clienteId:      'Consumidor Geral',
+          cliente:        v.cliente,
+          formaPagamento: v.formaPagamento||'dinheiro',
+          total:          v.total,
+          itens:          v.itens||[],
+          vendedor:       v.vendedor||currentOp.nome,
+          importado:      true,
+        });
+      });
+      await batch.commit();
+    }
   };
-  const idxData    = guess(['data','date','dt']);
-  const idxCliente = guess(['cliente','client','customer','nome']);
-  const idxPag     = guess(['pagamento','pag','payment','forma','tipo']);
-  const idxTotal   = guess(['total','valor','value','amount','vl']);
-  const idxProd    = guess(['produto','product','item','descri']);
+  toast('Importando '+impVendasData.length+' vendas...','info');
+  salvar().then(()=>{
+    toast(impVendasData.length+' vendas importadas!');
+    closeModal('m-imp-vendas');
+    impVendasData=[];impVendasHeaders=[];impVendasRows=[];
+    const fv=document.getElementById('f-imp-vendas');
+    if(fv)fv.value='';
+    const pv=document.getElementById('imp-vendas-prev');
+    if(pv)pv.style.display='none';
+    const mv=document.getElementById('imp-vendas-map');
+    if(mv)mv.style.display='none';
+    const bv=document.getElementById('btn-imp-vendas');
+    if(bv)bv.disabled=true;
+  }).catch(e=>{console.error(e);toast('Erro ao importar','err');});
+}
 
-  const optsBase = headers.map((h,i)=>`<option value="${i}">${h||'Coluna '+(i+1)}</option>`).join('');
-  const optsVazio = `<option value="">Nao mapear</option>`+optsBase;
+// Dados brutos antes do filtro de periodo
+let impVendasBruto = [];
 
-  document.getElementById('map-data').innerHTML    = optsVazio;
-  document.getElementById('map-cliente').innerHTML = optsBase;
-  document.getElementById('map-pag').innerHTML     = optsVazio;
-  document.getElementById('map-total').innerHTML   = optsBase;
-  document.getElementById('map-prod').innerHTML    = optsVazio;
-
-  // Selecionar sugestões
-  const temColunaData=headers.some(h=>['data','date','dt'].some(k=>h.toLowerCase().includes(k)));
-  document.getElementById('map-data').value    = temColunaData?String(idxData):'';
-  const dmEl=document.getElementById('map-data-manual');
-  if(dmEl)dmEl.value=today();
-  document.getElementById('map-cliente').value = String(idxCliente);
-  document.getElementById('map-pag').value     = '';
-  document.getElementById('map-total').value   = String(idxTotal);
-  document.getElementById('map-prod').value    = '';
-
-  mapDiv.style.display='block';
-
-  // Prévia das primeiras linhas
-  prev.innerHTML=`<div style="font-size:11px;color:var(--text3);margin-bottom:6px">${rows.length} linha(s) encontrada(s). Prévia:</div>
-  <div style="overflow-x:auto"><table class="data-table" style="font-size:11px;min-width:400px">
-    <thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
-    <tbody>${rows.slice(0,5).map(r=>`<tr>${headers.map((_,i)=>`<td>${r[i]??''}</td>`).join('')}</tr>`).join('')}</tbody>
-  </table></div>`;
+function refiltrarVendas(){
+  if(!impVendasBruto.length){toast('Carregue um arquivo primeiro','err');return;}
+  impVendasData = [...impVendasBruto];
+  const filtroInicio = document.getElementById('imp-v-inicio')?.value||'';
+  const filtroFim    = document.getElementById('imp-v-fim')?.value||'';
+  if(filtroInicio||filtroFim){
+    impVendasData = impVendasData.filter(v=>{
+      if(!v.data) return false;
+      if(filtroInicio && v.data < filtroInicio) return false;
+      if(filtroFim   && v.data > filtroFim)     return false;
+      return true;
+    });
+  }
+  const prev = document.getElementById('imp-vendas-prev');
+  const btn  = document.getElementById('btn-imp-vendas');
+  if(!impVendasData.length){
+    prev.innerHTML='<p style="color:var(--red);font-size:12px">Nenhuma venda no periodo selecionado. Ajuste as datas.</p>';
+    btn.disabled=true;
+    prev.style.display='block';
+    return;
+  }
+  const totalGeral=impVendasData.reduce((s,v)=>s+v.total,0);
+  const filtroLabel = (filtroInicio||filtroFim)
+    ? `<span style="color:var(--accent)">${filtroInicio?filtroInicio.split('-').reverse().join('/'):''} ate ${filtroFim?filtroFim.split('-').reverse().join('/'):'fim'}</span>`
+    : '<span style="color:var(--text3)">Sem filtro — todas as vendas</span>';
+  prev.innerHTML=`
+    <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Periodo filtrado: ${filtroLabel}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+      <div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px">VENDAS</div>
+        <div style="font-size:18px;font-weight:700;color:var(--text)">${impVendasData.length}</div>
+      </div>
+      <div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px">TOTAL</div>
+        <div style="font-size:16px;font-weight:700;color:var(--green)">${R(totalGeral)}</div>
+      </div>
+      <div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px">TICKET MEDIO</div>
+        <div style="font-size:16px;font-weight:700;color:var(--accent)">${R(totalGeral/impVendasData.length)}</div>
+      </div>
+    </div>
+    <table class="data-table" style="font-size:11px">
+      <thead><tr><th>Data</th><th>Cliente</th><th>Itens</th><th>Total</th></tr></thead>
+      <tbody>${impVendasData.slice(0,6).map(v=>`<tr>
+        <td>${v.data?v.data.split('-').reverse().join('/'):'-'} ${v.hora}</td>
+        <td>${v.cliente}</td>
+        <td>${v.itens.length}</td>
+        <td style="font-family:var(--mono);font-weight:600;color:var(--green)">${R(v.total)}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+    ${impVendasData.length>6?`<p style="font-size:11px;color:var(--text3);margin-top:4px">...e mais ${impVendasData.length-6} venda(s)</p>`:''}`;
   prev.style.display='block';
   btn.disabled=false;
 }
 
-function formatarDataXLS(val){
-  if(!val) return today();
-  // Se for objeto Date (SheetJS com cellDates:true)
-  if(val instanceof Date){
-    return val.toISOString().slice(0,10);
-  }
-  const s = String(val).trim();
-  // DD/MM/YYYY
-  if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)){
-    const [d,m,y]=s.split('/'); return `${y}-${m}-${d}`;
-  }
-  // YYYY-MM-DD
-  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
-  // Número serial Excel
-  if(/^\d+(\.\d+)?$/.test(s)){
-    const d=XLSX.SSF.parse_date_code(parseFloat(s));
-    if(d) return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
-  }
-  return s;
-}
-
-function confirmarImpVendas(){
-  if(!impVendasRows.length){toast('Nenhum dado para importar','err');return;}
-  const iDataRaw  = document.getElementById('map-data').value;
-  const iData     = iDataRaw!==''?parseInt(iDataRaw):null;
-  const dmEl2     = document.getElementById('map-data-manual');
-  const dataManual= dmEl2&&dmEl2.value?dmEl2.value:today();
-  const iCliente  = parseInt(document.getElementById('map-cliente').value);
-  const iPagRaw   = document.getElementById('map-pag').value;
-  const iPag      = iPagRaw!==''?parseInt(iPagRaw):null;
-  const iTotal    = parseInt(document.getElementById('map-total').value);
-  const iProdRaw  = document.getElementById('map-prod').value;
-  const iProd     = iProdRaw!==''?parseInt(iProdRaw):null;
-  const vendas=impVendasRows.map(r=>({
-    data:           iData!==null?formatarDataXLS(r[iData]):dataManual,
-    hora:           '',
-    clienteId:      'Consumidor Geral',
-    cliente:        String(r[iCliente]||'Consumidor Final').trim(),
-    formaPagamento: iPag!==null?String(r[iPag]||'dinheiro').trim().toLowerCase():'dinheiro',
-    total:          parseFloat(String(r[iTotal]||0).replace(',','.'))||0,
-    itens:          iProd!==null&&r[iProd]?[{nome:String(r[iProd]).trim(),qtd:1,preco:parseFloat(String(r[iTotal]||0).replace(',','.'))||0}]:[],
-    vendedor:       currentOp.nome,
-    importado:      true,
-  })).filter(v=>v.total>0);
-  if(!vendas.length){toast('Nenhuma linha valida encontrada','err');return;}
-  const BATCH=400;
-  const salvar=async()=>{
-    for(let i=0;i<vendas.length;i+=BATCH){
-      const batch=db.batch();
-      vendas.slice(i,i+BATCH).forEach(v=>batch.set(db.collection('vendas').doc(),v));
-      await batch.commit();
-    }
-  };
-  toast('Importando...','info');
-  salvar().then(()=>{
-    toast(vendas.length+' vendas importadas com sucesso!');
-    closeModal('m-imp-vendas');
-    impVendasData=[];impVendasHeaders=[];impVendasRows=[];
-    document.getElementById('f-imp-vendas').value='';
-    document.getElementById('imp-vendas-prev').style.display='none';
-    document.getElementById('imp-vendas-map').style.display='none';
-    document.getElementById('btn-imp-vendas').disabled=true;
-  }).catch(()=>toast('Erro ao importar','err'));
-}
-
 document.addEventListener('DOMContentLoaded',()=>{
   const fv=document.getElementById('f-imp-vendas');
-  if(fv) fv.addEventListener('change',function(){ if(this.files[0]) lerArquivoVendas(this.files[0]); });
+  if(fv)fv.addEventListener('change',function(){if(this.files[0])lerArquivoVendas(this.files[0]);});
 });
 
 // ── IMPORTAR CLIENTES ──
