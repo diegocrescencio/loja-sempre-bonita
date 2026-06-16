@@ -1295,28 +1295,28 @@ ${seedBanner}
   </div>
   <div style="margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
-      <span style="color:var(--text2);font-weight:600">🥉 Meta 1 (+35%) — ${R(m1)}</span>
+      <span style="color:var(--text2);font-weight:600">🥉 Meta 1 — ${R(m1)}</span>
       <span style="font-family:var(--mono);color:${vMes>=m1?'var(--green)':'var(--text2)'};font-weight:600">${pM1.toFixed(0)}% ${vMes>=m1?'✅':('faltam '+R(m1-vMes))}</span>
     </div>
     <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pM1}%;background:${vMes>=m1?'var(--green)':'var(--text3)'}"></div></div>
   </div>
   <div style="margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
-      <span style="color:var(--text2);font-weight:600">🥈 Meta 2 (+45%) — ${R(m2)}</span>
+      <span style="color:var(--text2);font-weight:600">🥈 Meta 2 — ${R(m2)}</span>
       <span style="font-family:var(--mono);color:${vMes>=m2?'var(--green)':'var(--text2)'};font-weight:600">${pM2.toFixed(0)}% ${vMes>=m2?'✅':('faltam '+R(m2-vMes))}</span>
     </div>
     <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pM2}%;background:${vMes>=m2?'var(--green)':'var(--amber)'}"></div></div>
   </div>
   <div style="margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
-      <span style="color:var(--text2);font-weight:600">🥇 Meta 3 (+60%) — ${R(m3)}</span>
+      <span style="color:var(--text2);font-weight:600">🥇 Meta 3 — ${R(m3)}</span>
       <span style="font-family:var(--mono);color:${vMes>=m3?'var(--green)':'var(--text2)'};font-weight:600">${pM3.toFixed(0)}% ${vMes>=m3?'✅':('faltam '+R(m3-vMes))}</span>
     </div>
     <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pM3}%;background:${vMes>=m3?'var(--green)':'var(--accent)'}"></div></div>
   </div>
   <div>
     <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
-      <span style="color:var(--accent);font-weight:700">⭐ Super Meta (+75%) — ${R(sm)}</span>
+      <span style="color:var(--accent);font-weight:700">⭐ Super Meta — ${R(sm)}</span>
       <span style="font-family:var(--mono);color:${vMes>=sm?'var(--green)':'var(--accent)'};font-weight:700">${pSM.toFixed(0)}% ${vMes>=sm?'🏆':('faltam '+R(sm-vMes))}</span>
     </div>
     <div class="progress-bar-bg" style="height:10px"><div class="progress-bar-fill" style="width:${pSM}%;background:${vMes>=sm?'var(--green)':'var(--accent)'}"></div></div>
@@ -3389,22 +3389,22 @@ function renderConfig(c,a){
     <div class="cfg-title"><i class="ti ti-target"></i> Metas do Mês (calculadas automaticamente)</div>
     <div class="meta-grid" id="preview-metas">
       <div class="meta-card">
-        <div class="meta-card-label">🥉 Meta 1 — 35% de crescimento</div>
+        <div class="meta-card-label">🥉 Meta 1</div>
         <div class="meta-card-inp" id="prev-m1" style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);padding:8px 10px;font-size:18px;font-weight:700;font-family:var(--mono);color:var(--text)">${R(calc.meta1)}</div>
         <div class="meta-card-sub" id="prev-m1-sub">Sem. atual (S${semAtual}): ${R(getMetaSemana(calc.meta1,semAtual))} · Diária: ${R(getMetaDiariaParaMeta(calc.meta1,semAtual))}</div>
       </div>
       <div class="meta-card">
-        <div class="meta-card-label">🥈 Meta 2 — 45% de crescimento</div>
+        <div class="meta-card-label">🥈 Meta 2</div>
         <div class="meta-card-inp" id="prev-m2" style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);padding:8px 10px;font-size:18px;font-weight:700;font-family:var(--mono);color:var(--text)">${R(calc.meta2)}</div>
         <div class="meta-card-sub" id="prev-m2-sub">Sem. atual (S${semAtual}): ${R(getMetaSemana(calc.meta2,semAtual))} · Diária: ${R(getMetaDiariaParaMeta(calc.meta2,semAtual))}</div>
       </div>
       <div class="meta-card">
-        <div class="meta-card-label">🥇 Meta 3 — 60% de crescimento</div>
+        <div class="meta-card-label">🥇 Meta 3</div>
         <div class="meta-card-inp" id="prev-m3" style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);padding:8px 10px;font-size:18px;font-weight:700;font-family:var(--mono);color:var(--text)">${R(calc.meta3)}</div>
         <div class="meta-card-sub" id="prev-m3-sub">Sem. atual (S${semAtual}): ${R(getMetaSemana(calc.meta3,semAtual))} · Diária: ${R(getMetaDiariaParaMeta(calc.meta3,semAtual))}</div>
       </div>
       <div class="meta-card highlight">
-        <div class="meta-card-label" style="color:var(--accent)">⭐ Super Meta — 75% de crescimento</div>
+        <div class="meta-card-label" style="color:var(--accent)">⭐ Super Meta</div>
         <div class="meta-card-inp" id="prev-sm" style="background:var(--bg);border:1px solid var(--accent);border-radius:var(--radius);padding:8px 10px;font-size:18px;font-weight:700;font-family:var(--mono);color:var(--accent)">${R(calc.superMeta)}</div>
         <div class="meta-card-sub" id="prev-sm-sub">Sem. atual (S${semAtual}): ${R(getMetaSemana(calc.superMeta,semAtual))} · Diária: ${R(getMetaDiariaParaMeta(calc.superMeta,semAtual))}</div>
       </div>
