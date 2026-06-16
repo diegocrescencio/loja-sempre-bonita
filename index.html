@@ -723,8 +723,8 @@ let currentOp=null, cartItems=[], selectedPay='dinheiro', parcelasCredito=1;
 let localProdutos=[], localClientes=[], localVendas=[], localReceber=[], localPagar=[], localCaixa=[];
 let editProdId=null, editClId=null;
 let impClData=[], impEstData=[];
-let relInicio='', relFim='';
-let pdvBusca='', pdvCat='Todos', pdvClienteId='', pdvSoComEstoque=true;
+let relInicio='', relFim='', relPagamento='';
+let pdvBusca='', pdvCat='Todos', pdvClienteId='', pdvSoComEstoque=true, pdvDesconto=0, pdvDescontoTipo='R';
 let estqBusca='', estqSoComEstoque=false, clBusca='';
 let _debounceTimer=null;
 function debounce(fn, ms=30){
@@ -735,7 +735,12 @@ let cxMoveType='sangria';
 
 // ── UTILS ──
 const R=n=>'R$ '+parseFloat(n||0).toFixed(2).replace('.',',');
-const today=()=>new Date().toISOString().slice(0,10);
+const today=()=>{
+  // Usar horário de Brasília (UTC-3) para evitar virar o dia antes da meia-noite local
+  const d=new Date();
+  const br=new Date(d.getTime()-3*60*60*1000); // UTC-3
+  return br.toISOString().slice(0,10);
+};
 const nowStr=()=>new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 function toast(msg,type='ok'){
   const t=document.getElementById('toast');
@@ -1050,7 +1055,9 @@ function renderPDV(c,a){
     c.innerHTML=`<div class="empty"><i class="ti ti-lock"></i><div class="empty-title">Caixa Fechado</div><div class="empty-sub">Abra o caixa antes de realizar vendas.</div><button class="btn btn-primary" style="margin-top:10px" onclick="goPage('caixa')">Ir para Caixa</button></div>`;
     return;
   }
-  const total=cartItems.reduce((s,i)=>s+(i.preco*i.qtd),0);
+  const subtotal=cartItems.reduce((s,i)=>s+(i.preco*i.qtd),0);
+  const desconto=calcDesconto(subtotal);
+  const total=totalComDesconto(subtotal);
   const clienteData=localClientes.find(c=>c.id===pdvClienteId);
   const limDisp=clienteData?(parseFloat(clienteData.limite||0)-calcDebCrediario(pdvClienteId)):0;
   const maxParcelas=selectedPay==='crediario'?6:10;
@@ -1099,9 +1106,35 @@ function renderPDV(c,a){
 
     <!-- 3. TOTAL + PAGAMENTO + CHECKOUT -->
     <div class="cart-foot">
-      <div class="cart-total-line">
-        <span class="cart-total-label">Total</span>
-        <span class="cart-total-val" id="cart-total">${R(total)}</span>
+      <!-- DESCONTO -->
+      <div style="background:var(--bg3);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px">
+        <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px">Desconto</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div style="display:flex;border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden;flex-shrink:0">
+            <button onclick="pdvDescontoTipo='R';atualizarDesconto()" style="padding:6px 10px;background:${pdvDescontoTipo==='R'?'var(--accent)':'var(--bg4)'};color:${pdvDescontoTipo==='R'?'#fff':'var(--text3)'};border:none;cursor:pointer;font-size:12px;font-weight:700">R$</button>
+            <button onclick="pdvDescontoTipo='%';atualizarDesconto()" style="padding:6px 10px;background:${pdvDescontoTipo==='%'?'var(--accent)':'var(--bg4)'};color:${pdvDescontoTipo==='%'?'#fff':'var(--text3)'};border:none;cursor:pointer;font-size:12px;font-weight:700">%</button>
+          </div>
+          <input type="number" id="inp-desconto" min="0" step="0.01"
+            placeholder="${pdvDescontoTipo==='R'?'0,00':'0'}"
+            value="${pdvDesconto||''}"
+            oninput="pdvDesconto=parseFloat(this.value)||0;atualizarDesconto()"
+            style="flex:1;padding:6px 10px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:14px;font-weight:600;outline:none;min-width:0">
+          ${pdvDesconto>0?`<button onclick="pdvDesconto=0;document.getElementById('inp-desconto').value='';atualizarDesconto()" style="background:var(--red-bg);border:1px solid rgba(248,113,113,.3);border-radius:var(--radius);color:var(--red);padding:6px 8px;cursor:pointer;font-size:12px;flex-shrink:0"><i class="ti ti-x"></i></button>`:''}
+        </div>
+      </div>
+      <!-- TOTAIS -->
+      <div style="margin-bottom:8px">
+        ${pdvDesconto>0?`<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:3px">
+          <span>Subtotal</span><span style="font-family:var(--mono)">${R(total)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--red);margin-bottom:3px">
+          <span>Desconto ${pdvDescontoTipo==='%'?'('+pdvDesconto+'%)':''}</span>
+          <span style="font-family:var(--mono)">- ${R(calcDesconto(total))}</span>
+        </div>`:''}
+        <div class="cart-total-line" style="margin:0">
+          <span class="cart-total-label" style="font-size:14px;font-weight:700;color:var(--text)">Total</span>
+          <span class="cart-total-val" id="cart-total" style="font-size:${pdvDesconto>0?'24':'22'}px">${R(totalComDesconto(total))}</span>
+        </div>
       </div>
 
       <div class="pay-section">
@@ -1126,13 +1159,32 @@ function renderPDV(c,a){
       </div>
 
       <button class="btn-checkout" id="btn-checkout" onclick="finalizarVenda()" ${cartItems.length===0?'disabled':''}>
-        <i class="ti ti-circle-check"></i>Concluir Venda — ${R(total)}
+        <i class="ti ti-circle-check"></i>Concluir Venda — ${R(totalComDesconto(total))}
       </button>
     </div>
   </div>
 </div>`;
   renderPDVGrid();
   updateCartDisplay();
+}
+
+function calcDesconto(subtotal){
+  if(!pdvDesconto||pdvDesconto<=0)return 0;
+  if(pdvDescontoTipo==='%') return Math.min(subtotal, subtotal*pdvDesconto/100);
+  return Math.min(subtotal, pdvDesconto);
+}
+function totalComDesconto(subtotal){
+  return Math.max(0, subtotal - calcDesconto(subtotal));
+}
+function atualizarDesconto(){
+  // Só atualiza o display sem re-renderizar tudo
+  const subtotal=cartItems.reduce((s,i)=>s+(i.preco*i.qtd),0);
+  const desc=calcDesconto(subtotal);
+  const total=totalComDesconto(subtotal);
+  const el=document.getElementById('cart-total');
+  if(el)el.textContent=R(total);
+  const btn=document.getElementById('btn-checkout');
+  if(btn)btn.innerHTML=`<i class="ti ti-circle-check"></i>Concluir Venda — ${R(total)}`;
 }
 
 function renderPDVGrid(){
@@ -1159,7 +1211,9 @@ function renderPDVGrid(){
 }
 
 function updateCartDisplay(){
-  const total=cartItems.reduce((s,i)=>s+(i.preco*i.qtd),0);
+  const subtotal=cartItems.reduce((s,i)=>s+(i.preco*i.qtd),0);
+  const desconto=calcDesconto(subtotal);
+  const total=totalComDesconto(subtotal);
   const el=document.getElementById('cart-total');
   if(el)el.textContent=R(total);
   const btn=document.getElementById('btn-checkout');
@@ -1224,7 +1278,9 @@ function setPay(t){
 function calcDebCrediario(cId){return localReceber.filter(r=>r.clienteId===cId&&r.status==='Pendente').reduce((s,r)=>s+(r.valor||0),0);}
 
 function finalizarVenda(){
-  const total=cartItems.reduce((s,i)=>s+(i.preco*i.qtd),0);
+  const subtotal=cartItems.reduce((s,i)=>s+(i.preco*i.qtd),0);
+  const desconto=calcDesconto(subtotal);
+  const total=totalComDesconto(subtotal);
   if(selectedPay==='crediario'){
     if(!pdvClienteId){toast('Selecione um cliente para Crediário!','err');return;}
     const cl=localClientes.find(c=>c.id===pdvClienteId);
@@ -1233,7 +1289,7 @@ function finalizarVenda(){
   }
   const batch=db.batch();
   const vRef=db.collection('vendas').doc();
-  batch.set(vRef,{data:today(),hora:nowStr(),itens:[...cartItems],total,formaPagamento:selectedPay,clienteId:pdvClienteId||'Consumidor Geral',vendedor:currentOp.nome});
+  batch.set(vRef,{data:today(),hora:nowStr(),itens:[...cartItems],subtotal,desconto,descontoTipo:pdvDescontoTipo,total,formaPagamento:selectedPay,clienteId:pdvClienteId||'Consumidor Geral',vendedor:currentOp.nome});
   cartItems.forEach(i=>{
     const orig=localProdutos.find(p=>p.id===i.id);
     batch.update(db.collection('produtos').doc(i.id),{estoque:Math.max(0,(orig?.estoque||0)-i.qtd)});
@@ -1258,7 +1314,7 @@ function finalizarVenda(){
     document.getElementById('vok-info').textContent=`Total: ${R(total)} · ${selectedPay.toUpperCase()}`;
     document.getElementById('vok-cl').textContent=`Cliente: ${clNome}`;
     openModal('m-venda-ok');
-    cartItems=[];selectedPay='dinheiro';parcelasCredito=1;
+    cartItems=[];selectedPay='dinheiro';parcelasCredito=1;pdvDesconto=0;pdvDescontoTipo='R';
   }).catch(()=>toast('Erro ao registrar venda','err'));
 }
 function novaVenda(){closeModal('m-venda-ok');renderCurrentPage();}
@@ -2068,6 +2124,7 @@ function renderRelatorios(c,a){
   // Filtrar apenas vendas válidas
   let vf=localVendas.filter(vendaValida);
   if(relInicio)vf=vf.filter(v=>extrairData(v)>=relInicio);
+  if(relPagamento)vf=vf.filter(v=>(v.formaPagamento||'')=== relPagamento);
   if(relFim)vf=vf.filter(v=>extrairData(v)<=relFim);
   vf.sort((a,b)=>extrairData(b).localeCompare(extrairData(a)));
   const tot=vf.reduce((s,v)=>s+(v.total||0),0),qtd=vf.length,ticket=qtd>0?tot/qtd:0;
@@ -2087,7 +2144,15 @@ function renderRelatorios(c,a){
         <label class="form-label">Data Fim</label>
         <input type="date" class="filter-input" value="${relFim}" onchange="relFim=this.value;renderCurrentPage()">
       </div>
-      <button class="btn btn-sm" onclick="relInicio='';relFim='';renderCurrentPage()"><i class="ti ti-x"></i>Limpar</button>
+      <button class="btn btn-sm" onclick="relInicio='';relFim='';relPagamento='';renderCurrentPage()"><i class="ti ti-x"></i>Limpar</button>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center">
+      <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Pagamento:</span>
+      ${['','dinheiro','pix','cartao','debito','crediario'].map(p=>`
+        <button onclick="relPagamento='${p}';renderCurrentPage()"
+          style="padding:4px 12px;border-radius:99px;font-size:12px;cursor:pointer;border:1px solid ${relPagamento===p?'var(--accent)':'var(--border2)'};background:${relPagamento===p?'var(--accent-glow)':'var(--bg3)'};color:${relPagamento===p?'var(--accent)':'var(--text2)'};font-weight:${relPagamento===p?'700':'400'}">
+          ${p===''?'Todos':p.charAt(0).toUpperCase()+p.slice(1)}
+        </button>`).join('')}
       ${invalidas>0?`<span style="font-size:11px;color:var(--amber);display:flex;align-items:center;gap:4px"><i class="ti ti-alert-triangle"></i>${invalidas} registro(s) antigo(s) oculto(s)</span>`:''}
     </div>
   </div>
