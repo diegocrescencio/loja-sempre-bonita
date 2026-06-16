@@ -701,6 +701,37 @@ a{color:var(--accent);text-decoration:none}
   </div>
 </div>
 
+<!-- BAIXA CONTAS A RECEBER -->
+<div class="modal-overlay" id="m-baixa-receber">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <span class="modal-title">Registrar Recebimento</span>
+      <button class="modal-close" onclick="closeModal('m-baixa-receber')"><i class="ti ti-x"></i></button>
+    </div>
+    <input type="hidden" id="baixa-rec-id">
+    <div style="background:var(--bg3);border-radius:var(--radius-lg);padding:14px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:12px;color:var(--text3)">Cliente</span>
+        <span style="font-size:13px;font-weight:600;color:var(--text)" id="baixa-rec-cliente"></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:12px;color:var(--text3)">Parcela</span>
+        <span style="font-size:13px;font-weight:600;color:var(--text)" id="baixa-rec-parcela"></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border)">
+        <span style="font-size:13px;font-weight:600;color:var(--text2)">Valor</span>
+        <span style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--green)" id="baixa-rec-valor"></span>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Como foi pago?</div>
+    <div id="baixa-pay-grid"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-baixa-receber')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarBaixaReceber()"><i class="ti ti-check"></i>Confirmar Recebimento</button>
+    </div>
+  </div>
+</div>
+
 <!-- VENDA DE CONDICIONAL -->
 <div class="modal-overlay" id="m-cond-venda">
   <div class="modal" style="max-width:460px">
@@ -2559,12 +2590,46 @@ function renderReceber(c,a){
         <td>${r.cliente||'—'}</td><td>${r.parcela||'—'}</td>
         <td>${r.vencimento?r.vencimento.split('-').reverse().join('/'):'—'}</td>
         <td style="font-family:var(--mono)">${R(r.valor)}</td>
-        <td><span class="badge ${r.status==='Pago'?'badge-green':'badge-amber'}">${r.status}</span></td>
-        <td>${r.status==='Pendente'?`<button class="btn btn-sm btn-success" onclick="receberParc('${r.id}')"><i class="ti ti-check"></i>Receber</button>`:'—'}</td>
+        <td><span class="badge ${r.status==='Pago'?'badge-green':'badge-amber'}">${r.status}</span>${r.formaPagamentoBaixa?`<span class="badge badge-blue" style="font-size:10px;margin-left:4px">${r.formaPagamentoBaixa}</span>`:''}</td>
+        <td>${r.status==='Pendente'?`<button class="btn btn-sm btn-success" onclick="abrirBaixaReceber('${r.id}','${r.cliente||''}','${r.parcela||''}',${r.valor||0})"><i class="ti ti-check"></i>Receber</button>`:'—'}</td>
       </tr>`).join('')}
     </tbody></table></div>`;
 }
-function receberParc(id){db.collection('contas_receber').doc(id).update({status:'Pago',dataPagamento:today()}).then(()=>toast('Recebido!')).catch(()=>toast('Erro','err'));}
+let _baixaReceberPag = 'dinheiro';
+
+function abrirBaixaReceber(id, cliente, parcela, valor){
+  _baixaReceberPag = 'dinheiro';
+  document.getElementById('baixa-rec-id').value      = id;
+  document.getElementById('baixa-rec-cliente').textContent = cliente||'—';
+  document.getElementById('baixa-rec-parcela').textContent = parcela||'—';
+  document.getElementById('baixa-rec-valor').textContent   = R(valor);
+  renderBaixaPag();
+  openModal('m-baixa-receber');
+}
+
+function renderBaixaPag(){
+  document.getElementById('baixa-pay-grid').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="pay-btn ${_baixaReceberPag==='dinheiro'?'sel':''}" onclick="_baixaReceberPag='dinheiro';renderBaixaPag()">
+        <i class="ti ti-cash"></i>Dinheiro
+      </div>
+      <div class="pay-btn ${_baixaReceberPag==='pix'?'sel':''}" onclick="_baixaReceberPag='pix';renderBaixaPag()">
+        <i class="ti ti-qrcode"></i>Pix
+      </div>
+    </div>`;
+}
+
+function confirmarBaixaReceber(){
+  const id = document.getElementById('baixa-rec-id').value;
+  db.collection('contas_receber').doc(id).update({
+    status:'Pago',
+    dataPagamento:today(),
+    formaPagamentoBaixa:_baixaReceberPag
+  }).then(()=>{
+    toast('Parcela recebida via '+_baixaReceberPag+'!');
+    closeModal('m-baixa-receber');
+  }).catch(()=>toast('Erro','err'));
+}
 
 // ══════════════════════════════════
 // CONTAS A PAGAR
