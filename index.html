@@ -305,12 +305,100 @@ a{color:var(--accent);text-decoration:none}
   .pay-grid{grid-template-columns:repeat(3,1fr)}
   .pay-grid-2{grid-template-columns:1fr 1fr}
 }
+
+/* ── IMPRESSÃO ── */
+@media print {
+  body > *:not(#print-frame) { display: none !important; }
+  #print-frame { display: block !important; position: fixed; inset: 0; z-index: 99999; background: #fff; }
+  @page { margin: 0; }
+}
+#print-frame { display: none; }
+
+/* COMPROVANTE */
+.comprovante {
+  width: 80mm;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #000;
+  background: #fff;
+  padding: 6mm 4mm;
+  margin: 0 auto;
+}
+.comprovante .loja-nome { font-size: 15px; font-weight: 700; text-align: center; margin-bottom: 2px; }
+.comprovante .loja-sub  { font-size: 10px; text-align: center; color: #555; margin-bottom: 4mm; }
+.comprovante .linha-sep { border: none; border-top: 1px dashed #000; margin: 3mm 0; }
+.comprovante .item-row  { display: flex; justify-content: space-between; margin-bottom: 1mm; font-size: 11px; }
+.comprovante .item-nome { flex: 1; padding-right: 4px; }
+.comprovante .item-val  { font-weight: 700; white-space: nowrap; }
+.comprovante .total-row { display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; margin-top: 2mm; }
+.comprovante .rodape    { text-align: center; font-size: 10px; color: #555; margin-top: 4mm; }
+
+/* ETIQUETAS PIMACO 6182 — 13 col x 5 lin, 38.2x21.1mm */
+.etiquetas-sheet {
+  width: 210mm;
+  margin: 0 auto;
+  padding: 13.5mm 3mm 0 6mm; /* margens da folha Pimaco 6182 */
+  background: #fff;
+  box-sizing: border-box;
+}
+.etiquetas-grid {
+  display: grid;
+  grid-template-columns: repeat(13, 38.2mm);
+  grid-template-rows: repeat(5, 21.1mm);
+  gap: 0mm 0mm;
+  column-gap: 0mm;
+  row-gap: 0mm;
+}
+.etiq {
+  width: 38.2mm;
+  height: 21.1mm;
+  box-sizing: border-box;
+  padding: 0.8mm 1mm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 0.2px solid transparent; /* debug: trocar para #ccc */
+}
+.etiq-nome {
+  font-family: Arial, sans-serif;
+  font-size: 5.5px;
+  font-weight: 700;
+  text-align: center;
+  color: #000;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+  margin-bottom: 0.5mm;
+}
+.etiq-var {
+  font-family: Arial, sans-serif;
+  font-size: 4.5px;
+  color: #333;
+  text-align: center;
+  margin-bottom: 0.5mm;
+}
+.etiq svg {
+  max-width: 34mm;
+  max-height: 8mm;
+}
+.etiq-preco {
+  font-family: Arial, sans-serif;
+  font-size: 7px;
+  font-weight: 900;
+  color: #000;
+  margin-top: 0.5mm;
+}
 </style>
 </head>
 <body>
 
 <!-- OVERLAY SIDEBAR MOBILE -->
 <div class="sidebar-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
+<div id="print-frame"></div>
 
 <!-- LOGIN -->
 <div id="login-screen" class="login-screen">
@@ -375,6 +463,7 @@ a{color:var(--accent);text-decoration:none}
         <div class="nav-item" id="m-importar" onclick="seedEstoque()"><i class="ti ti-database-import"></i>Importar Estoque</div>
         <div class="nav-item" onclick="openModal('m-imp-cl')"><i class="ti ti-users-plus"></i>Importar Clientes</div>
         <div class="nav-item" onclick="openModal('m-imp-vendas')"><i class="ti ti-file-upload"></i>Importar Vendas</div>
+        <div class="nav-item" onclick="openModal('m-etiquetas');carregarListaEtiq()"><i class="ti ti-tag"></i>Etiquetas</div>
       </div>
     </nav>
     <div class="user-area">
@@ -571,6 +660,51 @@ a{color:var(--accent);text-decoration:none}
   </div>
 </div>
 
+<!-- COMPROVANTE -->
+<div class="modal-overlay" id="m-comprovante">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <span class="modal-title">Comprovante de Venda</span>
+      <button class="modal-close" onclick="closeModal('m-comprovante')"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="comprovante-preview" style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;background:#fff;max-height:60vh;overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-comprovante')">Fechar</button>
+      <button class="btn btn-primary" onclick="imprimirComprovante()"><i class="ti ti-printer"></i>Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ETIQUETAS -->
+<div class="modal-overlay" id="m-etiquetas">
+  <div class="modal modal-lg" style="max-width:700px">
+    <div class="modal-header">
+      <span class="modal-title">Gerar Etiquetas</span>
+      <button class="modal-close" onclick="closeModal('m-etiquetas')"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end">
+      <div class="form-group" style="margin:0;flex:1;min-width:200px">
+        <label class="form-label">Buscar produto</label>
+        <input class="form-input" id="etiq-busca" placeholder="Nome ou SKU..." oninput="filtrarEtiquetas()">
+      </div>
+      <div class="form-group" style="margin:0;width:80px">
+        <label class="form-label">Qtd por produto</label>
+        <input type="number" class="form-input" id="etiq-qtd" value="1" min="1" max="65">
+      </div>
+      <button class="btn btn-sm" onclick="adicionarEtiqueta()"><i class="ti ti-plus"></i>Adicionar</button>
+    </div>
+    <div id="etiq-lista-prod" style="max-height:160px;overflow-y:auto;margin-bottom:12px;border:1px solid var(--border);border-radius:var(--radius)"></div>
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:6px">Fila de Impressão</div>
+    <div id="etiq-fila" style="min-height:40px;background:var(--bg3);border-radius:var(--radius);padding:8px;font-size:12px;color:var(--text3);margin-bottom:12px">Nenhum produto adicionado</div>
+    <div style="font-size:11px;color:var(--text3)">Total de etiquetas: <strong id="etiq-total-count" style="color:var(--accent)">0</strong> / 65 por folha</div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" onclick="limparFilaEtiq()"><i class="ti ti-trash"></i>Limpar</button>
+      <button class="btn" onclick="closeModal('m-etiquetas')">Fechar</button>
+      <button class="btn btn-primary" onclick="imprimirEtiquetas()"><i class="ti ti-printer"></i>Imprimir Etiquetas</button>
+    </div>
+  </div>
+</div>
+
 <!-- IMPORTAR VENDAS -->
 <div class="modal-overlay" id="m-imp-vendas">
   <div class="modal modal-lg">
@@ -679,7 +813,7 @@ a{color:var(--accent);text-decoration:none}
     <div id="vok-info" style="font-size:13px;color:var(--text3);margin-bottom:4px"></div>
     <div id="vok-cl" style="font-size:12px;color:var(--text3);margin-bottom:18px"></div>
     <div style="display:flex;gap:8px;justify-content:center">
-      <button class="btn" onclick="closeModal('m-venda-ok')"><i class="ti ti-printer"></i>Imprimir</button>
+      <button class="btn" onclick="abrirComprovante()"><i class="ti ti-printer"></i>Comprovante</button>
       <button class="btn btn-primary" onclick="novaVenda()"><i class="ti ti-plus"></i>Nova Venda</button>
     </div>
   </div>
@@ -689,6 +823,7 @@ a{color:var(--accent);text-decoration:none}
 
 <!-- FIREBASE -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -1198,7 +1333,7 @@ function atualizarDesconto(){
     if(linhaSubtotal)linhaSubtotal.style.display='flex';
     if(linhaSubtotal)linhaSubtotal.querySelector('span:last-child').textContent=R(subtotal);
     if(linhaDesc)linhaDesc.style.display='flex';
-    if(linhaDesc)linhaDesc.querySelector('span:first-child').textContent='Desconto'+(pdvDescontoTipo==='%'?' ('+pdvDesconto+'%)':'');
+    if(linhaDesc)linhaDesc.querySelector('span:first-child').textContent='Desconto'+(pdvDescontoTipo==='%'?' ('+parseFloat(pdvDesconto).toFixed(1)+'%)':'');
     if(linhaDesc)linhaDesc.querySelector('span:last-child').textContent='- '+R(desc);
   } else {
     if(linhaSubtotal)linhaSubtotal.style.display='none';
@@ -1336,8 +1471,16 @@ function finalizarVenda(){
   }
   batch.commit().then(()=>{
     const clNome=pdvClienteId?(localClientes.find(c=>c.id===pdvClienteId)||{nome:'—'}).nome:'Consumidor Final';
+    const clNomeComp = pdvClienteId ? (localClientes.find(c=>c.id===pdvClienteId)||{nome:'Consumidor Final'}).nome : 'Consumidor Final';
+    ultimaVendaComprovante = {
+      data: today(), hora: nowStr(),
+      itens: [...cartItems],
+      subtotal, desconto, descontoTipo: pdvDescontoTipo,
+      total, formaPagamento: selectedPay,
+      cliente: clNomeComp, vendedor: currentOp.nome
+    };
     document.getElementById('vok-info').textContent=`Total: ${R(total)} · ${selectedPay.toUpperCase()}`;
-    document.getElementById('vok-cl').textContent=`Cliente: ${clNome}`;
+    document.getElementById('vok-cl').textContent=`Cliente: ${clNomeComp}`;
     openModal('m-venda-ok');
     cartItems=[];selectedPay='dinheiro';parcelasCredito=1;pdvDesconto=0;pdvDescontoTipo='R';
   }).catch(()=>toast('Erro ao registrar venda','err'));
@@ -1677,6 +1820,210 @@ function abrirLimite(id){
 function salvarLimite(){
   const id=document.getElementById('lim-id').value,val=parseFloat(document.getElementById('lim-val').value)||0;
   db.collection('clientes').doc(id).update({limite:val}).then(()=>{toast('Limite atualizado!');closeModal('m-limite');}).catch(()=>toast('Erro','err'));
+}
+
+// ── COMPROVANTE DE VENDA ──
+let ultimaVendaComprovante = null;
+
+function abrirComprovante(){
+  closeModal('m-venda-ok');
+  if(!ultimaVendaComprovante) return;
+  const v = ultimaVendaComprovante;
+  const subtotal = v.subtotal || v.total;
+  const desconto = v.desconto || 0;
+  const descontoTipo = v.descontoTipo || 'R';
+  const descVal = desconto > 0
+    ? (descontoTipo === '%' ? subtotal * desconto / 100 : desconto)
+    : 0;
+
+  const html = `<div class="comprovante">
+    <div class="loja-nome">Sempre Bonita</div>
+    <div class="loja-sub">Moda Feminina</div>
+    <hr class="linha-sep">
+    <div style="font-size:10px;margin-bottom:2mm">
+      <div>Data: ${v.data ? v.data.split('-').reverse().join('/') : '—'} ${v.hora || ''}</div>
+      <div>Vendedor(a): ${v.vendedor || '—'}</div>
+      <div>Cliente: ${v.cliente || 'Consumidor Final'}</div>
+    </div>
+    <hr class="linha-sep">
+    ${(v.itens || []).map(i => `
+    <div class="item-row">
+      <span class="item-nome">${i.nome}${i.cor ? ' ' + i.cor : ''}${i.tam ? ' ' + i.tam : ''}</span>
+      <span class="item-val">${R(i.preco * i.qtd)}</span>
+    </div>
+    <div style="font-size:9px;color:#666;padding-left:2mm;margin-bottom:1mm">${i.qtd}x ${R(i.preco)}</div>
+    `).join('')}
+    <hr class="linha-sep">
+    ${desconto > 0 ? `
+    <div class="item-row"><span>Subtotal</span><span>${R(subtotal)}</span></div>
+    <div class="item-row" style="color:#c00"><span>Desconto${descontoTipo === '%' ? ' (' + parseFloat(desconto).toFixed(1) + '%)' : ''}</span><span>- ${R(descVal)}</span></div>
+    ` : ''}
+    <div class="total-row"><span>TOTAL</span><span>${R(v.total)}</span></div>
+    <div style="font-size:11px;margin-top:2mm">Pagamento: <strong>${v.formaPagamento || '—'}</strong></div>
+    <hr class="linha-sep">
+    <div class="rodape">
+      Obrigada pela preferencia!<br>Volte sempre :)
+    </div>
+  </div>`;
+
+  document.getElementById('comprovante-preview').innerHTML = html;
+  openModal('m-comprovante');
+}
+
+function imprimirComprovante(){
+  const conteudo = document.getElementById('comprovante-preview').innerHTML;
+  document.getElementById('print-frame').innerHTML = `<div style="background:#fff;min-height:100vh;display:flex;justify-content:center;padding:10mm 0">${conteudo}</div>`;
+  window.print();
+  document.getElementById('print-frame').innerHTML = '';
+}
+
+// ── ETIQUETAS PIMACO 6182 (13x5 = 65 por folha) ──
+let etiqFila = []; // [{produto, qtd}]
+let etiqBuscaResultados = [];
+
+function carregarListaEtiq(){
+  etiqBuscaResultados = [...localProdutos];
+  renderListaEtiq();
+  renderFilaEtiq();
+}
+
+function filtrarEtiquetas(){
+  const busca = document.getElementById('etiq-busca')?.value.toLowerCase() || '';
+  etiqBuscaResultados = busca
+    ? localProdutos.filter(p =>
+        (p.nome||'').toLowerCase().includes(busca) ||
+        (p.sku||'').toLowerCase().includes(busca))
+    : localProdutos;
+  renderListaEtiq();
+}
+
+function renderListaEtiq(){
+  const el = document.getElementById('etiq-lista-prod');
+  if(!el) return;
+  const lista = etiqBuscaResultados.slice(0, 20);
+  if(!lista.length){
+    el.innerHTML = '<div style="padding:12px;color:var(--text3);font-size:12px;text-align:center">Nenhum produto encontrado</div>';
+    return;
+  }
+  el.innerHTML = lista.map(p => `
+    <div onclick="selecionarProdEtiq('${p.id}')"
+      style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s"
+      onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background=''">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${p.nome}</div>
+        <div style="font-size:11px;color:var(--text3)">${[p.cor,p.tamanho].filter(Boolean).join(' · ')} · SKU: ${p.sku||'—'}</div>
+      </div>
+      <div style="font-family:var(--mono);font-weight:700;color:var(--accent);font-size:13px">${R(p.precoVenda)}</div>
+    </div>`).join('');
+}
+
+let prodEtiqSelecionado = null;
+function selecionarProdEtiq(id){
+  prodEtiqSelecionado = localProdutos.find(p => p.id === id);
+  document.querySelectorAll('#etiq-lista-prod > div').forEach(el => el.style.background = '');
+  event.currentTarget.style.background = 'var(--accent-glow)';
+}
+
+function adicionarEtiqueta(){
+  if(!prodEtiqSelecionado){ toast('Selecione um produto da lista', 'err'); return; }
+  const qtd = parseInt(document.getElementById('etiq-qtd')?.value) || 1;
+  const existe = etiqFila.find(e => e.produto.id === prodEtiqSelecionado.id);
+  if(existe) existe.qtd = Math.min(65, existe.qtd + qtd);
+  else etiqFila.push({ produto: { ...prodEtiqSelecionado }, qtd });
+  renderFilaEtiq();
+  toast(`${prodEtiqSelecionado.nome} adicionado!`);
+}
+
+function removerEtiq(idx){
+  etiqFila.splice(idx, 1);
+  renderFilaEtiq();
+}
+
+function renderFilaEtiq(){
+  const el = document.getElementById('etiq-fila');
+  const countEl = document.getElementById('etiq-total-count');
+  const total = etiqFila.reduce((s, e) => s + e.qtd, 0);
+  if(countEl) countEl.textContent = total;
+  if(!etiqFila.length){
+    if(el) el.innerHTML = '<span style="color:var(--text3);font-size:12px">Nenhum produto adicionado</span>';
+    return;
+  }
+  if(el) el.innerHTML = etiqFila.map((e, i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:12px;color:var(--text)">${e.produto.nome} ${[e.produto.cor,e.produto.tamanho].filter(Boolean).join('/')}</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="badge badge-blue" style="font-size:11px">${e.qtd}x</span>
+        <button onclick="removerEtiq(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px"><i class="ti ti-x"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function limparFilaEtiq(){
+  etiqFila = [];
+  renderFilaEtiq();
+}
+
+function imprimirEtiquetas(){
+  if(!etiqFila.length){ toast('Adicione produtos à fila', 'err'); return; }
+
+  // Montar lista de etiquetas (repetida pela qtd)
+  const etiquetas = [];
+  etiqFila.forEach(e => {
+    for(let i = 0; i < e.qtd; i++) etiquetas.push(e.produto);
+  });
+
+  // Completar até 65 (múltiplo de 65 para folha completa)
+  const total = etiquetas.length;
+  const folhas = Math.ceil(total / 65);
+  while(etiquetas.length < folhas * 65) etiquetas.push(null);
+
+  // Gerar SVG de código de barras inline
+  function gerarBarcode(codigo){
+    if(!codigo) return '';
+    try {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      JsBarcode(svg, String(codigo), {
+        format: 'CODE128', width: 1, height: 20,
+        displayValue: false, margin: 0
+      });
+      return svg.outerHTML;
+    } catch(e){ return ''; }
+  }
+
+  const gridHTML = etiquetas.map(p => {
+    if(!p) return '<div class="etiq"></div>';
+    const barcode = gerarBarcode(p.codigoBarras || p.sku || '');
+    const varStr = [p.cor, p.tamanho].filter(Boolean).join(' ');
+    return `<div class="etiq">
+      <div class="etiq-nome">${p.nome}</div>
+      ${varStr ? `<div class="etiq-var">${varStr}</div>` : ''}
+      ${barcode}
+      <div class="etiq-preco">${R(p.precoVenda)}</div>
+    </div>`;
+  }).join('');
+
+  const conteudo = `
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans&display=swap" rel="stylesheet">
+    <style>
+      @page { size: A4; margin: 0; }
+      body { margin: 0; background: #fff; }
+      .etiquetas-sheet { width:210mm; margin:0 auto; padding:13.5mm 3mm 0 6mm; box-sizing:border-box; }
+      .etiquetas-grid { display:grid; grid-template-columns:repeat(13,38.2mm); gap:0; }
+      .etiq { width:38.2mm; height:21.1mm; box-sizing:border-box; padding:0.8mm 1mm; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; }
+      .etiq-nome { font-family:Arial,sans-serif; font-size:5.5px; font-weight:700; text-align:center; color:#000; width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:0.3mm; }
+      .etiq-var { font-family:Arial,sans-serif; font-size:4.5px; color:#333; text-align:center; margin-bottom:0.3mm; }
+      .etiq svg { max-width:34mm; max-height:8mm; }
+      .etiq-preco { font-family:Arial,sans-serif; font-size:7px; font-weight:900; color:#000; margin-top:0.3mm; }
+    </style>
+    <div class="etiquetas-sheet">
+      <div class="etiquetas-grid">${gridHTML}</div>
+    </div>`;
+
+  document.getElementById('print-frame').innerHTML = conteudo;
+  setTimeout(() => {
+    window.print();
+    document.getElementById('print-frame').innerHTML = '';
+  }, 300);
 }
 
 // ── IMPORTAR VENDAS (XLS/XLSX/CSV) ──
@@ -2237,7 +2584,7 @@ function renderRelatorios(c,a){
             const cls=payColors[v.formaPagamento]||'';
             const lbl=payLabel[v.formaPagamento]||v.formaPagamento||'';
             const pagBadge=lbl?`<span class="badge ${cls}" style="font-size:10px;flex-shrink:0;margin-left:6px">${lbl}</span>`:'<span class="badge" style="font-size:10px;flex-shrink:0;margin-left:6px;background:var(--bg4);color:var(--text3)">s/ info</span>';
-            const descBadge=v.desconto>0?`<span class="badge badge-red" style="font-size:10px;flex-shrink:0;margin-left:4px">Desc. ${v.descontoTipo==='%'?v.desconto+'%':'R$ '+parseFloat(v.desconto).toFixed(2).replace('.',',')}</span>`:'';
+            const descBadge=v.desconto>0?`<span class="badge badge-red" style="font-size:10px;flex-shrink:0;margin-left:4px">Desc. ${v.descontoTipo==='%'?parseFloat(v.desconto).toFixed(1)+'%':'R$ '+parseFloat(v.desconto).toFixed(2).replace('.',',')}</span>`:'';
             return pagBadge+descBadge;
           })()}
           <span style="font-family:var(--mono);font-weight:700;color:var(--green);min-width:80px;text-align:right;flex-shrink:0;margin-left:8px">${R(v.total)}</span>
@@ -2263,7 +2610,7 @@ function renderRelatorios(c,a){
               <span style="font-family:var(--mono)">${R(v.subtotal||v.total)}</span>
             </div>
             <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--red);margin-bottom:6px">
-              <span>Desconto ${v.descontoTipo==='%'?'('+v.desconto+'%)':'em R$'}</span>
+              <span>Desconto ${v.descontoTipo==='%'?'('+parseFloat(v.desconto).toFixed(1)+'%)':'em R$'}</span>
               <span style="font-family:var(--mono);font-weight:600">- ${R(v.desconto&&v.descontoTipo==='%'?(v.subtotal||v.total)*v.desconto/100:v.desconto)}</span>
             </div>`:''}
             <div style="display:flex;justify-content:space-between;align-items:center">
