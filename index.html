@@ -864,17 +864,18 @@ function renderDashboard(c,a){
   const hoje=today(), mes=hoje.slice(0,7);
   const semAtual=getSemanaAtual();
   const pctsSem=[0,(metas.pctS1||20)/100,(metas.pctS2||30)/100,(metas.pctS3||30)/100,(metas.pctS4||20)/100];
-  const vHoje=localVendas.filter(v=>v.data===hoje).reduce((s,v)=>s+(v.total||0),0);
-  const vMes=localVendas.filter(v=>v.data&&v.data.startsWith(mes)).reduce((s,v)=>s+(v.total||0),0);
+  const vHoje=localVendas.filter(v=>extrairData(v)===hoje).reduce((s,v)=>s+(v.total||0),0);
+  const vMes=localVendas.filter(v=>extrairData(v).startsWith(mes)).reduce((s,v)=>s+(v.total||0),0);
   const ano=new Date().getFullYear(),mesN=new Date().getMonth();
   const diasNoMes=new Date(ano,mesN+1,0).getDate();
   const semInicio=semAtual===1?1:semAtual===2?8:semAtual===3?15:22;
   const semFim=semAtual===1?7:semAtual===2?14:semAtual===3?21:diasNoMes;
   const diasSem=semFim-semInicio+1;
   const vSemana=localVendas.filter(v=>{
-    if(!v.data||!/^\d{4}-\d{2}-\d{2}$/.test(v.data))return false;
-    const d=parseInt(v.data.split('-')[2]);
-    return v.data.startsWith(mes)&&d>=semInicio&&d<=semFim;
+    const dt=extrairData(v);
+    if(!dt)return false;
+    const d=parseInt(dt.split('-')[2]);
+    return dt.startsWith(mes)&&d>=semInicio&&d<=semFim;
   }).reduce((s,v)=>s+(v.total||0),0);
   const m1=metas.meta1||0,m2=metas.meta2||0,m3=metas.meta3||0,sm=metas.superMeta||0;
   const metaSemM1=m1*pctsSem[semAtual];
@@ -2045,18 +2046,30 @@ function formatarDataVenda(data, hora){
 }
 
 function vendaValida(v){
-  // Filtrar vendas com data malformada (timestamps ISO quebrados)
   if(!v.data) return false;
-  if(v.data.includes('T')&&!/^\d{4}-\d{2}-\d{2}T/.test(v.data)) return false;
-  return true;
+  const d = String(v.data);
+  // Aceitar YYYY-MM-DD (PDV e importadas corretas)
+  if(/^\d{4}-\d{2}-\d{2}$/.test(d)) return true;
+  // Aceitar ISO completo válido: 2026-06-15T...
+  if(/^\d{4}-\d{2}-\d{2}T/.test(d)) return true;
+  // Rejeitar timestamps quebrados tipo "04T20:35Z/06/2026"
+  return false;
+}
+
+function extrairData(v){
+  // Extrai só YYYY-MM-DD de qualquer formato válido
+  if(!v.data) return '';
+  const d = String(v.data);
+  if(/^\d{4}-\d{2}-\d{2}/.test(d)) return d.slice(0,10);
+  return '';
 }
 
 function renderRelatorios(c,a){
   // Filtrar apenas vendas válidas
   let vf=localVendas.filter(vendaValida);
-  if(relInicio)vf=vf.filter(v=>v.data>=relInicio);
-  if(relFim)vf=vf.filter(v=>v.data<=relFim);
-  vf.sort((a,b)=>(a.data||'')>(b.data||'')?-1:1);
+  if(relInicio)vf=vf.filter(v=>extrairData(v)>=relInicio);
+  if(relFim)vf=vf.filter(v=>extrairData(v)<=relFim);
+  vf.sort((a,b)=>extrairData(b).localeCompare(extrairData(a)));
   const tot=vf.reduce((s,v)=>s+(v.total||0),0),qtd=vf.length,ticket=qtd>0?tot/qtd:0;
 
   // Vendas inválidas para avisar
@@ -2104,7 +2117,7 @@ function renderRelatorios(c,a){
 
   ${!vf.length?'<div class="empty"><i class="ti ti-receipt-off"></i><div class="empty-title">Nenhuma venda no período</div><div class="empty-sub">Ajuste o filtro de datas ou realize novas vendas</div></div>':
     vf.map(v=>{
-      const {dataFmt,horaFmt}=formatarDataVenda(v.data,v.hora);
+      const {dataFmt,horaFmt}=formatarDataVenda(extrairData(v)||v.data,v.hora);
       // Prioridade: campo cliente direto (importadas) > busca por clienteId (PDV) > Consumidor Final
       let clNome = 'Consumidor Final';
       if(v.cliente && v.cliente !== 'Consumidor Final' && v.cliente !== 'Consumidor Geral'){
