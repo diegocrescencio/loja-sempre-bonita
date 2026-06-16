@@ -445,6 +445,8 @@ a{color:var(--accent);text-decoration:none}
       <div class="nav-section">
         <div class="nav-label">Gestão</div>
         <div class="nav-item" id="m-estoque" onclick="goPage('estoque',this)"><i class="ti ti-package"></i>Estoque <span id="badge-stock" class="nav-badge" style="display:none">!</span></div>
+        <div class="nav-item" id="m-compras" onclick="goPage('compras',this)"><i class="ti ti-truck-delivery"></i>Compras</div>
+        <div class="nav-item" id="m-condicionais" onclick="goPage('condicionais',this)"><i class="ti ti-briefcase"></i>Condicionais <span id="badge-cond" class="nav-badge" style="display:none">!</span></div>
         <div class="nav-item" id="m-clientes" onclick="goPage('clientes',this)"><i class="ti ti-users"></i>Clientes</div>
         <div class="nav-item" id="m-caixa" onclick="goPage('caixa',this)"><i class="ti ti-cash"></i>Caixa</div>
       </div>
@@ -660,6 +662,113 @@ a{color:var(--accent);text-decoration:none}
   </div>
 </div>
 
+<!-- CONDICIONAL -->
+<div class="modal-overlay" id="m-condicional">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title">Nova Condicional</span>
+      <button class="modal-close" onclick="closeModal('m-condicional')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Cliente *</label>
+        <select class="form-input" id="cond-cliente">
+          <option value="">Selecione o cliente...</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observações</label>
+        <input class="form-input" id="cond-obs" placeholder="Ex: malinha azul, 5 peças...">
+      </div>
+    </div>
+    <!-- BUSCA DE PRODUTO -->
+    <div style="background:var(--bg3);border-radius:var(--radius-lg);padding:12px;margin-bottom:12px;position:relative">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Adicionar Produto</div>
+      <input class="form-input" id="cond-prod-busca" placeholder="Buscar por nome, SKU ou código de barras..." oninput="buscarProdutoCondicional()">
+      <div id="cond-prod-resultados" style="display:none;position:absolute;left:12px;right:12px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;box-shadow:var(--shadow)"></div>
+    </div>
+    <!-- LISTA DE ITENS -->
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Itens da Condicional</div>
+    <div id="cond-itens-lista" style="min-height:60px;max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;margin-bottom:12px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--bg3);border-radius:var(--radius)">
+      <span style="font-size:13px;font-weight:600;color:var(--text2)">Total da Condicional</span>
+      <span style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent)" id="cond-total">R$ 0,00</span>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-condicional')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarCondicional()"><i class="ti ti-briefcase"></i>Salvar Condicional</button>
+    </div>
+  </div>
+</div>
+
+<!-- DEVOLUÇÃO PARCIAL -->
+<div class="modal-overlay" id="m-devol-parcial">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Devolução Parcial</span>
+      <button class="modal-close" onclick="closeModal('m-devol-parcial')"><i class="ti ti-x"></i></button>
+    </div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Marque os itens que serão devolvidos ao estoque:</p>
+    <input type="hidden" id="devol-cond-id">
+    <div id="devol-lista" style="max-height:300px;overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-devol-parcial')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarDevolParcial()"><i class="ti ti-arrow-back"></i>Devolver Selecionados</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMPRA -->
+<div class="modal-overlay" id="m-compra">
+  <div class="modal modal-lg" style="max-width:680px">
+    <div class="modal-header">
+      <span class="modal-title">Registrar Compra</span>
+      <button class="modal-close" onclick="closeModal('m-compra')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Fornecedor *</label><input class="form-input" id="compra-forn" placeholder="Nome do fornecedor"></div>
+      <div class="form-group"><label class="form-label">Observações</label><input class="form-input" id="compra-obs" placeholder="NF, pedido..."></div>
+    </div>
+    <!-- FORMULÁRIO ITEM -->
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px"><i class="ti ti-plus" style="font-size:13px;vertical-align:middle;margin-right:4px"></i>Adicionar Produto</div>
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:8px"><label class="form-label">Nome do Produto *</label><input class="form-input" id="ci-nome" placeholder="Ex: Blusa Estela"></div>
+        <div class="form-group" style="margin-bottom:8px"><label class="form-label">SKU / Código</label><input class="form-input" id="ci-sku" placeholder="Ex: 3022"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:8px"><label class="form-label">Cor</label><input class="form-input" id="ci-cor" placeholder="Ex: Preto"></div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label class="form-label">Tamanho</label>
+          <select class="form-input" id="ci-tam">
+            <option value="">Sem tamanho</option>
+            <option>PP</option><option>P</option><option>M</option><option>G</option><option>GG</option><option>XG</option>
+            <option>34</option><option>36</option><option>38</option><option>40</option><option>42</option><option>44</option><option>46</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group" style="margin-bottom:8px"><label class="form-label">Preço Custo (R$)</label><input type="number" class="form-input" id="ci-custo" step="0.01" placeholder="0,00"></div>
+        <div class="form-group" style="margin-bottom:8px"><label class="form-label">Preço Venda (R$)</label><input type="number" class="form-input" id="ci-preco" step="0.01" placeholder="0,00"></div>
+        <div class="form-group" style="margin-bottom:8px"><label class="form-label">Quantidade</label><input type="number" class="form-input" id="ci-qtd" value="1" min="1"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:8px"><label class="form-label">Marca</label><input class="form-input" id="ci-marca" placeholder="Ex: Monami"></div>
+      <button class="btn btn-primary btn-sm" onclick="adicionarItemCompra()"><i class="ti ti-plus"></i>Adicionar à Compra</button>
+    </div>
+    <!-- LISTA DE ITENS -->
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Itens da Compra</div>
+    <div id="compra-itens-lista" style="min-height:50px;max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;margin-bottom:10px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:var(--radius)">
+      <span style="font-size:13px;font-weight:600;color:var(--text2)">Total da Compra (custo)</span>
+      <span style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--red)" id="compra-total">R$ 0,00</span>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-compra')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarCompra()"><i class="ti ti-check"></i>Salvar e Atualizar Estoque</button>
+    </div>
+  </div>
+</div>
+
 <!-- COMPROVANTE -->
 <div class="modal-overlay" id="m-comprovante">
   <div class="modal" style="max-width:420px">
@@ -857,6 +966,9 @@ function getMetaDiaria(){
 let currentOp=null, cartItems=[], selectedPay='dinheiro', parcelasCredito=1;
 let localProdutos=[], localClientes=[], localVendas=[], localReceber=[], localPagar=[], localCaixa=[];
 let editProdId=null, editClId=null;
+let localCondicionais=[], localCompras=[];
+let condItens=[], editCondId=null;
+let compraItens=[], editCompraId=null;
 let impClData=[], impEstData=[];
 let relInicio='', relFim='', relPagamento='';
 let pdvBusca='', pdvCat='Todos', pdvClienteId='', pdvSoComEstoque=true, pdvDesconto=0, pdvDescontoTipo='R';
@@ -968,6 +1080,23 @@ function startListeners(){
   db.collection('contas_pagar').onSnapshot(s=>{localPagar=s.docs.map(d=>({id:d.id,...d.data()}));renderCurrentPage();},()=>setSyncStatus(false));
   db.collection('caixa').onSnapshot(s=>{localCaixa=s.docs.map(d=>({id:d.id,...d.data()}));setSyncStatus(true);renderCurrentPage();},()=>setSyncStatus(false));
   db.collection('config').doc('metas').onSnapshot(s=>{if(s.exists){metas={...metas,...s.data()};renderCurrentPage();}});
+  db.collection('condicionais').onSnapshot(s=>{
+    localCondicionais=s.docs.map(d=>({id:d.id,...d.data()}));
+    // Badge de condicionais abertas > 3 dias
+    const hoje=today();
+    const atrasadas=localCondicionais.filter(c=>{
+      if(c.status!=='Aberta')return false;
+      const dias=(new Date(hoje)-new Date(c.data))/(1000*60*60*24);
+      return dias>=3;
+    });
+    const b=document.getElementById('badge-cond');
+    if(b)b.style.display=atrasadas.length>0?'inline':'none';
+    renderCurrentPage();
+  },()=>setSyncStatus(false));
+  db.collection('compras').onSnapshot(s=>{
+    localCompras=s.docs.map(d=>({id:d.id,...d.data()}));
+    renderCurrentPage();
+  },()=>setSyncStatus(false));
 }
 
 // ── ROTEAMENTO ──
@@ -995,6 +1124,8 @@ function renderCurrentPage(){
   else if(currentPage==='pagar')renderPagar(c,a);
   else if(currentPage==='relatorios')renderRelatorios(c,a);
   else if(currentPage==='configuracoes')renderConfig(c,a);
+  else if(currentPage==='condicionais')renderCondicionais(c,a);
+  else if(currentPage==='compras')renderCompras(c,a);
 }
 
 // ══════════════════════════════════
@@ -2676,6 +2807,384 @@ function getMetaDiaria(){
 function getMetaDiariaParaMeta(metaMensal, semana){
   const dias = getDiasNaSemana(semana);
   return dias > 0 ? getMetaSemana(metaMensal, semana) / dias : 0;
+}
+
+// ══════════════════════════════════════════════
+// CONDICIONAIS
+// ══════════════════════════════════════════════
+let condBusca='', condBarraInput='';
+
+function renderCondicionais(c,a){
+  a.innerHTML=`<button class="btn btn-primary btn-sm" onclick="abrirNovaCondicional()"><i class="ti ti-plus"></i>Nova Condicional</button>`;
+  const hoje=today();
+  const abertas=localCondicionais.filter(x=>x.status==='Aberta');
+  const finalizadas=localCondicionais.filter(x=>x.status!=='Aberta');
+  const atrasadas=abertas.filter(c=>{
+    const dias=(new Date(hoje)-new Date(c.data))/(1000*60*60*24);
+    return dias>=3;
+  });
+
+  c.innerHTML=`
+  <!-- ALERTAS -->
+  ${atrasadas.length>0?`<div style="background:var(--amber-bg);border:1px solid rgba(251,191,36,.3);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+    <i class="ti ti-alert-triangle" style="font-size:22px;color:var(--amber);flex-shrink:0"></i>
+    <div><strong style="color:var(--amber)">${atrasadas.length} condicional(is) aberta(s) há mais de 3 dias!</strong><br>
+    <span style="font-size:12px;color:var(--text2)">${atrasadas.map(c=>`${c.cliente} (${Math.floor((new Date(hoje)-new Date(c.data))/(1000*60*60*24))} dias)`).join(' · ')}</span></div>
+  </div>`:''}
+
+  <!-- RESUMO -->
+  <div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+    <div class="metric metric-sales">
+      <div class="metric-label">Condicionais Abertas</div>
+      <div class="metric-value">${abertas.length}</div>
+      <div class="metric-sub">${R(abertas.reduce((s,c)=>s+(c.total||0),0))} em circulação</div>
+      <i class="ti ti-briefcase metric-icon"></i>
+    </div>
+    <div class="metric metric-stock">
+      <div class="metric-label">Peças Fora do Estoque</div>
+      <div class="metric-value" style="color:var(--amber)">${abertas.reduce((s,c)=>s+(c.itens||[]).length,0)}</div>
+      <div class="metric-sub">em malinhas de clientes</div>
+      <i class="ti ti-package metric-icon"></i>
+    </div>
+    <div class="metric metric-ticket">
+      <div class="metric-label">Finalizadas (mês)</div>
+      <div class="metric-value" style="color:var(--green)">${finalizadas.filter(c=>c.data&&c.data.startsWith(hoje.slice(0,7))).length}</div>
+      <div class="metric-sub">no mês atual</div>
+      <i class="ti ti-check metric-icon"></i>
+    </div>
+  </div>
+
+  <!-- LISTA -->
+  <div style="margin-bottom:8px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Condicionais Abertas</div>
+  ${!abertas.length?'<div class="empty"><i class="ti ti-briefcase"></i><div class="empty-title">Nenhuma condicional aberta</div></div>':
+    abertas.sort((a,b)=>a.data<b.data?-1:1).map(cond=>renderCondCard(cond,hoje)).join('')}
+
+  ${finalizadas.length>0?`
+  <div style="margin:16px 0 8px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Histórico</div>
+  ${finalizadas.slice(0,10).map(cond=>renderCondCard(cond,hoje)).join('')}`:''}`;
+}
+
+function renderCondCard(cond, hoje){
+  const dias=Math.floor((new Date(hoje)-new Date(cond.data||hoje))/(1000*60*60*24));
+  const atrasada=cond.status==='Aberta'&&dias>=3;
+  const statusColor=cond.status==='Aberta'?(atrasada?'var(--amber)':'var(--green)'):'var(--text3)';
+  const statusBg=cond.status==='Aberta'?(atrasada?'var(--amber-bg)':'var(--green-bg)'):'var(--bg3)';
+  return `<div style="background:var(--bg2);border:1px solid ${atrasada?'rgba(251,191,36,.4)':'var(--border)'};border-radius:var(--radius-lg);padding:16px;margin-bottom:10px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--text)">${cond.cliente}</div>
+        <div style="font-size:12px;color:var(--text3)">${cond.data?cond.data.split('-').reverse().join('/'):'—'} · ${dias===0?'hoje':dias+' dia(s)'} · ${(cond.itens||[]).length} peça(s)</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="background:${statusBg};color:${statusColor};padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700">${cond.status}</span>
+        <strong style="font-family:var(--mono);font-size:15px;color:var(--accent)">${R(cond.total||0)}</strong>
+      </div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:${cond.status==='Aberta'?'12':'0'}px">
+      ${(cond.itens||[]).map(i=>`<span style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:3px 8px;font-size:11px;color:var(--text2)">${i.nome}${i.cor?' · '+i.cor:''}${i.tamanho?' '+i.tamanho:''} — ${R(i.preco)}</span>`).join('')}
+    </div>
+    ${cond.status==='Aberta'?`
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn btn-success btn-sm" onclick="venderCondicional('${cond.id}')"><i class="ti ti-shopping-cart"></i>Vender Tudo</button>
+      <button class="btn btn-sm" onclick="devolverParcial('${cond.id}')"><i class="ti ti-arrows-exchange"></i>Devolver Parcial</button>
+      <button class="btn btn-danger btn-sm" onclick="devolverTudo('${cond.id}')"><i class="ti ti-arrow-back"></i>Devolver Tudo</button>
+    </div>`:''}
+  </div>`;
+}
+
+function abrirNovaCondicional(){
+  editCondId=null;
+  condItens=[];
+  // Popular select de clientes
+  const sel=document.getElementById('cond-cliente');
+  if(sel){
+    sel.innerHTML='<option value="">Selecione o cliente...</option>'+
+      localClientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  }
+  renderModalCondicional();
+  openModal('m-condicional');
+}
+
+function renderModalCondicional(){
+  const total=condItens.reduce((s,i)=>s+(i.preco*i.qtd),0);
+  document.getElementById('cond-itens-lista').innerHTML=condItens.length===0
+    ?'<div style="color:var(--text3);font-size:12px;text-align:center;padding:12px">Nenhum item adicionado</div>'
+    :condItens.map((i,idx)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1;font-size:12px"><strong>${i.nome}</strong>${i.cor?' · '+i.cor:''}${i.tamanho?' '+i.tamanho:''}<br><span style="color:var(--text3)">${R(i.preco)} · Qtd: ${i.qtd}</span></div>
+      <strong style="font-family:var(--mono);color:var(--accent)">${R(i.preco*i.qtd)}</strong>
+      <button onclick="removerItemCond(${idx})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px"><i class="ti ti-x"></i></button>
+    </div>`).join('');
+  document.getElementById('cond-total').textContent=R(total);
+}
+
+function buscarProdutoCondicional(){
+  const busca=document.getElementById('cond-prod-busca')?.value.toLowerCase()||'';
+  if(!busca)return;
+  const encontrados=localProdutos.filter(p=>
+    (p.nome||'').toLowerCase().includes(busca)||
+    (p.sku||'').toLowerCase().includes(busca)||
+    (p.codigoBarras||'').includes(busca)
+  );
+  const lista=document.getElementById('cond-prod-resultados');
+  if(!lista)return;
+  if(!encontrados.length){lista.innerHTML='<div style="padding:8px;font-size:12px;color:var(--text3)">Nenhum produto encontrado</div>';return;}
+  lista.innerHTML=encontrados.slice(0,8).map(p=>`
+    <div onclick="adicionarItemCond('${p.id}')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px"
+      onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background=''">
+      <div><strong>${p.nome}</strong><br><span style="color:var(--text3)">${[p.cor,p.tamanho].filter(Boolean).join(' · ')} · ${p.sku||''}</span></div>
+      <span style="font-family:var(--mono);color:var(--accent);font-weight:700">${R(p.precoVenda)}</span>
+    </div>`).join('');
+  lista.style.display='block';
+}
+
+function adicionarItemCond(id){
+  const p=localProdutos.find(x=>x.id===id);
+  if(!p)return;
+  if((p.estoque||0)<=0){toast('Produto sem estoque disponível!','err');return;}
+  const existe=condItens.find(i=>i.id===id);
+  if(existe){if(existe.qtd>=(p.estoque||0)){toast('Limite de estoque!','err');return;}existe.qtd++;}
+  else condItens.push({id:p.id,nome:p.nome,cor:p.cor||'',tamanho:p.tamanho||'',preco:p.precoVenda,qtd:1,codigoBarras:p.codigoBarras||''});
+  document.getElementById('cond-prod-resultados').style.display='none';
+  document.getElementById('cond-prod-busca').value='';
+  renderModalCondicional();
+  toast(`${p.nome} adicionado!`);
+}
+
+function removerItemCond(idx){
+  condItens.splice(idx,1);
+  renderModalCondicional();
+}
+
+function salvarCondicional(){
+  const clienteId=document.getElementById('cond-cliente').value;
+  const obs=document.getElementById('cond-obs')?.value||'';
+  if(!clienteId){toast('Selecione o cliente','err');return;}
+  if(!condItens.length){toast('Adicione pelo menos um produto','err');return;}
+  const cliente=localClientes.find(c=>c.id===clienteId);
+  const total=condItens.reduce((s,i)=>s+(i.preco*i.qtd),0);
+  // Baixar estoque dos itens
+  const batch=db.batch();
+  const ref=editCondId?db.collection('condicionais').doc(editCondId):db.collection('condicionais').doc();
+  batch.set(ref,{
+    clienteId,cliente:cliente.nome,
+    itens:condItens,total,
+    data:today(),hora:nowStr(),
+    status:'Aberta',obs,
+    criadoPor:currentOp.nome
+  },{merge:!!editCondId});
+  // Baixar estoque
+  condItens.forEach(i=>{
+    const orig=localProdutos.find(p=>p.id===i.id);
+    if(orig)batch.update(db.collection('produtos').doc(i.id),{estoque:Math.max(0,(orig.estoque||0)-i.qtd)});
+  });
+  batch.commit().then(()=>{
+    toast('Condicional salva!');
+    closeModal('m-condicional');
+    condItens=[];editCondId=null;
+  }).catch(()=>toast('Erro ao salvar','err'));
+}
+
+function venderCondicional(id){
+  if(!confirm('Confirmar venda de todos os itens desta condicional?'))return;
+  const cond=localCondicionais.find(c=>c.id===id);
+  if(!cond)return;
+  const batch=db.batch();
+  // Registrar venda
+  const vRef=db.collection('vendas').doc();
+  batch.set(vRef,{
+    data:today(),hora:nowStr(),
+    itens:cond.itens,total:cond.total,
+    formaPagamento:'dinheiro',
+    clienteId:cond.clienteId,cliente:cond.cliente,
+    vendedor:currentOp.nome,origemCondicional:id
+  });
+  // Fechar condicional
+  batch.update(db.collection('condicionais').doc(id),{status:'Vendida',dataFim:today()});
+  batch.commit().then(()=>toast('Venda registrada!')).catch(()=>toast('Erro','err'));
+}
+
+function devolverTudo(id){
+  if(!confirm('Devolver todos os itens ao estoque?'))return;
+  const cond=localCondicionais.find(c=>c.id===id);
+  if(!cond)return;
+  const batch=db.batch();
+  cond.itens.forEach(i=>{
+    const orig=localProdutos.find(p=>p.id===i.id);
+    if(orig)batch.update(db.collection('produtos').doc(i.id),{estoque:(orig.estoque||0)+i.qtd});
+  });
+  batch.update(db.collection('condicionais').doc(id),{status:'Devolvida',dataFim:today()});
+  batch.commit().then(()=>toast('Itens devolvidos ao estoque!')).catch(()=>toast('Erro','err'));
+}
+
+function devolverParcial(id){
+  const cond=localCondicionais.find(c=>c.id===id);
+  if(!cond)return;
+  // Abrir modal de devolução parcial
+  const modal=document.getElementById('m-devol-parcial');
+  document.getElementById('devol-cond-id').value=id;
+  document.getElementById('devol-lista').innerHTML=cond.itens.map((i,idx)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <input type="checkbox" id="devol-${idx}" value="${idx}" checked style="width:16px;height:16px;accent-color:var(--accent)">
+      <label for="devol-${idx}" style="flex:1;font-size:13px;color:var(--text);cursor:pointer">
+        ${i.nome}${i.cor?' · '+i.cor:''}${i.tamanho?' '+i.tamanho:''} — ${R(i.preco)}
+      </label>
+    </div>`).join('');
+  openModal('m-devol-parcial');
+}
+
+function confirmarDevolParcial(){
+  const id=document.getElementById('devol-cond-id').value;
+  const cond=localCondicionais.find(c=>c.id===id);
+  if(!cond)return;
+  const checkboxes=document.querySelectorAll('#devol-lista input[type=checkbox]');
+  const devolver=[], ficar=[];
+  cond.itens.forEach((item,idx)=>{
+    if(checkboxes[idx]&&checkboxes[idx].checked)devolver.push(item);
+    else ficar.push(item);
+  });
+  if(!devolver.length){toast('Selecione ao menos um item','err');return;}
+  const batch=db.batch();
+  devolver.forEach(i=>{
+    const orig=localProdutos.find(p=>p.id===i.id);
+    if(orig)batch.update(db.collection('produtos').doc(i.id),{estoque:(orig.estoque||0)+i.qtd});
+  });
+  const novoTotal=ficar.reduce((s,i)=>s+(i.preco*i.qtd),0);
+  if(ficar.length===0){
+    batch.update(db.collection('condicionais').doc(id),{status:'Devolvida',dataFim:today(),itens:[],total:0});
+  } else {
+    batch.update(db.collection('condicionais').doc(id),{itens:ficar,total:novoTotal});
+  }
+  batch.commit().then(()=>{
+    toast(`${devolver.length} item(s) devolvido(s)!`);
+    closeModal('m-devol-parcial');
+  }).catch(()=>toast('Erro','err'));
+}
+
+// ══════════════════════════════════════════════
+// COMPRAS
+// ══════════════════════════════════════════════
+let compraBusca='';
+
+function renderCompras(c,a){
+  a.innerHTML=`<button class="btn btn-primary btn-sm" onclick="abrirNovaCompra()"><i class="ti ti-plus"></i>Nova Compra</button>`;
+  const mesAtual=today().slice(0,7);
+  const comprasMes=localCompras.filter(x=>x.data&&x.data.startsWith(mesAtual));
+  const totalMes=comprasMes.reduce((s,x)=>s+(x.total||0),0);
+  const itensMes=comprasMes.reduce((s,x)=>s+(x.itens||[]).reduce((ss,i)=>ss+(i.qtd||0),0),0);
+
+  c.innerHTML=`
+  <div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+    <div class="metric metric-sales">
+      <div class="metric-label">Compras no Mês</div>
+      <div class="metric-value">${comprasMes.length}</div>
+      <div class="metric-sub">pedidos recebidos</div>
+      <i class="ti ti-truck-delivery metric-icon"></i>
+    </div>
+    <div class="metric metric-cash">
+      <div class="metric-label">Valor Investido no Mês</div>
+      <div class="metric-value" style="font-size:18px">${R(totalMes)}</div>
+      <div class="metric-sub">custo das compras</div>
+      <i class="ti ti-coin metric-icon"></i>
+    </div>
+    <div class="metric metric-stock">
+      <div class="metric-label">Peças Recebidas no Mês</div>
+      <div class="metric-value">${itensMes}</div>
+      <div class="metric-sub">unidades adicionadas</div>
+      <i class="ti ti-package metric-icon"></i>
+    </div>
+  </div>
+  ${!localCompras.length?'<div class="empty"><i class="ti ti-truck-delivery"></i><div class="empty-title">Nenhuma compra registrada</div></div>':
+    [...localCompras].sort((a,b)=>a.data<b.data?1:-1).map(comp=>`
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--text)">${comp.fornecedor||'—'}</div>
+          <div style="font-size:12px;color:var(--text3)">${comp.data?comp.data.split('-').reverse().join('/'):'—'} · ${(comp.itens||[]).reduce((s,i)=>s+(i.qtd||0),0)} peças · ${currentOp.nome}</div>
+        </div>
+        <strong style="font-family:var(--mono);font-size:15px;color:var(--red)">${R(comp.total||0)}</strong>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${(comp.itens||[]).map(i=>`<span style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:3px 8px;font-size:11px;color:var(--text2)">${i.nome}${i.cor?' · '+i.cor:''}${i.tamanho?' '+i.tamanho:''} x${i.qtd} — ${R(i.custo)}</span>`).join('')}
+      </div>
+    </div>`).join('')}`;
+}
+
+function abrirNovaCompra(){
+  editCompraId=null;compraItens=[];
+  document.getElementById('compra-forn').value='';
+  document.getElementById('compra-obs').value='';
+  renderModalCompra();
+  openModal('m-compra');
+}
+
+function renderModalCompra(){
+  const total=compraItens.reduce((s,i)=>s+(i.custo*i.qtd),0);
+  document.getElementById('compra-itens-lista').innerHTML=compraItens.length===0
+    ?'<div style="color:var(--text3);font-size:12px;text-align:center;padding:12px">Nenhum item adicionado</div>'
+    :compraItens.map((i,idx)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1;font-size:12px"><strong>${i.nome}</strong>${i.cor?' · '+i.cor:''}${i.tamanho?' '+i.tamanho:''}<br>
+      <span style="color:var(--text3)">SKU: ${i.sku||'—'} · Custo: ${R(i.custo)} · Qtd: ${i.qtd}</span></div>
+      <strong style="font-family:var(--mono);color:var(--red)">${R(i.custo*i.qtd)}</strong>
+      <button onclick="removerItemCompra(${idx})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px"><i class="ti ti-x"></i></button>
+    </div>`).join('');
+  document.getElementById('compra-total').textContent=R(total);
+}
+
+function adicionarItemCompra(){
+  const nome=document.getElementById('ci-nome').value.trim();
+  const sku=document.getElementById('ci-sku').value.trim();
+  const cor=document.getElementById('ci-cor').value.trim();
+  const tam=document.getElementById('ci-tam').value;
+  const custo=parseFloat(document.getElementById('ci-custo').value)||0;
+  const preco=parseFloat(document.getElementById('ci-preco').value)||0;
+  const qtd=parseInt(document.getElementById('ci-qtd').value)||1;
+  const marca=document.getElementById('ci-marca').value.trim();
+  if(!nome){toast('Informe o nome do produto','err');return;}
+  // Verificar se produto já existe no estoque (pelo SKU)
+  compraItens.push({nome,sku,cor,tamanho:tam,custo,precoVenda:preco,qtd,marca,fornecedor:document.getElementById('compra-forn').value.trim()});
+  // Limpar campos
+  ['ci-nome','ci-sku','ci-cor','ci-custo','ci-preco','ci-marca'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('ci-tam').value='';
+  document.getElementById('ci-qtd').value=1;
+  renderModalCompra();
+  toast(`${nome} adicionado!`);
+}
+
+function removerItemCompra(idx){compraItens.splice(idx,1);renderModalCompra();}
+
+function salvarCompra(){
+  const forn=document.getElementById('compra-forn').value.trim();
+  if(!forn){toast('Informe o fornecedor','err');return;}
+  if(!compraItens.length){toast('Adicione ao menos um produto','err');return;}
+  const total=compraItens.reduce((s,i)=>s+(i.custo*i.qtd),0);
+  const batch=db.batch();
+  // Salvar compra
+  const ref=db.collection('compras').doc();
+  batch.set(ref,{fornecedor:forn,itens:compraItens,total,data:today(),hora:nowStr(),operador:currentOp.nome,obs:document.getElementById('compra-obs').value.trim()});
+  // Atualizar/criar produtos no estoque
+  compraItens.forEach(item=>{
+    const existente=localProdutos.find(p=>p.sku&&p.sku===item.sku&&p.cor===item.cor&&p.tamanho===item.tamanho);
+    if(existente){
+      batch.update(db.collection('produtos').doc(existente.id),{
+        estoque:(existente.estoque||0)+item.qtd,
+        custo:item.custo||existente.custo,
+        precoVenda:item.precoVenda||existente.precoVenda,
+      });
+    } else if(item.sku||item.nome){
+      const markup=item.custo>0?((item.precoVenda-item.custo)/item.custo*100):0;
+      batch.set(db.collection('produtos').doc(),{
+        nome:item.nome,sku:item.sku,cor:item.cor,tamanho:item.tamanho,
+        custo:item.custo,precoVenda:item.precoVenda,markup,
+        estoque:item.qtd,estoqueMin:2,
+        marca:item.marca,fornecedor:forn,categoria:'Roupas',
+      });
+    }
+  });
+  batch.commit().then(()=>{
+    toast('Compra registrada e estoque atualizado!');
+    closeModal('m-compra');
+    compraItens=[];editCompraId=null;
+  }).catch(()=>toast('Erro','err'));
 }
 
 function renderConfig(c,a){
