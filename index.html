@@ -1695,7 +1695,11 @@ function processarVendasXLS(headers, rows){
           numVenda,
           data,hora,
           cliente:String(r[iCliente]>=0?r[iCliente]:'Consumidor Final').trim(),
-          vendedor:iVendedor>=0?String(r[iVendedor]||'').trim():'',
+          // Limpar vendedor "1 Sempre Bonita" que vem do Awise
+          vendedor:(()=>{
+            const v=iVendedor>=0?String(r[iVendedor]||'').trim():'';
+            return (v.includes('Sempre Bonita')||v==='1')?'':v;
+          })(),
           itens:[],
           total:0,
           formaPagamento:'dinheiro',
@@ -2089,44 +2093,49 @@ function renderRelatorios(c,a){
   ${!vf.length?'<div class="empty"><i class="ti ti-receipt-off"></i><div class="empty-title">Nenhuma venda no período</div><div class="empty-sub">Ajuste o filtro de datas ou realize novas vendas</div></div>':
     vf.map(v=>{
       const {dataFmt,horaFmt}=formatarDataVenda(v.data,v.hora);
-      const clNome=v.clienteId&&v.clienteId!=='Consumidor Geral'
-        ?(localClientes.find(c=>c.id===v.clienteId)||{nome:'Consumidor Final'}).nome
-        :'Consumidor Final';
+      // Prioridade: campo cliente direto (importadas) > busca por clienteId (PDV) > Consumidor Final
+      let clNome = 'Consumidor Final';
+      if(v.cliente && v.cliente !== 'Consumidor Final' && v.cliente !== 'Consumidor Geral'){
+        clNome = v.cliente;
+      } else if(v.clienteId && v.clienteId !== 'Consumidor Geral'){
+        const clObj = localClientes.find(c=>c.id===v.clienteId);
+        if(clObj) clNome = clObj.nome;
+      }
       const payIcon={dinheiro:'ti-cash',pix:'ti-qrcode',cartao:'ti-credit-card',debito:'ti-device-mobile',crediario:'ti-notebook'}[v.formaPagamento]||'ti-credit-card';
+      // Resumo dos itens para mostrar no cabeçalho
+      const resumoItens = (v.itens||[]).slice(0,2).map(i=>i.nome).join(', ')
+        + ((v.itens||[]).length>2 ? ` +${v.itens.length-2} item(s)` : '');
+      const vendedorLabel = v.vendedor&&!v.vendedor.includes('Sempre Bonita')&&v.vendedor!=='1'?v.vendedor:'';
       return `<div class="rel-row">
         <div class="rel-row-head" onclick="this.nextElementSibling.classList.toggle('open')">
           <i class="ti ti-receipt" style="color:var(--accent);font-size:15px;flex-shrink:0"></i>
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:600;color:var(--text)">${clNome}</div>
-            <div style="font-size:11px;color:var(--text3)">${dataFmt} ${horaFmt} · ${v.vendedor||'—'}</div>
+            <div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              ${dataFmt} ${horaFmt}${vendedorLabel?' · '+vendedorLabel:''}
+              ${resumoItens?`<span style="color:var(--text3)"> — ${resumoItens}</span>`:''}
+            </div>
           </div>
-          ${v.formaPagamento&&v.formaPagamento!=='—'?`<span class="badge badge-blue" style="font-size:10px;flex-shrink:0"><i class="ti ${payIcon}" style="font-size:11px;margin-right:3px"></i>${v.formaPagamento}</span>`:''}
-          <span style="font-family:var(--mono);font-weight:700;color:var(--green);min-width:80px;text-align:right;flex-shrink:0">${R(v.total)}</span>
+          ${v.formaPagamento&&v.formaPagamento!=='—'?`<span class="badge badge-blue" style="font-size:10px;flex-shrink:0;margin-left:6px">${v.formaPagamento}</span>`:''}
+          <span style="font-family:var(--mono);font-weight:700;color:var(--green);min-width:80px;text-align:right;flex-shrink:0;margin-left:8px">${R(v.total)}</span>
           <i class="ti ti-chevron-down" style="color:var(--text3);font-size:13px;margin-left:6px;flex-shrink:0"></i>
         </div>
         <div class="rel-row-body">
           ${!(v.itens&&v.itens.length)?'<p style="font-size:12px;color:var(--text3)">Sem detalhes de produtos.</p>':`
-          <table style="width:100%;font-size:12px;border-collapse:collapse">
-            <thead>
-              <tr>
-                <th style="text-align:left;color:var(--text3);padding-bottom:6px;font-weight:600">Produto</th>
-                <th style="color:var(--text3);text-align:center;font-weight:600">Qtd</th>
-                <th style="color:var(--text3);text-align:right;font-weight:600">Unit.</th>
-                <th style="color:var(--text3);text-align:right;font-weight:600">Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${v.itens.map(i=>`
-              <tr>
-                <td style="padding:4px 0;color:var(--text)">${i.nome}${i.cor?' <span style="color:var(--text3)">·</span> '+i.cor:''}${i.tam?' <span class="badge badge-purple" style="font-size:9px">'+i.tam+'</span>':''}</td>
-                <td style="text-align:center;color:var(--text2)">${i.qtd}</td>
-                <td style="text-align:right;font-family:var(--mono);color:var(--text2)">${R(i.preco)}</td>
-                <td style="text-align:right;font-family:var(--mono);font-weight:600;color:var(--text)">${R(i.preco*i.qtd)}</td>
-              </tr>`).join('')}
-            </tbody>
-          </table>
-          <div style="text-align:right;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:13px">
-            Total: <strong style="color:var(--green);font-family:var(--mono)">${R(v.total)}</strong>
+          <div style="margin-bottom:8px">
+            <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Produtos comprados</div>
+            ${v.itens.map(i=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:500;color:var(--text)">${i.nome}${i.cor?' · <span style="color:var(--text3)">'+i.cor+'</span>':''}${i.tam?' <span class="badge badge-purple" style="font-size:9px">'+i.tam+'</span>':''}</div>
+                <div style="font-size:11px;color:var(--text3)">${i.qtd} un × ${R(i.preco)}</div>
+              </div>
+              <div style="font-family:var(--mono);font-weight:700;color:var(--text);flex-shrink:0;margin-left:12px">${R(i.preco*i.qtd)}</div>
+            </div>`).join('')}
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px">
+            <span style="font-size:12px;color:var(--text3)">${(v.itens||[]).length} item(s) · ${v.formaPagamento||'—'}</span>
+            <strong style="font-size:15px;color:var(--green);font-family:var(--mono)">${R(v.total)}</strong>
           </div>`}
         </div>
       </div>`;
