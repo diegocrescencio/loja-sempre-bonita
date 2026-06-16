@@ -575,56 +575,46 @@ a{color:var(--accent);text-decoration:none}
 <div class="modal-overlay" id="m-imp-vendas">
   <div class="modal modal-lg">
     <div class="modal-header">
-      <span class="modal-title">Importar Relatório de Vendas (CSV)</span>
+      <span class="modal-title">Importar Vendas (XLS / XLSX)</span>
       <button class="modal-close" onclick="closeModal('m-imp-vendas')"><i class="ti ti-x"></i></button>
     </div>
     <div style="background:var(--bg3);border-radius:var(--radius);padding:12px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.9">
-      <strong style="color:var(--text)">Formatos aceitos: XLS, XLSX ou CSV</strong><br>
-      O sistema detecta as colunas automaticamente. Após selecionar o arquivo, escolha quais colunas correspondem a cada campo.
+      <strong style="color:var(--text)">Formato Awise aceito automaticamente</strong><br>
+      Colunas: <code style="color:var(--accent);font-family:var(--mono)">Data de competencia, Nome do cliente, Numero da venda, Produto, Qtd, Valor total</code><br>
+      <span style="color:var(--amber)">Dica: exporte um arquivo por forma de pagamento no Awise e selecione abaixo qual e antes de importar.</span>
+    </div>
+    <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px"><i class="ti ti-credit-card" style="font-size:14px;vertical-align:middle;margin-right:4px"></i>Forma de pagamento deste arquivo</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+        <div class="pay-btn sel" id="ps-auto" onclick="selecionarPagImp('auto')"><i class="ti ti-sparkles"></i>Auto</div>
+        <div class="pay-btn" id="ps-dinheiro" onclick="selecionarPagImp('dinheiro')"><i class="ti ti-cash"></i>Dinheiro</div>
+        <div class="pay-btn" id="ps-pix" onclick="selecionarPagImp('pix')"><i class="ti ti-qrcode"></i>Pix</div>
+        <div class="pay-btn" id="ps-cartao" onclick="selecionarPagImp('cartao')"><i class="ti ti-credit-card"></i>Cartao Cred.</div>
+        <div class="pay-btn" id="ps-debito" onclick="selecionarPagImp('debito')"><i class="ti ti-device-mobile"></i>Debito</div>
+        <div class="pay-btn" id="ps-crediario" onclick="selecionarPagImp('crediario')"><i class="ti ti-notebook"></i>Crediario</div>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:8px">"Auto" detecta crediario pelo campo de credito do Awise. Para os demais, selecione antes de carregar o arquivo.</p>
+    </div>
+    <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px"><i class="ti ti-calendar-event" style="font-size:14px;vertical-align:middle;margin-right:4px"></i>Filtrar por periodo (opcional)</div>
+      <div class="form-row">
+        <div class="form-group" style="margin:0"><label class="form-label">Data inicio</label><input type="date" class="form-input" id="imp-v-inicio"></div>
+        <div class="form-group" style="margin:0"><label class="form-label">Data fim</label><input type="date" class="form-input" id="imp-v-fim"></div>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:8px">Deixe em branco para importar todas as vendas do arquivo.</p>
     </div>
     <div class="form-group">
       <label class="form-label">Selecionar arquivo XLS / XLSX / CSV</label>
       <input type="file" accept=".xls,.xlsx,.csv,.txt" id="f-imp-vendas" class="form-input" style="padding:6px">
     </div>
-    <!-- Mapeamento de colunas (aparece após carregar o arquivo) -->
-    <<div id="imp-vendas-map" style="display:none">
-      <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Mapeie as colunas do seu arquivo</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Coluna de Data (opcional)</label>
-          <select class="form-input" id="map-data"></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Data Manual das Vendas</label>
-          <input type="date" class="form-input" id="map-data-manual">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Cliente *</label><select class="form-input" id="map-cliente"></select></div>
-        <div class="form-group"><label class="form-label">Forma de Pagamento (opcional)</label><select class="form-input" id="map-pag"></select></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Total R$ *</label><select class="form-input" id="map-total"></select></div>
-        <div class="form-group"><label class="form-label">Produtos (opcional)</label><select class="form-input" id="map-prod"></select></div>
-      </div>
-    </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Data da Venda</label><select class="form-input" id="map-data"></select></div>
-        <div class="form-group"><label class="form-label">Nome do Cliente</label><select class="form-input" id="map-cliente"></select></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Forma de Pagamento</label><select class="form-input" id="map-pag"></select></div>
-        <div class="form-group"><label class="form-label">Total da Venda (R$)</label><select class="form-input" id="map-total"></select></div>
-      </div>
-      <div class="form-group"><label class="form-label">Produtos (opcional)</label><select class="form-input" id="map-prod"><option value="">— Não importar produtos —</option></select></div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:8px;margin-bottom:4px">
-      <button class="btn btn-sm" id="btn-refiltrar" style="display:none" onclick="refiltrarVendas()"><i class="ti ti-filter"></i>Aplicar Filtro</button>
+    <div id="imp-vendas-map" style="display:none"></div>
+    <div style="margin-top:8px;margin-bottom:4px">
+      <button class="btn btn-sm" id="btn-refiltrar" style="display:none" onclick="refiltrarVendas()"><i class="ti ti-filter"></i>Aplicar Filtro / Pagamento</button>
     </div>
     <div id="imp-vendas-prev" style="display:none;max-height:240px;overflow-y:auto;margin-top:4px"></div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('m-imp-vendas')">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmarImpVendas()" id="btn-imp-vendas" disabled><i class="ti ti-upload"></i>Importar Vendas Filtradas</button>
+      <button class="btn btn-primary" onclick="confirmarImpVendas()" id="btn-imp-vendas" disabled><i class="ti ti-upload"></i>Importar Vendas</button>
     </div>
   </div>
 </div>
@@ -1609,6 +1599,17 @@ function salvarLimite(){
 
 // ── IMPORTAR VENDAS (XLS/XLSX/CSV) ──
 let impVendasData=[], impVendasHeaders=[], impVendasRows=[];
+let impVendasPagamento='auto'; // forma de pagamento forçada para importação
+
+function selecionarPagImp(tipo){
+  impVendasPagamento=tipo;
+  ['auto','dinheiro','pix','cartao','debito','crediario'].forEach(t=>{
+    const el=document.getElementById('ps-'+t);
+    if(el)el.classList.toggle('sel', t===tipo);
+  });
+  // Se já tem dados carregados, reaplicar pagamento
+  if(impVendasBruto.length>0) refiltrarVendas();
+}
 
 function lerArquivoVendas(file){
   const ext=file.name.split('.').pop().toLowerCase();
@@ -1662,92 +1663,95 @@ function parseDateBR(s){
   return{data:today(),hora:''};
 }
 
+function limparVendedor(v){
+  if(!v)return'';
+  const s=String(v).trim();
+  if(s.includes('Sempre Bonita')||s==='1')return'';
+  return s;
+}
+
 function processarVendasXLS(headers, rows){
   const prev=document.getElementById('imp-vendas-prev');
   const btn=document.getElementById('btn-imp-vendas');
-  const mapDiv=document.getElementById('imp-vendas-map');
   if(!headers.length){toast('Arquivo sem colunas validas','err');return;}
 
-  // Auto-detectar colunas pelo nome exato do relatorio
   const idx=kws=>headers.findIndex(h=>kws.some(k=>h.toLowerCase().includes(k)));
-  const iNumVenda = idx(['numero da venda','número da venda','num venda','numero venda']);
-  const iData     = idx(['data de compet','data compet','data da venda','data venda','data']);
-  const iCliente  = idx(['nome do cliente','cliente','client']);
-  const iProduto  = idx(['produto','product','item','descri']);
-  const iQtd      = idx(['quantidade','qtd','qty']);
-  const iValUnit  = idx(['valor unitário','valor unitario','unitário','unitario','preco unit','preço unit']);
+  const iNumVenda = idx(['numero da venda','número da venda']);
+  const iData     = idx(['data de compet','data da venda','data venda','data']);
+  const iCliente  = idx(['nome do cliente','cliente']);
+  const iProduto  = idx(['produto','product','item']);
+  const iQtd      = idx(['quantidade','qtd']);
+  const iValUnit  = idx(['valor unit','unitário','unitario']);
   const iTotal    = idx(['valor total','total']);
   const iVendedor = idx(['vendedor','seller']);
+  const iCredito  = idx(['crédito utilizado','credito utilizado','valor de crédito','credito']);
 
-  // Detectou numero da venda? Agrupar por ele
   const temNumVenda = iNumVenda >= 0;
   const temData     = iData >= 0;
 
   if(temNumVenda){
-    // Agrupar linhas por numero da venda (formato do sistema Awise/atual)
+    // Formato com número da venda — agrupar por número
     const vendasMap={};
     rows.forEach(r=>{
       const numVenda=String(r[iNumVenda]||'').trim();
       if(!numVenda)return;
       if(!vendasMap[numVenda]){
         const {data,hora}=temData?parseDateBR(r[iData]):{data:today(),hora:''};
-        vendasMap[numVenda]={
-          numVenda,
-          data,hora,
-          cliente:String(r[iCliente]>=0?r[iCliente]:'Consumidor Final').trim(),
-          // Limpar vendedor "1 Sempre Bonita" que vem do Awise
-          vendedor:(()=>{
-            const v=iVendedor>=0?String(r[iVendedor]||'').trim():'';
-            return (v.includes('Sempre Bonita')||v==='1')?'':v;
-          })(),
-          itens:[],
-          total:0,
-          formaPagamento:'dinheiro',
-          importado:true,
-        };
+        vendasMap[numVenda]={numVenda,data,hora,
+          cliente:String(iCliente>=0?r[iCliente]:'Consumidor Final').trim(),
+          vendedor:limparVendedor(iVendedor>=0?r[iVendedor]:''),
+          itens:[],total:0,creditoTotal:0,formaPagamento:'',importado:true};
       }
       const preco=parseFloat(String(iValUnit>=0?r[iValUnit]:0).replace(',','.'))||0;
-      const qtd=parseInt(r[iQtd]>=0?r[iQtd]:1)||1;
+      const qtd=parseInt(iQtd>=0?r[iQtd]:1)||1;
       const subtotal=parseFloat(String(iTotal>=0?r[iTotal]:preco*qtd).replace(',','.'))||0;
-      if(iProduto>=0&&r[iProduto]){
+      const credito=parseFloat(String(iCredito>=0?r[iCredito]:0).replace(',','.'))||0;
+      if(iProduto>=0&&r[iProduto])
         vendasMap[numVenda].itens.push({nome:String(r[iProduto]).trim(),qtd,preco});
-      }
       vendasMap[numVenda].total+=subtotal;
+      vendasMap[numVenda].creditoTotal+=credito;
+      if(credito>0)vendasMap[numVenda].formaPagamento='crediario';
     });
-    impVendasData=Object.values(vendasMap).map(v=>({...v,total:Math.round(v.total*100)/100})).filter(v=>v.total>0);
-  impVendasBruto=[...impVendasData]; // guardar copia para refiltrar
-  // Mostrar botao refiltrar
-  const btnRef=document.getElementById('btn-refiltrar');
-  if(btnRef)btnRef.style.display='inline-flex';
+    impVendasData=Object.values(vendasMap).map(v=>({
+      ...v,total:Math.round(v.total*100)/100,
+      formaPagamento:v.formaPagamento||''
+    })).filter(v=>v.total>0);
+
   } else {
-    // Sem numero de venda: cada linha e uma venda
-    impVendasBruto=[];
-  impVendasData=rows.map(r=>{
+    // Formato sem número — agrupar por data+hora+cliente
+    const vendasMap={};
+    rows.forEach(r=>{
       const {data,hora}=temData?parseDateBR(r[iData]):{data:today(),hora:''};
-      const total=parseFloat(String(iTotal>=0?r[iTotal]:0).replace(',','.'))||0;
-      return{
-        data,hora,
-        cliente:String(iCliente>=0?r[iCliente]:'Consumidor Final').trim(),
-        vendedor:iVendedor>=0?String(r[iVendedor]||'').trim():'',
-        itens:iProduto>=0&&r[iProduto]?[{nome:String(r[iProduto]).trim(),qtd:1,preco:total}]:[],
-        total,
-        formaPagamento:'dinheiro',
-        importado:true,
-      };
-    }).filter(v=>v.total>0);
+      const cliente=String(iCliente>=0?r[iCliente]:'Consumidor Final').trim();
+      const chave=data+'|'+hora+'|'+cliente;
+      if(!vendasMap[chave]){
+        vendasMap[chave]={data,hora,cliente,
+          vendedor:limparVendedor(iVendedor>=0?r[iVendedor]:''),
+          itens:[],total:0,creditoTotal:0,formaPagamento:'',importado:true};
+      }
+      const preco=parseFloat(String(iValUnit>=0?r[iValUnit]:0).replace(',','.'))||0;
+      const qtd=parseInt(iQtd>=0?r[iQtd]:1)||1;
+      const subtotal=parseFloat(String(iTotal>=0?r[iTotal]:preco*qtd).replace(',','.'))||0;
+      const credito=parseFloat(String(iCredito>=0?r[iCredito]:0).replace(',','.'))||0;
+      if(iProduto>=0&&r[iProduto])
+        vendasMap[chave].itens.push({nome:String(r[iProduto]).trim(),qtd,preco});
+      vendasMap[chave].total+=subtotal;
+      vendasMap[chave].creditoTotal+=credito;
+      if(credito>0)vendasMap[chave].formaPagamento='crediario';
+    });
+    impVendasData=Object.values(vendasMap).map(v=>({
+      ...v,total:Math.round(v.total*100)/100,
+      formaPagamento:v.formaPagamento||''
+    })).filter(v=>v.total>0);
   }
 
-  // Aplicar filtro de periodo
-  const filtroInicio = document.getElementById('imp-v-inicio')?.value||'';
-  const filtroFim    = document.getElementById('imp-v-fim')?.value||'';
-  if(filtroInicio||filtroFim){
-    impVendasData = impVendasData.filter(v=>{
-      if(!v.data) return false;
-      if(filtroInicio && v.data < filtroInicio) return false;
-      if(filtroFim   && v.data > filtroFim)     return false;
-      return true;
-    });
+  // Aplicar pagamento forçado se selecionado
+  if(impVendasPagamento!=='auto'){
+    impVendasData=impVendasData.map(v=>({...v,formaPagamento:impVendasPagamento}));
   }
+  impVendasBruto=[...impVendasData];
+  const btnRef=document.getElementById('btn-refiltrar');
+  if(btnRef)btnRef.style.display='inline-flex';
 
   if(!impVendasData.length){
     prev.innerHTML='<p style="color:var(--red);font-size:12px">Nenhuma venda encontrada no periodo selecionado.</p>';
@@ -1813,7 +1817,9 @@ function confirmarImpVendas(){
   salvar().then(()=>{
     toast(impVendasData.length+' vendas importadas!');
     closeModal('m-imp-vendas');
-    impVendasData=[];impVendasHeaders=[];impVendasRows=[];
+    impVendasData=[];impVendasHeaders=[];impVendasRows=[];impVendasBruto=[];
+    impVendasPagamento='auto';
+    selecionarPagImp('auto');
     const fv=document.getElementById('f-imp-vendas');
     if(fv)fv.value='';
     const pv=document.getElementById('imp-vendas-prev');
@@ -1822,6 +1828,8 @@ function confirmarImpVendas(){
     if(mv)mv.style.display='none';
     const bv=document.getElementById('btn-imp-vendas');
     if(bv)bv.disabled=true;
+    const br=document.getElementById('btn-refiltrar');
+    if(br)br.style.display='none';
   }).catch(e=>{console.error(e);toast('Erro ao importar','err');});
 }
 
@@ -1834,7 +1842,11 @@ function refiltrarVendas(){
   const filtroInicio = document.getElementById('imp-v-inicio')?.value||'';
   const filtroFim    = document.getElementById('imp-v-fim')?.value||'';
   if(filtroInicio||filtroFim){
-    impVendasData = impVendasData.filter(v=>{
+    // Aplicar pagamento forçado
+  if(impVendasPagamento!=='auto'){
+    impVendasData = impVendasData.map(v=>({...v, formaPagamento:impVendasPagamento}));
+  }
+  impVendasData = impVendasData.filter(v=>{
       if(!v.data) return false;
       if(filtroInicio && v.data < filtroInicio) return false;
       if(filtroFim   && v.data > filtroFim)     return false;
@@ -2116,7 +2128,14 @@ function renderRelatorios(c,a){
               ${resumoItens?`<span style="color:var(--text3)"> — ${resumoItens}</span>`:''}
             </div>
           </div>
-          ${v.formaPagamento&&v.formaPagamento!=='—'?`<span class="badge badge-blue" style="font-size:10px;flex-shrink:0;margin-left:6px">${v.formaPagamento}</span>`:''}
+          ${(()=>{
+            if(!v.formaPagamento||v.formaPagamento==='—') return '<span class="badge" style="font-size:10px;flex-shrink:0;margin-left:6px;background:var(--bg4);color:var(--text3)">s/ info</span>';
+            const payColors={dinheiro:'badge-green',pix:'badge-blue',cartao:'badge-blue',debito:'badge-blue',crediario:'badge-amber'};
+            const payLabel={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartao',debito:'Débito',crediario:'Crediário'};
+            const cls=payColors[v.formaPagamento]||'badge-blue';
+            const lbl=payLabel[v.formaPagamento]||v.formaPagamento;
+            return `<span class="badge ${cls}" style="font-size:10px;flex-shrink:0;margin-left:6px">${lbl}</span>`;
+          })()}
           <span style="font-family:var(--mono);font-weight:700;color:var(--green);min-width:80px;text-align:right;flex-shrink:0;margin-left:8px">${R(v.total)}</span>
           <i class="ti ti-chevron-down" style="color:var(--text3);font-size:13px;margin-left:6px;flex-shrink:0"></i>
         </div>
@@ -2134,7 +2153,7 @@ function renderRelatorios(c,a){
             </div>`).join('')}
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px">
-            <span style="font-size:12px;color:var(--text3)">${(v.itens||[]).length} item(s) · ${v.formaPagamento||'—'}</span>
+            <span style="font-size:12px;color:var(--text3)">${(v.itens||[]).length} item(s)${v.formaPagamento&&v.formaPagamento!=='—'?' · '+v.formaPagamento:' · pagamento não informado pelo Awise'}</span>
             <strong style="font-size:15px;color:var(--green);font-family:var(--mono)">${R(v.total)}</strong>
           </div>`}
         </div>
