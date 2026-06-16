@@ -711,6 +711,20 @@ a{color:var(--accent);text-decoration:none}
   </div>
 </div>
 
+<!-- MODAL VENDAS DIA / SEMANA -->
+<div class="modal-overlay" id="m-vendas-dash">
+  <div class="modal modal-lg" style="max-width:680px">
+    <div class="modal-header">
+      <span class="modal-title" id="m-vd-title">Vendas do Dia</span>
+      <button class="modal-close" onclick="closeModal('m-vendas-dash')"><i class="ti ti-x"></i></button>
+    </div>
+    <!-- RESUMO -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px" id="m-vd-resumo"></div>
+    <!-- LISTA -->
+    <div id="m-vd-lista" style="max-height:55vh;overflow-y:auto"></div>
+  </div>
+</div>
+
 <!-- BAIXA CONTAS A RECEBER -->
 <div class="modal-overlay" id="m-baixa-receber">
   <div class="modal" style="max-width:380px">
@@ -1237,8 +1251,8 @@ function renderDashboard(c,a){
 ${seedBanner}
 <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">📅 Hoje — ${hoje.split('-').reverse().join('/')}</div>
 <div class="metrics" style="margin-bottom:20px">
-  <div class="metric metric-sales">
-    <div class="metric-label">Vendas de Hoje</div>
+  <div class="metric metric-sales" onclick="abrirVendasDia('${hoje}')" style="cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor=''">
+    <div class="metric-label">Vendas de Hoje <i class="ti ti-eye" style="font-size:11px;opacity:.5;margin-left:4px"></i></div>
     <div class="metric-value">${R(vHoje)}</div>
     <div class="progress-bar-bg"><div class="progress-bar-fill green" style="width:${pDia}%"></div></div>
     <div class="progress-text"><span>Meta dia: ${R(metaDia)}</span><span>${pDia.toFixed(0)}%</span></div>
@@ -2020,6 +2034,92 @@ function abrirLimite(id){
 function salvarLimite(){
   const id=document.getElementById('lim-id').value,val=parseFloat(document.getElementById('lim-val').value)||0;
   db.collection('clientes').doc(id).update({limite:val}).then(()=>{toast('Limite atualizado!');closeModal('m-limite');}).catch(()=>toast('Erro','err'));
+}
+
+// ── VENDAS DO DIA / SEMANA (DASHBOARD) ──
+function abrirVendasDia(data){
+  const vendas = localVendas.filter(v=>extrairData(v)===data&&vendaValida(v));
+  const titulo = 'Vendas de Hoje — '+data.split('-').reverse().join('/');
+  renderModalVendasDash(titulo, vendas);
+}
+
+function abrirVendasSemana(mes, inicio, fim){
+  const vendas = localVendas.filter(v=>{
+    const dt=extrairData(v);
+    if(!dt||!vendaValida(v))return false;
+    const d=parseInt(dt.split('-')[2]);
+    return dt.startsWith(mes)&&d>=inicio&&d<=fim;
+  });
+  const titulo = `Vendas da Semana — dias ${inicio} a ${fim}`;
+  renderModalVendasDash(titulo, vendas);
+}
+
+function renderModalVendasDash(titulo, vendas){
+  document.getElementById('m-vd-title').textContent = titulo;
+
+  const total  = vendas.reduce((s,v)=>s+(v.total||0),0);
+  const qtd    = vendas.length;
+  const ticket = qtd>0?total/qtd:0;
+
+  // Resumo
+  document.getElementById('m-vd-resumo').innerHTML = `
+    <div style="background:var(--bg3);padding:12px;border-radius:var(--radius);text-align:center">
+      <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:4px">Total</div>
+      <div style="font-size:20px;font-weight:700;color:var(--green);font-family:var(--mono)">${R(total)}</div>
+    </div>
+    <div style="background:var(--bg3);padding:12px;border-radius:var(--radius);text-align:center">
+      <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:4px">Nº de Vendas</div>
+      <div style="font-size:20px;font-weight:700;color:var(--text)">${qtd}</div>
+    </div>
+    <div style="background:var(--bg3);padding:12px;border-radius:var(--radius);text-align:center">
+      <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:4px">Ticket Médio</div>
+      <div style="font-size:20px;font-weight:700;color:var(--accent);font-family:var(--mono)">${R(ticket)}</div>
+    </div>`;
+
+  // Lista de vendas
+  const sorted = [...vendas].sort((a,b)=>((b.hora||'')>(a.hora||''))?1:-1);
+  if(!sorted.length){
+    document.getElementById('m-vd-lista').innerHTML = '<div class="empty"><i class="ti ti-receipt-off"></i><div class="empty-title">Nenhuma venda</div></div>';
+  } else {
+    document.getElementById('m-vd-lista').innerHTML = sorted.map(v=>{
+      const clNome = v.cliente&&v.cliente!=='Consumidor Final'&&v.cliente!=='Consumidor Geral'
+        ? v.cliente
+        : v.clienteId&&v.clienteId!=='Consumidor Geral'
+          ? (localClientes.find(c=>c.id===v.clienteId)||{nome:'Consumidor Final'}).nome
+          : 'Consumidor Final';
+      const payColors={dinheiro:'badge-green',pix:'badge-blue',cartao:'badge-blue',debito:'badge-blue',crediario:'badge-amber'};
+      const payLabel={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',debito:'Débito',crediario:'Crediário'};
+      const resumoItens=(v.itens||[]).slice(0,2).map(i=>i.nome).join(', ')+((v.itens||[]).length>2?` +${v.itens.length-2}`:'');
+      return `<div class="rel-row" style="margin-bottom:6px">
+        <div class="rel-row-head" onclick="this.nextElementSibling.classList.toggle('open')">
+          <i class="ti ti-receipt" style="color:var(--accent);font-size:15px;flex-shrink:0"></i>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${clNome}</div>
+            <div style="font-size:11px;color:var(--text3)">${v.hora||''} · ${v.vendedor||''} ${resumoItens?'— '+resumoItens:''}</div>
+          </div>
+          ${v.formaPagamento?`<span class="badge ${payColors[v.formaPagamento]||'badge-blue'}" style="font-size:10px;flex-shrink:0;margin-left:6px">${payLabel[v.formaPagamento]||v.formaPagamento}</span>`:''}
+          ${v.desconto>0?`<span class="badge badge-red" style="font-size:10px;flex-shrink:0;margin-left:4px">Desc.</span>`:''}
+          <span style="font-family:var(--mono);font-weight:700;color:var(--green);min-width:80px;text-align:right;flex-shrink:0;margin-left:8px">${R(v.total)}</span>
+          <i class="ti ti-chevron-down" style="color:var(--text3);font-size:13px;margin-left:6px;flex-shrink:0"></i>
+        </div>
+        <div class="rel-row-body">
+          ${!(v.itens&&v.itens.length)?'<p style="font-size:12px;color:var(--text3)">Sem detalhes.</p>':
+          `<div>${v.itens.map(i=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
+              <div style="flex:1"><div style="font-size:13px;color:var(--text)">${i.nome}${i.cor?' · '+i.cor:''}${i.tam?' '+i.tam:''}</div>
+              <div style="font-size:11px;color:var(--text3)">${i.qtd} un × ${R(i.preco)}</div></div>
+              <div style="font-family:var(--mono);font-weight:700;color:var(--text)">${R(i.preco*i.qtd)}</div>
+            </div>`).join('')}
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px">
+            <span style="font-size:12px;color:var(--text3)">${(v.itens||[]).length} item(s)</span>
+            <strong style="font-size:15px;color:var(--green);font-family:var(--mono)">${R(v.total)}</strong>
+          </div>`}
+        </div>
+      </div>`;
+    }).join('');
+  }
+  openModal('m-vendas-dash');
 }
 
 // ── COMPROVANTE DE VENDA ──
