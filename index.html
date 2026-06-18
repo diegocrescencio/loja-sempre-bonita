@@ -463,11 +463,13 @@ a{color:var(--accent);text-decoration:none}
       <div class="nav-section">
         <div class="nav-label">Financeiro</div>
         <div class="nav-item" id="m-receber" onclick="goPage('receber',this)"><i class="ti ti-arrow-up-right"></i>A Receber</div>
+        <div class="nav-item" id="m-trocas" onclick="goPage('trocas',this)"><i class="ti ti-arrows-exchange"></i>Trocas e Dev.</div>
         <div class="nav-item" id="m-pagar" onclick="goPage('pagar',this)"><i class="ti ti-arrow-down-left"></i>A Pagar</div>
       </div>
       <div class="nav-section">
         <div class="nav-label">Análise</div>
         <div class="nav-item" id="m-relatorios" onclick="goPage('relatorios',this)"><i class="ti ti-chart-bar"></i>Relatórios</div>
+        
       </div>
       <div class="nav-section">
         <div class="nav-label">Sistema</div>
@@ -756,6 +758,58 @@ a{color:var(--accent);text-decoration:none}
   </div>
 </div>
 
+<!-- HISTÓRICO DE PREÇOS -->
+<div class="modal-overlay" id="m-hist-precos">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="hist-precos-title">Histórico de Preços</span>
+      <button class="modal-close" onclick="closeModal('m-hist-precos')"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="hist-precos-body" style="max-height:400px;overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-hist-precos')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TROCA/DEVOLUÇÃO -->
+<div class="modal-overlay" id="m-troca">
+  <div class="modal modal-lg" style="max-width:600px">
+    <div class="modal-header">
+      <span class="modal-title">Nova Troca / Devolução</span>
+      <button class="modal-close" onclick="closeModal('m-troca')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Buscar Venda (nome do cliente)</label>
+      <div style="display:flex;gap:6px">
+        <input class="form-input" id="troca-busca-venda" placeholder="Nome do cliente..." onkeydown="if(event.key==='Enter')buscarVendaParaTroca()">
+        <button class="btn btn-sm" onclick="buscarVendaParaTroca()"><i class="ti ti-search"></i></button>
+      </div>
+    </div>
+    <div id="troca-venda-info" style="margin-bottom:14px"></div>
+
+    <div id="troca-itens-area" style="display:none">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Selecione os itens</div>
+      <div id="troca-itens-lista" style="max-height:200px;overflow-y:auto;margin-bottom:12px"></div>
+      <div class="form-group">
+        <label class="form-label">Motivo</label>
+        <input class="form-input" id="troca-motivo" placeholder="Ex: tamanho errado, defeito, não gostou...">
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg3);border-radius:var(--radius);margin-bottom:14px">
+        <span style="font-size:13px;font-weight:600;color:var(--text2)">Total Selecionado</span>
+        <span style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent)" id="troca-total-selecionado">R$ 0,00</span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm" style="flex:1" onclick="confirmarTroca('troca')"><i class="ti ti-replace"></i>Registrar Troca</button>
+        <button class="btn btn-danger btn-sm" style="flex:1" onclick="confirmarTroca('devolucao')"><i class="ti ti-arrow-back"></i>Devolver e Estornar</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-troca')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- VENDA DE CONDICIONAL -->
 <div class="modal-overlay" id="m-cond-venda">
   <div class="modal" style="max-width:460px">
@@ -848,6 +902,52 @@ a{color:var(--accent);text-decoration:none}
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('m-compra')">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarCompra()"><i class="ti ti-check"></i>Salvar e Atualizar Estoque</button>
+    </div>
+  </div>
+</div>
+
+<!-- TROCA / DEVOLUÇÃO -->
+<div class="modal-overlay" id="m-troca">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title">Nova Troca / Devolução</span>
+      <button class="modal-close" onclick="closeModal('m-troca')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Tipo *</label>
+        <select class="form-input" id="troca-tipo" onchange="renderTrocaTipo()">
+          <option value="troca">Troca de produto</option>
+          <option value="devolucao">Devolução (crédito ou reembolso)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cliente</label>
+        <select class="form-input" id="troca-cliente">
+          <option value="">Consumidor Final</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Motivo</label>
+        <input class="form-input" id="troca-motivo" placeholder="Ex: Defeito, tamanho errado...">
+      </div>
+      <div class="form-group" id="troca-credito-group" style="display:none">
+        <label class="form-label">Crédito gerado (R$)</label>
+        <input type="number" class="form-input" id="troca-credito" step="0.01" placeholder="0,00">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Produto(s) devolvido(s)</label>
+      <input class="form-input" id="troca-prod-busca" placeholder="Buscar produto..." oninput="buscarProdutoTroca()">
+      <div id="troca-prod-res" style="display:none;border:1px solid var(--border2);border-radius:var(--radius);margin-top:4px;max-height:160px;overflow-y:auto;background:var(--bg2)"></div>
+    </div>
+    <div id="troca-itens" style="min-height:40px;border:1px solid var(--border);border-radius:var(--radius);padding:8px;margin-bottom:10px;font-size:12px;color:var(--text3)">Nenhum item adicionado</div>
+    <div style="font-size:12px;color:var(--text3)" id="troca-total-label"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-troca')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarTroca()"><i class="ti ti-check"></i>Registrar</button>
     </div>
   </div>
 </div>
@@ -961,6 +1061,43 @@ a{color:var(--accent);text-decoration:none}
   </div>
 </div>
 
+<!-- FECHAMENTO CAIXA -->
+<div class="modal-overlay" id="m-fech-caixa">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <span class="modal-title">Fechamento de Caixa</span>
+      <button class="modal-close" onclick="closeModal('m-fech-caixa')"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="fech-resumo"></div>
+    <div class="form-group" style="margin-top:14px">
+      <label class="form-label">Valor físico em caixa (R$)</label>
+      <input type="number" class="form-input" id="fech-valor-fisico" step="0.01" placeholder="Conte o dinheiro e informe aqui">
+    </div>
+    <div id="fech-diferenca" style="display:none;padding:10px;border-radius:var(--radius);margin-top:6px;font-size:13px;font-weight:600;text-align:center"></div>
+    <script>
+      document.addEventListener('input', function(e){
+        if(e.target.id!=='fech-valor-fisico')return;
+        const cx=localCaixa.find(x=>x.status==='Aberto');
+        if(!cx)return;
+        const fisico=parseFloat(e.target.value)||0;
+        const sistema=cx.saldoAtual||0;
+        const diff=fisico-sistema;
+        const el=document.getElementById('fech-diferenca');
+        if(e.target.value){
+          el.style.display='block';
+          el.style.background=Math.abs(diff)<0.01?'var(--green-bg)':diff>0?'var(--green-bg)':'var(--red-bg)';
+          el.style.color=Math.abs(diff)<0.01?'var(--green)':diff>0?'var(--green)':'var(--red)';
+          el.textContent=Math.abs(diff)<0.01?'✅ Caixa conferido!':diff>0?`Sobra: ${R(diff)}`:`Falta: ${R(Math.abs(diff))}`;
+        } else {el.style.display='none';}
+      });
+    </script>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-fech-caixa')">Cancelar</button>
+      <button class="btn btn-primary" onclick="fecharCaixa()"><i class="ti ti-lock"></i>Confirmar Fechamento</button>
+    </div>
+  </div>
+</div>
+
 <!-- ABERTURA CAIXA -->
 <div class="modal-overlay" id="m-cx-abre">
   <div class="modal" style="max-width:340px">
@@ -1049,7 +1186,7 @@ function getMetaDiaria(){
 let currentOp=null, cartItems=[], selectedPay='dinheiro', parcelasCredito=1;
 let localProdutos=[], localClientes=[], localVendas=[], localReceber=[], localPagar=[], localCaixa=[];
 let editProdId=null, editClId=null;
-let localCondicionais=[], localCompras=[];
+let localCondicionais=[], localCompras=[], localTrocas=[];
 let condItens=[], editCondId=null;
 let compraItens=[], editCompraId=null;
 let impClData=[], impEstData=[];
@@ -1176,6 +1313,14 @@ function startListeners(){
     if(b)b.style.display=atrasadas.length>0?'inline':'none';
     renderCurrentPage();
   },()=>setSyncStatus(false));
+  db.collection('trocas').onSnapshot(s=>{
+    localTrocas=s.docs.map(d=>({id:d.id,...d.data()}));
+    renderCurrentPage();
+  },()=>setSyncStatus(false));
+  db.collection('trocas').onSnapshot(s=>{
+    localTrocas=s.docs.map(d=>({id:d.id,...d.data()}));
+    renderCurrentPage();
+  },()=>setSyncStatus(false));
   db.collection('compras').onSnapshot(s=>{
     localCompras=s.docs.map(d=>({id:d.id,...d.data()}));
     renderCurrentPage();
@@ -1208,7 +1353,9 @@ function renderCurrentPage(){
   else if(currentPage==='relatorios')renderRelatorios(c,a);
   else if(currentPage==='configuracoes')renderConfig(c,a);
   else if(currentPage==='condicionais')renderCondicionais(c,a);
+  else if(currentPage==='trocas')renderTrocas(c,a);
   else if(currentPage==='compras')renderCompras(c,a);
+  else if(currentPage==='trocas')renderTrocas(c,a);
 }
 
 // ══════════════════════════════════
@@ -1337,6 +1484,58 @@ ${seedBanner}
   </div>
 </div>
 
+<!-- ESTOQUE BAIXO -->
+${(()=>{
+  const baixoEstoque = localProdutos.filter(p=>(p.estoque||0)<=(p.estoqueMin||2)&&(p.estoque||0)>0);
+  const semEstoque   = localProdutos.filter(p=>(p.estoque||0)===0);
+  if(baixoEstoque.length===0 && semEstoque.length===0) return '';
+  return `<div class="card" style="margin-bottom:16px;cursor:pointer" onclick="goPage('estoque')">
+    <div class="card-title"><i class="ti ti-alert-triangle" style="color:var(--amber)"></i> Atenção ao Estoque</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      ${semEstoque.length>0?`<div><span style="font-size:20px;font-weight:700;color:var(--red);font-family:var(--mono)">${semEstoque.length}</span> <span style="font-size:12px;color:var(--text3)">produto(s) zerado(s)</span></div>`:''}
+      ${baixoEstoque.length>0?`<div><span style="font-size:20px;font-weight:700;color:var(--amber);font-family:var(--mono)">${baixoEstoque.length}</span> <span style="font-size:12px;color:var(--text3)">produto(s) críticos</span></div>`:''}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:10px">
+      ${[...semEstoque,...baixoEstoque].slice(0,8).map(p=>`<span style="background:${p.estoque===0?'var(--red-bg)':'var(--amber-bg)'};color:${p.estoque===0?'var(--red)':'var(--amber)'};padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600">${p.nome}${p.cor?' '+p.cor:''}${p.tamanho?' '+p.tamanho:''} (${p.estoque})</span>`).join('')}
+      ${(semEstoque.length+baixoEstoque.length)>8?`<span style="color:var(--text3);font-size:11px;padding:3px 4px">+${(semEstoque.length+baixoEstoque.length)-8} outros</span>`:''}
+    </div>
+  </div>`;
+})()}
+
+<!-- METAS POR VENDEDORA -->
+${(()=>{
+  if(!metas.metaKamilly && !metas.metaGiovanna) return '';
+  const mesAtual=today().slice(0,7);
+  const vendasMes=localVendas.filter(v=>extrairData(v).startsWith(mesAtual)&&vendaValida(v));
+  const porVendedor={};
+  vendasMes.forEach(v=>{
+    const nome=v.vendedor;
+    if(!nome)return;
+    porVendedor[nome]=(porVendedor[nome]||0)+(v.total||0);
+  });
+  const vendedoras=[
+    {nome:'Kamilly', meta:metas.metaKamilly||0, vendido:porVendedor['Kamilly']||0},
+    {nome:'Giovanna', meta:metas.metaGiovanna||0, vendido:porVendedor['Giovanna']||0}
+  ].filter(v=>v.meta>0);
+  if(!vendedoras.length) return '';
+  return `<div class="card" style="margin-bottom:16px">
+    <div class="card-title"><i class="ti ti-users"></i> Progresso das Vendedoras — Mês</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      ${vendedoras.map(v=>{
+        const pct=v.meta>0?Math.min(100,v.vendido/v.meta*100):0;
+        return `<div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
+            <span style="font-weight:600;color:var(--text)">${v.nome}</span>
+            <span style="font-family:var(--mono);color:${v.vendido>=v.meta?'var(--green)':'var(--text2)'}">${R(v.vendido)} / ${R(v.meta)}</span>
+          </div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill ${v.vendido>=v.meta?'green':''}" style="width:${pct}%"></div></div>
+          <div style="font-size:11px;color:var(--text3);margin-top:3px">${pct.toFixed(0)}% da meta ${v.vendido>=v.meta?'🎉':''}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+})()}
+
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
   <div class="card" style="margin:0">
     <div class="card-title"><i class="ti ti-activity"></i> Sessão</div>
@@ -1416,7 +1615,11 @@ function renderPDV(c,a){
   <!-- COLUNA ESQUERDA: busca + grid de produtos -->
   <div class="pdv-left">
     <div class="pdv-search-bar">
-      <input class="pdv-search-input" id="pdv-busca" placeholder="🔍 Buscar por nome ou SKU..." value="${pdvBusca}" oninput="pdvBusca=this.value;renderPDVGrid()">
+      <input class="pdv-search-input" id="pdv-barcode" placeholder="📷 Código de barras (foco automático)..." 
+        onkeydown="if(event.key==='Enter'){event.preventDefault();pdvLerBarcode(this.value);this.value='';}" 
+        autofocus autocomplete="off"
+        style="max-width:200px;flex-shrink:0;border-color:var(--green);background:var(--green-bg)">
+      <input class="pdv-search-input" id="pdv-busca" placeholder="🔍 Buscar ou bipar código de barras..." value="${pdvBusca}" oninput="pdvBusca=this.value;renderPDVGrid()" onkeydown="handlePDVBarcodeEnter(event)" autofocus>
       <select class="pdv-cat-sel" onchange="pdvCat=this.value;renderPDVGrid()">
         <option>Todos</option><option>Blusas</option><option>Vestidos</option><option>Conjuntos</option>
         <option>Calça</option><option>Bermuda</option><option>Saia</option><option>Shorts Saia</option>
@@ -1515,6 +1718,31 @@ function renderPDV(c,a){
 </div>`;
   renderPDVGrid();
   updateCartDisplay();
+}
+
+function pdvLerBarcode(codigo){
+  if(!codigo||!codigo.trim())return;
+  const cod = codigo.trim();
+  // Buscar por código de barras ou SKU
+  const prod = localProdutos.find(p=>
+    (p.codigoBarras&&p.codigoBarras===cod)||
+    (p.sku&&p.sku===cod)
+  );
+  if(!prod){
+    toast('Produto não encontrado: '+cod,'err');
+    // Tentar busca parcial
+    pdvBusca=cod;
+    renderPDVGrid();
+    return;
+  }
+  addToCart(prod.id);
+  // Feedback visual
+  toast(prod.nome+' adicionado!');
+  // Manter foco no campo de barcode
+  setTimeout(()=>{
+    const el=document.getElementById('pdv-barcode');
+    if(el){el.value='';el.focus();}
+  },100);
 }
 
 function calcDesconto(subtotal){
@@ -1622,6 +1850,41 @@ function updateCartDisplay(){
   if(ps){
     const maxP=selectedPay==='crediario'?6:10;
     ps.innerHTML=Array.from({length:maxP},(_,i)=>{const x=i+1;return `<option value="${x}" ${parcelasCredito===x?'selected':''} >${x}x de ${R(total/x)}${x===1?' (à vista)':''}</option>`;}).join('');
+  }
+}
+
+function handlePDVBarcodeEnter(e){
+  if(e.key!=='Enter')return;
+  const valor=e.target.value.trim();
+  if(!valor)return;
+  // Buscar por código de barras exato primeiro (scanner sempre bipa rápido e completo)
+  const porBarras=localProdutos.find(p=>p.codigoBarras&&p.codigoBarras===valor);
+  if(porBarras){
+    addToCart(porBarras.id);
+    pdvBusca='';
+    e.target.value='';
+    renderPDVGrid();
+    toast(porBarras.nome+' adicionado via leitor!');
+    return;
+  }
+  // Se não achou por barras, tenta por SKU exato
+  const porSku=localProdutos.find(p=>p.sku&&p.sku.toLowerCase()===valor.toLowerCase());
+  if(porSku){
+    addToCart(porSku.id);
+    pdvBusca='';
+    e.target.value='';
+    renderPDVGrid();
+    toast(porSku.nome+' adicionado!');
+    return;
+  }
+  // Senão, se só tiver 1 resultado na busca atual, adiciona ele
+  const filtrados=localProdutos.filter(p=>(p.nome||'').toLowerCase().includes(valor.toLowerCase())||(p.sku||'').toLowerCase().includes(valor.toLowerCase()));
+  if(filtrados.length===1){
+    addToCart(filtrados[0].id);
+    pdvBusca='';
+    e.target.value='';
+    renderPDVGrid();
+    toast(filtrados[0].nome+' adicionado!');
   }
 }
 
@@ -1867,6 +2130,7 @@ function renderEstoque(c,a){
             <td>${status}</td>
             <td align="right" style="white-space:nowrap">
               <button class="btn btn-sm" onclick="editarProd('${p.id}')"><i class="ti ti-edit"></i></button>
+              <button class="btn btn-sm" onclick="verHistoricoPrecos('${p.id}','${p.nome.replace(/'/g,"")}')" title="Histórico de preços"><i class="ti ti-history"></i></button>
               <button class="btn btn-danger btn-sm" onclick="excluirProd('${p.id}')"><i class="ti ti-trash"></i></button>
             </td>
           </tr>`;
@@ -1925,8 +2189,49 @@ function salvarProduto(){
     codigoBarras:document.getElementById('fp-barras').value.trim()
   };
   if(!d.nome){toast('Informe o nome','err');return;}
+
+  // Registrar histórico de mudança de preço
+  const batch=db.batch();
   const ref=editProdId?db.collection('produtos').doc(editProdId):db.collection('produtos').doc();
-  ref.set(d,{merge:true}).then(()=>{toast(editProdId?'Produto atualizado!':'Produto cadastrado!');closeModal('m-produto');editProdId=null;}).catch(()=>toast('Erro ao salvar','err'));
+
+  if(editProdId){
+    const original=localProdutos.find(p=>p.id===editProdId);
+    if(original && (original.precoVenda!==d.precoVenda || original.custo!==d.custo)){
+      batch.set(db.collection('historico_precos').doc(),{
+        produtoId:editProdId,
+        produtoNome:d.nome,
+        precoVendaAntigo:original.precoVenda||0,
+        precoVendaNovo:d.precoVenda,
+        custoAntigo:original.custo||0,
+        custoNovo:d.custo,
+        data:today(),hora:nowStr(),
+        operador:currentOp.nome
+      });
+    }
+  }
+
+  batch.set(ref,d,{merge:true});
+  batch.commit().then(()=>{toast(editProdId?'Produto atualizado!':'Produto cadastrado!');closeModal('m-produto');editProdId=null;}).catch(()=>toast('Erro ao salvar','err'));
+}
+
+function verHistoricoPrecos(produtoId, produtoNome){
+  db.collection('historico_precos').where('produtoId','==',produtoId).get().then(snap=>{
+    const historico=snap.docs.map(d=>d.data()).sort((a,b)=>(b.data||'')>(a.data||'')?1:-1);
+    let html_hist;
+    if(!historico.length){
+      html_hist='<p style="font-size:12px;color:var(--text3);text-align:center;padding:20px">Nenhuma alteração de preço registrada para este produto.</p>';
+    } else {
+      html_hist=historico.map(h=>`
+        <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${h.data?h.data.split('-').reverse().join('/'):''} ${h.hora||''} · ${h.operador||''}</div>
+          ${h.precoVendaAntigo!==h.precoVendaNovo?`<div style="font-size:13px;color:var(--text)">Venda: <span style="text-decoration:line-through;color:var(--text3)">${R(h.precoVendaAntigo)}</span> → <strong style="color:var(--accent)">${R(h.precoVendaNovo)}</strong></div>`:''}
+          ${h.custoAntigo!==h.custoNovo?`<div style="font-size:13px;color:var(--text)">Custo: <span style="text-decoration:line-through;color:var(--text3)">${R(h.custoAntigo)}</span> → <strong style="color:var(--amber)">${R(h.custoNovo)}</strong></div>`:''}
+        </div>`).join('');
+    }
+    document.getElementById('hist-precos-title').textContent='Histórico de Preços — '+produtoNome;
+    document.getElementById('hist-precos-body').innerHTML=html_hist;
+    openModal('m-hist-precos');
+  }).catch(()=>toast('Erro ao buscar histórico','err'));
 }
 function excluirProd(id){if(!confirm('Excluir produto?'))return;db.collection('produtos').doc(id).delete().then(()=>toast('Excluído!')).catch(()=>toast('Erro','err'));}
 
@@ -2659,13 +2964,97 @@ function confirmarImpCl(){
 // ══════════════════════════════════
 function renderCaixa(c,a){
   const cx=localCaixa.find(x=>x.status==='Aberto');
-  if(cx)a.innerHTML=`<button class="btn btn-sm" onclick="abrirMove('suprimento')"><i class="ti ti-plus"></i>Suprimento</button><button class="btn btn-sm btn-danger" onclick="abrirMove('sangria')"><i class="ti ti-minus"></i>Sangria</button><button class="btn btn-sm" onclick="fecharCaixa()"><i class="ti ti-lock"></i>Fechar</button>`;
+  const hoje=today();
+  // Vendas de hoje por forma de pagamento
+  const vendasHoje=localVendas.filter(v=>extrairData(v)===hoje&&vendaValida(v));
+  const porPag={};
+  vendasHoje.forEach(v=>{
+    const p=v.formaPagamento||'outros';
+    porPag[p]=(porPag[p]||0)+(v.total||0);
+  });
+  const totalVendasHoje=vendasHoje.reduce((s,v)=>s+(v.total||0),0);
+  // Histórico de caixas
+  const historico=[...localCaixa].filter(x=>x.status==='Fechado').sort((a,b)=>a.dataAbertura<b.dataAbertura?1:-1).slice(0,5);
+
+  if(cx)a.innerHTML=`
+    <button class="btn btn-sm" onclick="abrirMove('suprimento')"><i class="ti ti-plus"></i>Suprimento</button>
+    <button class="btn btn-sm btn-danger" onclick="abrirMove('sangria')"><i class="ti ti-minus"></i>Sangria</button>
+    <button class="btn btn-sm" onclick="abrirFechamentoCaixa()"><i class="ti ti-lock"></i>Fechar Caixa</button>`;
   else a.innerHTML=`<button class="btn btn-primary btn-sm" onclick="document.getElementById('ab-op').value=currentOp.nome;openModal('m-cx-abre')"><i class="ti ti-lock-open"></i>Abrir Caixa</button>`;
-  c.innerHTML=`<div class="cx-bar ${cx?'cx-open':'cx-closed'}">
+
+  const payLabel={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',debito:'Débito',crediario:'Crediário'};
+
+  c.innerHTML=`
+  <div class="cx-bar ${cx?'cx-open':'cx-closed'}" style="margin-bottom:16px">
     <div class="cx-dot ${cx?'dot-g':'dot-r'}"></div>
-    <div><strong style="color:${cx?'var(--green)':'var(--red)'}">${cx?'Caixa Aberto':'Caixa Fechado'}</strong><br>
-    <span style="font-size:12px;color:var(--text3)">${cx?`Saldo atual: ${R(cx.saldoAtual||0)} · Abertura: ${cx.horaAbertura||'—'}`:'Nenhum caixa aberto'}</span></div>
-  </div>`;
+    <div style="flex:1">
+      <strong style="color:${cx?'var(--green)':'var(--red)'}">${cx?'Caixa Aberto':'Caixa Fechado'}</strong><br>
+      <span style="font-size:12px;color:var(--text3)">${cx?`Abertura: ${cx.horaAbertura||'—'} · Operador: ${cx.operador||'—'}`:'Nenhum caixa aberto hoje'}</span>
+    </div>
+    ${cx?`<div style="text-align:right"><div style="font-size:11px;color:var(--text3)">Saldo em caixa</div><div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--green)">${R(cx.saldoAtual||0)}</div></div>`:''}
+  </div>
+
+  <!-- RESUMO DO DIA -->
+  <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Vendas de Hoje por Forma de Pagamento</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:20px">
+    ${Object.keys(porPag).length===0?'<div style="color:var(--text3);font-size:12px">Nenhuma venda hoje</div>':
+      Object.entries(porPag).map(([p,v])=>`
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px">
+        <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:6px">${payLabel[p]||p}</div>
+        <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text)">${R(v)}</div>
+      </div>`).join('')}
+    <div style="background:var(--accent-glow);border:1px solid rgba(79,142,247,.3);border-radius:var(--radius-lg);padding:14px">
+      <div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;margin-bottom:6px">Total do Dia</div>
+      <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent)">${R(totalVendasHoje)}</div>
+    </div>
+  </div>
+
+  <!-- HISTÓRICO DE CAIXAS -->
+  ${historico.length>0?`
+  <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Histórico de Fechamentos</div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Data</th><th>Operador</th><th>Abertura</th><th>Fechamento</th><th>Saldo Inicial</th><th>Saldo Final</th></tr></thead>
+      <tbody>${historico.map(h=>`<tr>
+        <td>${h.dataAbertura?h.dataAbertura.split('-').reverse().join('/'):'—'}</td>
+        <td>${h.operador||'—'}</td>
+        <td>${h.horaAbertura||'—'}</td>
+        <td>${h.horaFechamento||'—'}</td>
+        <td style="font-family:var(--mono)">${R(h.saldoInicial||0)}</td>
+        <td style="font-family:var(--mono);font-weight:700;color:var(--green)">${R(h.saldoAtual||0)}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+  </div>`:''}`;
+}
+
+// Modal de fechamento com conferência
+function abrirFechamentoCaixa(){
+  const cx=localCaixa.find(x=>x.status==='Aberto');
+  if(!cx)return;
+  const hoje=today();
+  const vendasHoje=localVendas.filter(v=>extrairData(v)===hoje&&vendaValida(v));
+  const porPag={};
+  vendasHoje.forEach(v=>{const p=v.formaPagamento||'outros';porPag[p]=(porPag[p]||0)+(v.total||0);});
+  const totalVendas=vendasHoje.reduce((s,v)=>s+(v.total||0),0);
+  const payLabel={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',debito:'Débito',crediario:'Crediário'};
+  document.getElementById('fech-resumo').innerHTML=`
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Vendas por forma de pagamento</div>
+      ${Object.entries(porPag).map(([p,v])=>`
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:13px;color:var(--text2)">${payLabel[p]||p}</span>
+        <span style="font-family:var(--mono);font-weight:600;color:var(--text)">${R(v)}</span>
+      </div>`).join('')}
+      <div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:4px">
+        <span style="font-size:14px;font-weight:700;color:var(--text)">Total em Vendas</span>
+        <span style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--green)">${R(totalVendas)}</span>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--bg3);border-radius:var(--radius)">
+      <span style="font-size:13px;color:var(--text2)">Saldo em caixa (sistema)</span>
+      <span style="font-family:var(--mono);font-weight:700;color:var(--accent)">${R(cx.saldoAtual||0)}</span>
+    </div>`;
+  openModal('m-fech-caixa');
 }
 function confirmarAbertura(){
   const val=parseFloat(document.getElementById('ab-val').value)||0;
@@ -2682,7 +3071,15 @@ function confirmarMove(){
   batch.set(db.collection('caixa_movimentos').doc(),{caixaId:cx.id,tipo:cxMoveType,valor:val,descricao:desc||cxMoveType,hora:nowStr()});
   batch.commit().then(()=>{toast('Registrado!');closeModal('m-cx-move');}).catch(()=>toast('Erro','err'));
 }
-function fecharCaixa(){if(!confirm('Fechar caixa?'))return;const cx=localCaixa.find(x=>x.status==='Aberto');if(!cx)return;db.collection('caixa').doc(cx.id).update({status:'Fechado',horaFechamento:nowStr()}).then(()=>toast('Caixa fechado!')).catch(()=>toast('Erro','err'));}
+function fecharCaixa(){
+  const cx=localCaixa.find(x=>x.status==='Aberto');if(!cx)return;
+  const vlrFisico=parseFloat(document.getElementById('fech-valor-fisico')?.value)||0;
+  db.collection('caixa').doc(cx.id).update({
+    status:'Fechado',horaFechamento:nowStr(),
+    valorFisicoFechamento:vlrFisico,
+    diferenca:vlrFisico-(cx.saldoAtual||0)
+  }).then(()=>{toast('Caixa fechado!');closeModal('m-fech-caixa');}).catch(()=>toast('Erro','err'));
+}
 
 // ══════════════════════════════════
 // CONTAS A RECEBER
@@ -2701,7 +3098,10 @@ function renderReceber(c,a){
         <td>${r.vencimento?r.vencimento.split('-').reverse().join('/'):'—'}</td>
         <td style="font-family:var(--mono)">${R(r.valor)}</td>
         <td><span class="badge ${r.status==='Pago'?'badge-green':'badge-amber'}">${r.status}</span>${r.formaPagamentoBaixa?`<span class="badge badge-blue" style="font-size:10px;margin-left:4px">${r.formaPagamentoBaixa}</span>`:''}</td>
-        <td>${r.status==='Pendente'?`<button class="btn btn-sm btn-success" onclick="abrirBaixaReceber('${r.id}','${r.cliente||''}','${r.parcela||''}',${r.valor||0})"><i class="ti ti-check"></i>Receber</button>`:'—'}</td>
+        <td>${r.status==='Pendente'?`<div style="display:flex;gap:4px">
+          <button class="btn btn-sm btn-success" onclick="abrirBaixaReceber('${r.id}','${r.cliente||''}','${r.parcela||''}',${r.valor||0})"><i class="ti ti-check"></i>Receber</button>
+          <button class="btn btn-sm" onclick="abrirWhatsAppCobranca(${JSON.stringify({clienteId:r.clienteId,cliente:r.cliente,valor:r.valor,vencimento:r.vencimento}).replace(/"/g,'&quot;')})" title="Enviar cobrança WhatsApp" style="background:var(--green-bg);border-color:rgba(52,211,153,.3);color:var(--green)"><i class="ti ti-brand-whatsapp"></i></button>
+        </div>`:'—'}</td>
       </tr>`).join('')}
     </tbody></table></div>`;
 }
@@ -2878,6 +3278,66 @@ function renderRelatorios(c,a){
       <div class="metric-label">Ticket Médio</div>
       <div class="metric-value">${R(ticket)}</div>
       <i class="ti ti-trending-up metric-icon"></i>
+    </div>
+  </div>
+
+  <!-- DRE -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title"><i class="ti ti-chart-pie"></i> Resultado do Período (DRE Simplificado)</div>
+    ${(()=>{
+      const dre=calcularDRE(vf,localCompras,localPagar);
+      const margem=dre.receita>0?(dre.lucroBruto/dre.receita*100):0;
+      return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">
+        <div style="background:var(--bg3);padding:12px;border-radius:var(--radius)">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:4px">Receita de Vendas</div>
+          <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--green)">${R(dre.receita)}</div>
+        </div>
+        <div style="background:var(--bg3);padding:12px;border-radius:var(--radius)">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:4px">Custo Mercadorias</div>
+          <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--red)">${R(dre.cmv)}</div>
+        </div>
+        <div style="background:var(--bg3);padding:12px;border-radius:var(--radius)">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:4px">Lucro Bruto</div>
+          <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent)">${R(dre.lucroBruto)}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">Margem: ${margem.toFixed(1)}%</div>
+        </div>
+        <div style="background:var(--bg3);padding:12px;border-radius:var(--radius)">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:4px">Despesas Pagas</div>
+          <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--amber)">${R(dre.despesas)}</div>
+        </div>
+        <div style="background:${dre.lucroLiq>=0?'var(--green-bg)':'var(--red-bg)'};padding:12px;border-radius:var(--radius);border:1px solid ${dre.lucroLiq>=0?'rgba(52,211,153,.3)':'rgba(248,113,113,.3)'}">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:4px">Lucro Líquido Est.</div>
+          <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:${dre.lucroLiq>=0?'var(--green)':'var(--red)'}">${R(dre.lucroLiq)}</div>
+        </div>
+      </div>`;
+    })()}
+  </div>
+
+  <!-- RANKINGS -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+    <div class="card" style="margin:0">
+      <div class="card-title"><i class="ti ti-trophy"></i> Top 10 Produtos</div>
+      ${rankingProdutos(vf).map((p,i)=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:11px;font-weight:700;color:var(--text3);width:18px;text-align:center">${i+1}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nome}</div>
+          <div style="font-size:10px;color:var(--text3)">${p.qtd} un vendidas</div>
+        </div>
+        <span style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);flex-shrink:0">${R(p.valor)}</span>
+      </div>`).join('')}
+    </div>
+    <div class="card" style="margin:0">
+      <div class="card-title"><i class="ti ti-star"></i> Top 10 Clientes</div>
+      ${rankingClientes(vf).map((cl,i)=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:11px;font-weight:700;color:var(--text3);width:18px;text-align:center">${i+1}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cl.nome}</div>
+          <div style="font-size:10px;color:var(--text3)">${cl.qtd} compra(s)</div>
+        </div>
+        <span style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--green);flex-shrink:0">${R(cl.valor)}</span>
+      </div>`).join('')}
     </div>
   </div>
 
@@ -3460,6 +3920,143 @@ function salvarCompra(){
   }).catch(()=>toast('Erro','err'));
 }
 
+// ══════════════════════════════════════════════
+// TROCAS E DEVOLUÇÕES
+// ══════════════════════════════════════════════
+function renderTrocas(c,a){
+  a.innerHTML=`<button class="btn btn-primary btn-sm" onclick="abrirNovaTroca()"><i class="ti ti-plus"></i>Nova Troca/Devolução</button>`;
+  const mesAtual=today().slice(0,7);
+  const trocasMes=localTrocas.filter(t=>t.data&&t.data.startsWith(mesAtual));
+  const totalEstorno=trocasMes.filter(t=>t.tipo==='devolucao').reduce((s,t)=>s+(t.valorTotal||0),0);
+
+  c.innerHTML=`
+  <div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+    <div class="metric metric-sales">
+      <div class="metric-label">Trocas/Devoluções no Mês</div>
+      <div class="metric-value">${trocasMes.length}</div>
+      <i class="ti ti-replace metric-icon"></i>
+    </div>
+    <div class="metric metric-cash">
+      <div class="metric-label">Valor Devolvido no Mês</div>
+      <div class="metric-value" style="font-size:18px;color:var(--red)">${R(totalEstorno)}</div>
+      <i class="ti ti-arrow-back metric-icon"></i>
+    </div>
+    <div class="metric metric-stock">
+      <div class="metric-label">Peças Retornadas ao Estoque</div>
+      <div class="metric-value">${trocasMes.reduce((s,t)=>s+(t.itens||[]).length,0)}</div>
+      <i class="ti ti-package metric-icon"></i>
+    </div>
+  </div>
+  ${!localTrocas.length?'<div class="empty"><i class="ti ti-replace"></i><div class="empty-title">Nenhuma troca ou devolução registrada</div></div>':
+    [...localTrocas].sort((a,b)=>a.data<b.data?1:-1).map(t=>`
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--text)">${t.cliente||'Consumidor Final'}</div>
+          <div style="font-size:12px;color:var(--text3)">${t.data?t.data.split('-').reverse().join('/'):'—'} · Venda original: ${t.vendaData||'—'}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="badge ${t.tipo==='devolucao'?'badge-red':'badge-blue'}">${t.tipo==='devolucao'?'Devolução':'Troca'}</span>
+          <strong style="font-family:var(--mono);font-size:15px;color:${t.tipo==='devolucao'?'var(--red)':'var(--accent)'}">${R(t.valorTotal||0)}</strong>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Motivo: ${t.motivo||'—'}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${(t.itens||[]).map(i=>`<span style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:3px 8px;font-size:11px;color:var(--text2)">${i.nome}${i.cor?' · '+i.cor:''}${i.tam?' '+i.tam:''} — ${R(i.preco)}</span>`).join('')}
+      </div>
+    </div>`).join('')}`;
+}
+
+function abrirNovaTroca(){
+  trocaVendaEncontrada=null;
+  trocaItensSelecionados=[];
+  document.getElementById('troca-busca-venda').value='';
+  document.getElementById('troca-venda-info').innerHTML='';
+  document.getElementById('troca-itens-area').style.display='none';
+  openModal('m-troca');
+}
+
+function buscarVendaParaTroca(){
+  const busca=document.getElementById('troca-busca-venda').value.trim().toLowerCase();
+  if(!busca){toast('Digite o nome do cliente ou data','err');return;}
+  // Buscar últimas vendas (não condicionais) que batem com nome do cliente
+  const candidatas=localVendas.filter(v=>{
+    const nome=(v.cliente||'').toLowerCase();
+    return vendaValida(v)&&nome.includes(busca);
+  }).sort((a,b)=>(b.data||'')>(a.data||'')?1:-1).slice(0,8);
+
+  if(!candidatas.length){
+    document.getElementById('troca-venda-info').innerHTML='<p style="color:var(--text3);font-size:12px;padding:8px">Nenhuma venda encontrada com esse nome.</p>';
+    return;
+  }
+
+  document.getElementById('troca-venda-info').innerHTML=`
+    <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Selecione a venda:</div>
+    ${candidatas.map(v=>`
+      <div onclick='selecionarVendaTroca(${JSON.stringify(v.id)})' style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--bg3);border-radius:var(--radius);margin-bottom:5px;cursor:pointer;font-size:12px"
+        onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background='var(--bg3)'">
+        <span>${v.cliente||'Consumidor Final'} — ${v.data?v.data.split('-').reverse().join('/'):''} ${v.hora||''}</span>
+        <strong style="font-family:var(--mono);color:var(--accent)">${R(v.total)}</strong>
+      </div>`).join('')}`;
+}
+
+function selecionarVendaTroca(vendaId){
+  const v=localVendas.find(x=>x.id===vendaId);
+  if(!v)return;
+  trocaVendaEncontrada=v;
+  document.getElementById('troca-venda-info').innerHTML=`
+    <div style="background:var(--accent-glow);border:1px solid rgba(79,142,247,.3);border-radius:var(--radius);padding:10px;font-size:12px">
+      <strong style="color:var(--accent)">Venda selecionada:</strong> ${v.cliente||'Consumidor Final'} — ${v.data?v.data.split('-').reverse().join('/'):''} — Total ${R(v.total)}
+    </div>`;
+  trocaItensSelecionados=[];
+  document.getElementById('troca-itens-area').style.display='block';
+  document.getElementById('troca-itens-lista').innerHTML=(v.itens||[]).map((i,idx)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <input type="checkbox" id="ti-${idx}" onchange="toggleItemTroca(${idx})" style="width:16px;height:16px;accent-color:var(--accent)">
+      <label for="ti-${idx}" style="flex:1;font-size:13px;color:var(--text);cursor:pointer">
+        ${i.nome}${i.cor?' · '+i.cor:''}${i.tam?' '+i.tam:''} — ${i.qtd}x ${R(i.preco)}
+      </label>
+    </div>`).join('');
+}
+
+function toggleItemTroca(idx){
+  const item=trocaVendaEncontrada.itens[idx];
+  const checkbox=document.getElementById('ti-'+idx);
+  if(checkbox.checked) trocaItensSelecionados.push({...item, idx});
+  else trocaItensSelecionados=trocaItensSelecionados.filter(i=>i.idx!==idx);
+  const total=trocaItensSelecionados.reduce((s,i)=>s+(i.preco*i.qtd),0);
+  document.getElementById('troca-total-selecionado').textContent=R(total);
+}
+
+function confirmarTroca(tipo){
+  if(!trocaVendaEncontrada){toast('Selecione uma venda primeiro','err');return;}
+  if(!trocaItensSelecionados.length){toast('Selecione ao menos um item','err');return;}
+  const motivo=document.getElementById('troca-motivo').value.trim();
+  const total=trocaItensSelecionados.reduce((s,i)=>s+(i.preco*i.qtd),0);
+  const batch=db.batch();
+  // Retornar itens ao estoque
+  trocaItensSelecionados.forEach(item=>{
+    const prod=localProdutos.find(p=>p.id===item.id);
+    if(prod) batch.update(db.collection('produtos').doc(item.id),{estoque:(prod.estoque||0)+item.qtd});
+  });
+  // Registrar troca/devolução
+  batch.set(db.collection('trocas').doc(),{
+    tipo, // 'devolucao' ou 'troca'
+    cliente:trocaVendaEncontrada.cliente||'Consumidor Final',
+    vendaOrigemId:trocaVendaEncontrada.id,
+    vendaData:trocaVendaEncontrada.data?trocaVendaEncontrada.data.split('-').reverse().join('/'):'',
+    itens:trocaItensSelecionados,
+    valorTotal:total,
+    motivo:motivo||'Não informado',
+    data:today(),hora:nowStr(),
+    operador:currentOp.nome
+  });
+  batch.commit().then(()=>{
+    toast(tipo==='devolucao'?'Devolução registrada e estoque atualizado!':'Troca registrada!');
+    closeModal('m-troca');
+  }).catch(()=>toast('Erro ao registrar','err'));
+}
+
 function renderConfig(c,a){
   a.innerHTML=`<button class="btn btn-primary btn-sm" onclick="salvarMetas()"><i class="ti ti-device-floppy"></i>Salvar Configurações</button>`;
   const ref = metas.refAnoPassado||0;
@@ -3545,6 +4142,21 @@ function renderConfig(c,a){
   </div>
 
   <div class="cfg-section">
+    <div class="cfg-title"><i class="ti ti-users"></i> Metas Individuais por Vendedora (opcional)</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Defina uma meta individual de vendas no mês para cada funcionária. Deixe em branco para não acompanhar individualmente.</p>
+    <div class="meta-grid">
+      <div class="meta-card">
+        <div class="meta-card-label">Kamilly — Meta do Mês (R$)</div>
+        <input type="number" class="meta-card-inp" id="cfg-meta-kamilly" value="${metas.metaKamilly||''}" step="100" placeholder="0,00">
+      </div>
+      <div class="meta-card">
+        <div class="meta-card-label">Giovanna — Meta do Mês (R$)</div>
+        <input type="number" class="meta-card-inp" id="cfg-meta-giovanna" value="${metas.metaGiovanna||''}" step="100" placeholder="0,00">
+      </div>
+    </div>
+  </div>
+
+  <div class="cfg-section">
     <div class="cfg-title"><i class="ti ti-file-spreadsheet"></i> Modelos CSV</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn btn-sm" onclick="dlClientes()"><i class="ti ti-download"></i>Modelo Clientes</button>
@@ -3590,13 +4202,16 @@ function salvarMetas(){
   const s4  = parseFloat(document.getElementById('cfg-s4')?.value)||20;
   if(s1+s2+s3+s4!==100){ toast('A soma das semanas deve ser 100%!','err'); return; }
   const calc = calcularMetas(ref);
+  const metaKamilly  = parseFloat(document.getElementById('cfg-meta-kamilly')?.value)||0;
+  const metaGiovanna = parseFloat(document.getElementById('cfg-meta-giovanna')?.value)||0;
   const nm = {
     refAnoPassado: ref,
     meta1:     calc.meta1,
     meta2:     calc.meta2,
     meta3:     calc.meta3,
     superMeta: calc.superMeta,
-    pctS1:s1, pctS2:s2, pctS3:s3, pctS4:s4
+    pctS1:s1, pctS2:s2, pctS3:s3, pctS4:s4,
+    metaKamilly, metaGiovanna
   };
   db.collection('config').doc('metas').set(nm).then(()=>{
     metas=nm;
