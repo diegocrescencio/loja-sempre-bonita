@@ -3051,10 +3051,14 @@ function parseCSVLine(line){
 }
 
 function extrairTelefone(contatos){
-  if(!contatos)return'';
-  // Formato Awise: ": (16) 99464-1842" ou variações — extrair só os números/formato de telefone
-  const m=String(contatos).match(/\(?\d{2}\)?\s*\d{4,5}-?\d{4}/);
-  return m?m[0].trim():String(contatos).replace(/^:\s*/,'').trim();
+  try{
+    if(!contatos)return'';
+    const s=String(contatos);
+    const m=s.match(/\(?\d{2}\)?\s*\d{4,5}-?\d{4}/);
+    return m?m[0].trim():s.replace(/^:\s*/,'').trim();
+  }catch(e){
+    return'';
+  }
 }
 
 document.getElementById('f-imp-cl').addEventListener('change',function(){
@@ -3071,6 +3075,9 @@ document.getElementById('f-imp-cl').addEventListener('change',function(){
     const headers=parseCSVLine(lines[0]).map(h=>h.trim());
     const idx=kws=>headers.findIndex(h=>kws.some(k=>h.toLowerCase().includes(k)));
 
+    // Helper seguro: nunca quebra mesmo se a coluna não existir na linha
+    const get=(cols,i)=> (i>=0 && cols[i]!==undefined && cols[i]!==null) ? String(cols[i]).trim() : '';
+
     const iNome     = idx(['nome']);
     const iCpf      = idx(['cpf']);
     const iLimite   = idx(['limite de crédito','limite de credito','limite']);
@@ -3080,21 +3087,28 @@ document.getElementById('f-imp-cl').addEventListener('change',function(){
     const iObs      = idx(['observação','observacao','observação']);
 
     impClData=[];
+    let erros=0;
     for(let i=1;i<lines.length;i++){
-      const cols=parseCSVLine(lines[i]);
-      const nome=(iNome>=0?cols[iNome]:'').trim();
-      if(!nome)continue;
-      const limiteRaw=iLimite>=0?cols[iLimite]:'';
-      const limite=parseFloat(String(limiteRaw).replace(',','.'))||0;
-      impClData.push({
-        nome:        nome,
-        cpf:         (iCpf>=0?cols[iCpf]:'').trim(),
-        telefone:    extrairTelefone(iContatos>=0?cols[iContatos]:''),
-        endereco:    [iEndereco>=0?cols[iEndereco]:'', iCidade>=0?cols[iCidade]:''].filter(Boolean).join(', ').trim(),
-        limite:      limite,
-        observacoes: (iObs>=0?cols[iObs]:'').trim(),
-      });
+      try{
+        const cols=parseCSVLine(lines[i]);
+        const nome=get(cols,iNome);
+        if(!nome)continue;
+        const limiteRaw=get(cols,iLimite);
+        const limite=parseFloat(limiteRaw.replace(',','.'))||0;
+        impClData.push({
+          nome:        nome,
+          cpf:         get(cols,iCpf),
+          telefone:    extrairTelefone(get(cols,iContatos)),
+          endereco:    [get(cols,iEndereco), get(cols,iCidade)].filter(Boolean).join(', '),
+          limite:      limite,
+          observacoes: get(cols,iObs),
+        });
+      }catch(err){
+        erros++;
+        console.warn('Linha '+i+' ignorada por erro:', err.message);
+      }
     }
+    if(erros>0) console.warn(erros+' linha(s) com erro foram ignoradas na importação de clientes.');
 
     const prev=document.getElementById('imp-cl-prev'),btn=document.getElementById('btn-imp-cl');
     if(!impClData.length){
@@ -3131,10 +3145,30 @@ document.getElementById('f-imp-cl').addEventListener('change',function(){
   r.readAsText(file, 'UTF-8');
 });
 function confirmarImpCl(){
-  if(!impClData.length)return;
-  const batch=db.batch();
-  impClData.forEach(row=>batch.set(db.collection('clientes').doc(),row));
-  batch.commit().then(()=>{toast(`${impClData.length} clientes importados!`);closeModal('m-imp-cl');impClData=[];document.getElementById('f-imp-cl').value='';document.getElementById('imp-cl-prev').style.display='none';document.getElementById('btn-imp-cl').disabled=true;}).catch(()=>toast('Erro','err'));
+  if(!impClData.length){toast('Nenhum cliente para importar','err');return;}
+  const BATCH_SIZE=400;
+  const total=impClData.length;
+  toast('Importando '+total+' clientes...','info');
+
+  const salvar=async()=>{
+    for(let i=0;i<impClData.length;i+=BATCH_SIZE){
+      const batch=db.batch();
+      impClData.slice(i,i+BATCH_SIZE).forEach(row=>batch.set(db.collection('clientes').doc(),row));
+      await batch.commit();
+    }
+  };
+
+  salvar().then(()=>{
+    toast(`✅ ${total} clientes importados com sucesso!`);
+    closeModal('m-imp-cl');
+    impClData=[];
+    document.getElementById('f-imp-cl').value='';
+    document.getElementById('imp-cl-prev').style.display='none';
+    document.getElementById('btn-imp-cl').disabled=true;
+  }).catch(e=>{
+    console.error('Erro ao importar clientes:',e);
+    toast('Erro ao importar: '+e.message,'err');
+  });
 }
 
 // ══════════════════════════════════
