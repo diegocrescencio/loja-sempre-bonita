@@ -3032,23 +3032,103 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(fv)fv.addEventListener('change',function(){if(this.files[0])lerArquivoVendas(this.files[0]);});
 });
 
-// ── IMPORTAR CLIENTES ──
+// ── IMPORTAR CLIENTES (formato Awise) ──
+function parseCSVLine(line){
+  // Parser CSV robusto: respeita aspas e vírgulas dentro de campos
+  const result=[];
+  let cur='', inQuotes=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){
+      if(inQuotes && line[i+1]==='"'){cur+='"';i++;}
+      else inQuotes=!inQuotes;
+    } else if(ch===',' && !inQuotes){
+      result.push(cur);cur='';
+    } else cur+=ch;
+  }
+  result.push(cur);
+  return result.map(c=>c.trim());
+}
+
+function extrairTelefone(contatos){
+  if(!contatos)return'';
+  // Formato Awise: ": (16) 99464-1842" ou variações — extrair só os números/formato de telefone
+  const m=String(contatos).match(/\(?\d{2}\)?\s*\d{4,5}-?\d{4}/);
+  return m?m[0].trim():String(contatos).replace(/^:\s*/,'').trim();
+}
+
 document.getElementById('f-imp-cl').addEventListener('change',function(){
   const file=this.files[0];if(!file)return;
   const r=new FileReader();
   r.onload=e=>{
-    const lines=e.target.result.split('\n').map(l=>l.trim()).filter(l=>l);
-    impClData=[];let start=0;
-    if(lines[0].toLowerCase().includes('nome'))start=1;
-    for(let i=start;i<lines.length;i++){
-      const cols=lines[i].split(',');if(!cols[0].trim())continue;
-      impClData.push({nome:(cols[0]||'').trim(),cpf:(cols[1]||'').trim(),telefone:(cols[2]||'').trim(),endereco:(cols[3]||'').trim(),limite:parseFloat(cols[4])||500,observacoes:(cols[5]||'').trim()});
+    // Detectar e remover BOM (utf-8-sig)
+    let texto=e.target.result;
+    if(texto.charCodeAt(0)===0xFEFF) texto=texto.slice(1);
+
+    const lines=texto.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
+    if(!lines.length)return;
+
+    const headers=parseCSVLine(lines[0]).map(h=>h.trim());
+    const idx=kws=>headers.findIndex(h=>kws.some(k=>h.toLowerCase().includes(k)));
+
+    const iNome     = idx(['nome']);
+    const iCpf      = idx(['cpf']);
+    const iLimite   = idx(['limite de crédito','limite de credito','limite']);
+    const iContatos = idx(['contatos','telefone','contato']);
+    const iCidade   = idx(['cidade']);
+    const iEndereco = idx(['endereço','endereco']);
+    const iObs      = idx(['observação','observacao','observação']);
+
+    impClData=[];
+    for(let i=1;i<lines.length;i++){
+      const cols=parseCSVLine(lines[i]);
+      const nome=(iNome>=0?cols[iNome]:'').trim();
+      if(!nome)continue;
+      const limiteRaw=iLimite>=0?cols[iLimite]:'';
+      const limite=parseFloat(String(limiteRaw).replace(',','.'))||0;
+      impClData.push({
+        nome:        nome,
+        cpf:         (iCpf>=0?cols[iCpf]:'').trim(),
+        telefone:    extrairTelefone(iContatos>=0?cols[iContatos]:''),
+        endereco:    [iEndereco>=0?cols[iEndereco]:'', iCidade>=0?cols[iCidade]:''].filter(Boolean).join(', ').trim(),
+        limite:      limite,
+        observacoes: (iObs>=0?cols[iObs]:'').trim(),
+      });
     }
+
     const prev=document.getElementById('imp-cl-prev'),btn=document.getElementById('btn-imp-cl');
-    if(!impClData.length){prev.innerHTML='<p style="color:var(--red);font-size:12px">Nenhum dado válido.</p>';btn.disabled=true;}
-    else{prev.innerHTML=`<p style="font-size:11px;color:var(--text3);margin-bottom:6px">${impClData.length} clientes. Prévia:</p><table class="data-table" style="font-size:11px"><thead><tr><th>Nome</th><th>CPF</th><th>Tel</th><th>Limite</th></tr></thead><tbody>${impClData.slice(0,6).map(r=>`<tr><td>${r.nome}</td><td>${r.cpf}</td><td>${r.telefone}</td><td>${R(r.limite)}</td></tr>`).join('')}</tbody></table>`;btn.disabled=false;}
+    if(!impClData.length){
+      prev.innerHTML='<p style="color:var(--red);font-size:12px">Nenhum cliente válido encontrado. Verifique se o arquivo tem a coluna "Nome".</p>';
+      btn.disabled=true;
+    } else {
+      const comTelefone=impClData.filter(c=>c.telefone).length;
+      prev.innerHTML=`
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center">
+            <div style="font-size:10px;color:var(--text3)">TOTAL DE CLIENTES</div>
+            <div style="font-size:18px;font-weight:700;color:var(--text)">${impClData.length}</div>
+          </div>
+          <div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center">
+            <div style="font-size:10px;color:var(--text3)">COM TELEFONE</div>
+            <div style="font-size:18px;font-weight:700;color:var(--green)">${comTelefone}</div>
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--text3);margin-bottom:6px">Prévia (primeiros 6):</p>
+        <table class="data-table" style="font-size:11px">
+          <thead><tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>Limite</th></tr></thead>
+          <tbody>${impClData.slice(0,6).map(r=>`<tr>
+            <td>${r.nome}</td>
+            <td>${r.cpf||'—'}</td>
+            <td>${r.telefone||'—'}</td>
+            <td style="font-family:var(--mono)">${R(r.limite)}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+        ${impClData.length>6?`<p style="font-size:11px;color:var(--text3);margin-top:4px">...e mais ${impClData.length-6} cliente(s)</p>`:''}`;
+      btn.disabled=false;
+    }
     prev.style.display='block';
-  };r.readAsText(file);
+  };
+  r.readAsText(file, 'UTF-8');
 });
 function confirmarImpCl(){
   if(!impClData.length)return;
