@@ -1738,15 +1738,23 @@ function renderPDV(c,a){
       <div class="cart-head-title"><i class="ti ti-users"></i> Venda</div>
       <span class="cart-badge" id="cart-badge">0</span>
     </div>
-    <div class="cart-cl">
+    <div class="cart-cl" style="position:relative">
       <div class="cart-cl-label">
         <span>Cliente</span>
         ${clienteData?`<span class="cart-cl-credit">Lim. disp: ${R(limDisp)}</span>`:''}
       </div>
-      <select class="cart-cl-sel" id="cart-cl" onchange="pdvClienteId=this.value;renderPDV(document.getElementById('content'),document.getElementById('topbar-actions'))">
-        <option value="">Consumidor Final</option>
-        ${localClientes.map(cl=>`<option value="${cl.id}" ${pdvClienteId===cl.id?'selected':''} >${cl.nome}</option>`).join('')}
-      </select>
+      ${clienteData?`
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border:1px solid var(--accent);border-radius:var(--radius);padding:7px 10px">
+        <span style="font-size:13px;font-weight:600;color:var(--text)">${clienteData.nome}</span>
+        <button onclick="pdvClienteId='';renderPDV(document.getElementById('content'),document.getElementById('topbar-actions'))" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 2px"><i class="ti ti-x"></i></button>
+      </div>
+      `:`
+      <input class="cart-cl-sel" id="cart-cl-busca" placeholder="Buscar cliente pelo nome..." autocomplete="off"
+        oninput="buscarClientePDV(this.value)"
+        onfocus="if(this.value)buscarClientePDV(this.value)"
+        style="width:100%;padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:12px;outline:none">
+      <div id="cart-cl-resultados" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:2px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);z-index:50;max-height:220px;overflow-y:auto;box-shadow:var(--shadow)"></div>
+      `}
     </div>
 
     <!-- 2. ITENS DO CARRINHO -->
@@ -2010,6 +2018,37 @@ function setPay(t){
   if(t!=='cartao'&&t!=='crediario')parcelasCredito=1;
   renderPDV(document.getElementById('content'),document.getElementById('topbar-actions'));
 }
+function buscarClientePDV(termo){
+  const resultados=document.getElementById('cart-cl-resultados');
+  if(!resultados)return;
+  const busca=(termo||'').trim().toLowerCase();
+  if(!busca){
+    resultados.style.display='none';
+    resultados.innerHTML='';
+    return;
+  }
+  const encontrados=localClientes.filter(cl=>(cl.nome||'').toLowerCase().includes(busca)).slice(0,10);
+  if(!encontrados.length){
+    resultados.innerHTML='<div style="padding:10px 12px;font-size:12px;color:var(--text3)">Nenhum cliente encontrado</div>';
+  } else {
+    resultados.innerHTML=encontrados.map(cl=>{
+      const deb=calcDebCrediario(cl.id), lim=parseFloat(cl.limite||0), disp=lim-deb;
+      return `<div onclick="selecionarClientePDV('${cl.id}')"
+        style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px"
+        onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background=''">
+        <span style="color:var(--text)">${cl.nome}</span>
+        <span style="font-size:11px;color:${disp<0?'var(--red)':'var(--text3)'};font-family:var(--mono)">${R(disp)}</span>
+      </div>`;
+    }).join('');
+  }
+  resultados.style.display='block';
+}
+
+function selecionarClientePDV(id){
+  pdvClienteId=id;
+  renderPDV(document.getElementById('content'),document.getElementById('topbar-actions'));
+}
+
 function calcDebCrediario(cId){return localReceber.filter(r=>r.clienteId===cId&&r.status==='Pendente').reduce((s,r)=>s+(r.valor||0),0);}
 
 function finalizarVenda(){
@@ -3033,21 +3072,40 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 
 // ── IMPORTAR CLIENTES (formato Awise) ──
-function parseCSVLine(line){
-  // Parser CSV robusto: respeita aspas e vírgulas dentro de campos
-  const result=[];
-  let cur='', inQuotes=false;
-  for(let i=0;i<line.length;i++){
-    const ch=line[i];
-    if(ch==='"'){
-      if(inQuotes && line[i+1]==='"'){cur+='"';i++;}
-      else inQuotes=!inQuotes;
-    } else if(ch===',' && !inQuotes){
-      result.push(cur);cur='';
-    } else cur+=ch;
+// Parser de CSV completo — processa o arquivo inteiro de uma vez,
+// lidando corretamente com quebras de linha DENTRO de campos entre aspas
+// (ex: campo "Cor: Azul\nTamanho: G" não deve virar 2 linhas)
+function parseCSVCompleto(texto){
+  const rows=[];
+  let row=[], field='', inQuotes=false;
+  for(let i=0;i<texto.length;i++){
+    const ch=texto[i];
+    if(inQuotes){
+      if(ch==='"'){
+        if(texto[i+1]==='"'){field+='"';i++;}
+        else inQuotes=false;
+      } else {
+        field+=ch;
+      }
+    } else {
+      if(ch==='"'){
+        inQuotes=true;
+      } else if(ch===','){
+        row.push(field);field='';
+      } else if(ch==='\r'){
+        // ignora, trata só o \n
+      } else if(ch==='\n'){
+        row.push(field);field='';
+        rows.push(row);
+        row=[];
+      } else {
+        field+=ch;
+      }
+    }
   }
-  result.push(cur);
-  return result.map(c=>c.trim());
+  // Última linha (sem quebra final)
+  if(field!==''||row.length){row.push(field);rows.push(row);}
+  return rows.filter(r=>r.some(c=>c&&c.trim()!==''));
 }
 
 function extrairTelefone(contatos){
@@ -3069,10 +3127,11 @@ document.getElementById('f-imp-cl').addEventListener('change',function(){
     let texto=e.target.result;
     if(texto.charCodeAt(0)===0xFEFF) texto=texto.slice(1);
 
-    const lines=texto.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
-    if(!lines.length)return;
+    // Parser completo: lida corretamente com quebras de linha DENTRO de campos entre aspas
+    const allRows=parseCSVCompleto(texto);
+    if(!allRows.length)return;
 
-    const headers=parseCSVLine(lines[0]).map(h=>h.trim());
+    const headers=allRows[0].map(h=>(h||'').trim());
     const idx=kws=>headers.findIndex(h=>kws.some(k=>h.toLowerCase().includes(k)));
 
     // Helper seguro: nunca quebra mesmo se a coluna não existir na linha
@@ -3088,9 +3147,9 @@ document.getElementById('f-imp-cl').addEventListener('change',function(){
 
     impClData=[];
     let erros=0;
-    for(let i=1;i<lines.length;i++){
+    for(let i=1;i<allRows.length;i++){
       try{
-        const cols=parseCSVLine(lines[i]);
+        const cols=allRows[i];
         const nome=get(cols,iNome);
         if(!nome)continue;
         const limiteRaw=get(cols,iLimite);
