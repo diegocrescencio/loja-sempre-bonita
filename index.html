@@ -907,6 +907,29 @@ a{color:var(--accent);text-decoration:none}
 </div>
 
 <!-- TROCA / DEVOLUÇÃO -->
+<!-- CADASTRO RÁPIDO DE CLIENTE -->
+<div class="modal-overlay" id="m-cadastro-rapido">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <span class="modal-title">Cadastro Rápido de Cliente</span>
+      <button class="modal-close" onclick="closeModal('m-cadastro-rapido')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nome *</label>
+      <input class="form-input" id="cr-nome" placeholder="Nome do cliente">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Telefone</label>
+      <input class="form-input" id="cr-telefone" placeholder="(00) 00000-0000" onkeydown="if(event.key==='Enter')salvarCadastroRapido()">
+    </div>
+    <p style="font-size:11px;color:var(--text3);margin-top:-8px;margin-bottom:14px">Você pode completar CPF, endereço e limite de crédito depois, na tela de Clientes.</p>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-cadastro-rapido')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarCadastroRapido()"><i class="ti ti-user-plus"></i>Cadastrar e Selecionar</button>
+    </div>
+  </div>
+</div>
+
 <!-- COMPROVANTE -->
 <div class="modal-overlay" id="m-comprovante">
   <div class="modal" style="max-width:420px">
@@ -1806,6 +1829,17 @@ function renderPDV(c,a){
           <div class="pay-btn ${selectedPay==='cartao'?'sel':''}" onclick="setPay('cartao')"><i class="ti ti-credit-card"></i>Cartão Créd.</div>
           <div class="pay-btn ${selectedPay==='crediario'?'sel':''}" onclick="setPay('crediario')"><i class="ti ti-notebook"></i>Crediário</div>
         </div>
+        <div class="pay-grid-2" style="margin-top:6px">
+          <div class="pay-btn ${selectedPay==='misto'?'sel':''}" onclick="setPay('misto')" style="grid-column:1/-1"><i class="ti ti-split"></i>Pagamento em Mais de uma Forma</div>
+        </div>
+      </div>
+
+      <!-- PAGAMENTO MISTO -->
+      <div class="parcel-box ${selectedPay==='misto'?'show':''}" id="misto-box" style="${selectedPay==='misto'?'display:block':'display:none'}">
+        <div class="pay-section-label">Dividir Pagamento — Total: ${R(totalComDesconto(total))}</div>
+        <div id="misto-linhas"></div>
+        <button class="btn btn-sm" style="margin-top:8px;width:100%" onclick="adicionarFormaMista()"><i class="ti ti-plus"></i>Adicionar Forma de Pagamento</button>
+        <div id="misto-resumo" style="margin-top:10px;padding:8px 10px;background:var(--bg3);border-radius:var(--radius);font-size:12px"></div>
       </div>
 
       <!-- PARCELAMENTO (cartão até 10x / crediário até 6x) -->
@@ -1824,6 +1858,7 @@ function renderPDV(c,a){
 </div>`;
   renderPDVGrid();
   updateCartDisplay();
+  if(selectedPay==='misto') renderMistoLinhas();
 }
 
 function pdvLerBarcode(codigo){
@@ -2013,10 +2048,72 @@ function changeQty(id,d){
   updateCartDisplay();
 }
 function removeItem(id){cartItems=cartItems.filter(x=>x.id!==id);updateCartDisplay();}
+let pagamentosMistos=[]; // [{forma:'dinheiro', valor:50}]
+
 function setPay(t){
   selectedPay=t;
   if(t!=='cartao'&&t!=='crediario')parcelasCredito=1;
+  if(t==='misto' && pagamentosMistos.length===0){
+    pagamentosMistos=[{forma:'dinheiro',valor:0},{forma:'pix',valor:0}];
+  }
   renderPDV(document.getElementById('content'),document.getElementById('topbar-actions'));
+}
+
+function adicionarFormaMista(){
+  if(pagamentosMistos.length>=4){toast('Máximo de 4 formas de pagamento','err');return;}
+  pagamentosMistos.push({forma:'dinheiro',valor:0});
+  renderMistoLinhas();
+}
+
+function removerFormaMista(idx){
+  pagamentosMistos.splice(idx,1);
+  renderMistoLinhas();
+}
+
+function atualizarFormaMista(idx,campo,valor){
+  if(campo==='valor') pagamentosMistos[idx].valor=parseFloat(valor)||0;
+  else pagamentosMistos[idx].forma=valor;
+  renderMistoLinhas();
+}
+
+function renderMistoLinhas(){
+  const cont=document.getElementById('misto-linhas');
+  const resumo=document.getElementById('misto-resumo');
+  if(!cont)return;
+  const subtotal=cartItems.reduce((s,i)=>s+(i.preco*i.qtd),0);
+  const total=totalComDesconto(subtotal);
+
+  cont.innerHTML=pagamentosMistos.map((p,i)=>`
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+      <select onchange="atualizarFormaMista(${i},'forma',this.value)" style="flex:1.3;padding:6px 8px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:12px">
+        <option value="dinheiro" ${p.forma==='dinheiro'?'selected':''}>Dinheiro</option>
+        <option value="pix" ${p.forma==='pix'?'selected':''}>Pix</option>
+        <option value="debito" ${p.forma==='debito'?'selected':''}>Débito</option>
+        <option value="cartao" ${p.forma==='cartao'?'selected':''}>Cartão Créd.</option>
+        <option value="crediario" ${p.forma==='crediario'?'selected':''}>Crediário</option>
+      </select>
+      <input type="number" min="0" step="0.01" value="${p.valor||''}" placeholder="0,00"
+        oninput="atualizarFormaMista(${i},'valor',this.value)"
+        style="flex:1;padding:6px 8px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:13px;font-weight:600">
+      ${pagamentosMistos.length>1?`<button onclick="removerFormaMista(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;padding:0 4px"><i class="ti ti-x"></i></button>`:''}
+    </div>`).join('');
+
+  const somaPagamentos=pagamentosMistos.reduce((s,p)=>s+(p.valor||0),0);
+  const diff=total-somaPagamentos;
+  resumo.innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>Total da venda</span><span style="font-family:var(--mono)">${R(total)}</span></div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>Soma informada</span><span style="font-family:var(--mono)">${R(somaPagamentos)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-weight:700;color:${Math.abs(diff)<0.01?'var(--green)':'var(--red)'}">
+      <span>${diff>0.01?'Falta':diff<-0.01?'Excede':'Confere ✓'}</span>
+      <span style="font-family:var(--mono)">${Math.abs(diff)>=0.01?R(Math.abs(diff)):''}</span>
+    </div>`;
+
+  // Atualizar botão de checkout
+  const btn=document.getElementById('btn-checkout');
+  if(btn){
+    const podeFinalizar=Math.abs(diff)<0.01 && total>0;
+    btn.disabled = cartItems.length===0 || (selectedPay==='misto' && !podeFinalizar);
+  }
 }
 function buscarClientePDV(termo){
   const resultados=document.getElementById('cart-cl-resultados');
@@ -2027,9 +2124,16 @@ function buscarClientePDV(termo){
     resultados.innerHTML='';
     return;
   }
-  const encontrados=localClientes.filter(cl=>(cl.nome||'').toLowerCase().includes(busca)).slice(0,10);
+  const encontrados=localClientes.filter(cl=>(cl.nome||'').toLowerCase().includes(busca)).slice(0,8);
+
+  const btnNovo=`<div onclick="abrirCadastroRapidoCliente('${termo.replace(/'/g,"\\'")}')"
+    style="display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;background:var(--accent-glow);color:var(--accent);font-size:13px;font-weight:600;border-top:${encontrados.length?'1px solid var(--border)':'none'}"
+    onmouseover="this.style.background='var(--accent)';this.style.color='#fff'" onmouseout="this.style.background='var(--accent-glow)';this.style.color='var(--accent)'">
+    <i class="ti ti-user-plus"></i> Cadastrar novo cliente "${termo}"
+  </div>`;
+
   if(!encontrados.length){
-    resultados.innerHTML='<div style="padding:10px 12px;font-size:12px;color:var(--text3)">Nenhum cliente encontrado</div>';
+    resultados.innerHTML='<div style="padding:10px 12px;font-size:12px;color:var(--text3)">Nenhum cliente encontrado</div>'+btnNovo;
   } else {
     resultados.innerHTML=encontrados.map(cl=>{
       const deb=calcDebCrediario(cl.id), lim=parseFloat(cl.limite||0), disp=lim-deb;
@@ -2039,9 +2143,31 @@ function buscarClientePDV(termo){
         <span style="color:var(--text)">${cl.nome}</span>
         <span style="font-size:11px;color:${disp<0?'var(--red)':'var(--text3)'};font-family:var(--mono)">${R(disp)}</span>
       </div>`;
-    }).join('');
+    }).join('')+btnNovo;
   }
   resultados.style.display='block';
+}
+
+function abrirCadastroRapidoCliente(nomeInicial){
+  document.getElementById('cr-nome').value=nomeInicial||'';
+  document.getElementById('cr-telefone').value='';
+  const resultados=document.getElementById('cart-cl-resultados');
+  if(resultados)resultados.style.display='none';
+  openModal('m-cadastro-rapido');
+  setTimeout(()=>document.getElementById('cr-telefone').focus(),100);
+}
+
+function salvarCadastroRapido(){
+  const nome=document.getElementById('cr-nome').value.trim();
+  const telefone=document.getElementById('cr-telefone').value.trim();
+  if(!nome){toast('Informe o nome do cliente','err');return;}
+  const ref=db.collection('clientes').doc();
+  ref.set({nome,telefone,limite:0,cpf:'',endereco:'',observacoes:''}).then(()=>{
+    toast('Cliente cadastrado!');
+    closeModal('m-cadastro-rapido');
+    pdvClienteId=ref.id;
+    renderPDV(document.getElementById('content'),document.getElementById('topbar-actions'));
+  }).catch(()=>toast('Erro ao cadastrar','err'));
 }
 
 function selecionarClientePDV(id){
@@ -2055,19 +2181,49 @@ function finalizarVenda(){
   const subtotal=cartItems.reduce((s,i)=>s+(i.preco*i.qtd),0);
   const desconto=calcDesconto(subtotal);
   const total=totalComDesconto(subtotal);
+
+  // Validação pagamento misto
+  let temCrediarioMisto=false, valorCrediarioMisto=0;
+  if(selectedPay==='misto'){
+    const soma=pagamentosMistos.reduce((s,p)=>s+(p.valor||0),0);
+    if(Math.abs(soma-total)>=0.01){toast('A soma dos pagamentos deve ser igual ao total da venda!','err');return;}
+    if(pagamentosMistos.some(p=>!p.valor||p.valor<=0)){toast('Remova formas de pagamento com valor zero','err');return;}
+    const crediarioPart=pagamentosMistos.find(p=>p.forma==='crediario');
+    if(crediarioPart){
+      temCrediarioMisto=true;
+      valorCrediarioMisto=crediarioPart.valor;
+      if(!pdvClienteId){toast('Selecione um cliente para usar Crediário no pagamento misto!','err');return;}
+      const cl=localClientes.find(c=>c.id===pdvClienteId);
+      const lim=parseFloat(cl.limite||0), deb=calcDebCrediario(pdvClienteId);
+      if(deb+valorCrediarioMisto>lim){toast(`Limite excedido! Disponível: ${R(lim-deb)}`,'err');return;}
+    }
+  }
+
   if(selectedPay==='crediario'){
     if(!pdvClienteId){toast('Selecione um cliente para Crediário!','err');return;}
     const cl=localClientes.find(c=>c.id===pdvClienteId);
     const lim=parseFloat(cl.limite||0), deb=calcDebCrediario(pdvClienteId);
     if(deb+total>lim){toast(`Limite excedido! Disponível: ${R(lim-deb)}`,'err');return;}
   }
+
   const batch=db.batch();
   const vRef=db.collection('vendas').doc();
-  batch.set(vRef,{data:today(),hora:nowStr(),itens:[...cartItems],subtotal,desconto,descontoTipo:pdvDescontoTipo,total,formaPagamento:selectedPay,clienteId:pdvClienteId||'Consumidor Geral',vendedor:currentOp.nome});
+  const vendaData={
+    data:today(),hora:nowStr(),itens:[...cartItems],subtotal,desconto,descontoTipo:pdvDescontoTipo,total,
+    formaPagamento:selectedPay,
+    clienteId:pdvClienteId||'Consumidor Geral',vendedor:currentOp.nome
+  };
+  if(selectedPay==='misto'){
+    vendaData.pagamentosMistos=pagamentosMistos.map(p=>({forma:p.forma,valor:p.valor}));
+  }
+  batch.set(vRef,vendaData);
+
   cartItems.forEach(i=>{
     const orig=localProdutos.find(p=>p.id===i.id);
     batch.update(db.collection('produtos').doc(i.id),{estoque:Math.max(0,(orig?.estoque||0)-i.qtd)});
   });
+
+  // Crediário puro
   if(selectedPay==='crediario'&&pdvClienteId){
     const cl=localClientes.find(c=>c.id===pdvClienteId);
     const vp=total/parcelasCredito;
@@ -2076,28 +2232,47 @@ function finalizarVenda(){
       batch.set(db.collection('contas_receber').doc(),{clienteId:pdvClienteId,cliente:cl.nome,valor:vp,vencimento:vd.toISOString().slice(0,10),parcela:`${x}/${parcelasCredito}`,status:'Pendente',origemVenda:vRef.id});
     }
   }
-  if(selectedPay==='dinheiro'||selectedPay==='pix'||selectedPay==='debito'){
-    const cx=localCaixa.find(x=>x.status==='Aberto');
-    if(cx){
-      batch.set(db.collection('caixa_movimentos').doc(),{caixaId:cx.id,tipo:'entrada',valor:total,descricao:`Venda #${vRef.id.slice(0,5)}`,hora:nowStr()});
-      batch.update(db.collection('caixa').doc(cx.id),{saldoAtual:(cx.saldoAtual||0)+total});
+
+  // Crediário dentro do pagamento misto (sempre à vista, 1x)
+  if(temCrediarioMisto&&pdvClienteId){
+    const cl=localClientes.find(c=>c.id===pdvClienteId);
+    const vd=new Date();vd.setMonth(vd.getMonth()+1);
+    batch.set(db.collection('contas_receber').doc(),{clienteId:pdvClienteId,cliente:cl.nome,valor:valorCrediarioMisto,vencimento:vd.toISOString().slice(0,10),parcela:'1/1',status:'Pendente',origemVenda:vRef.id});
+  }
+
+  // Movimentar caixa — para formas à vista (dinheiro/pix/débito), seja puro ou dentro do misto
+  const cx=localCaixa.find(x=>x.status==='Aberto');
+  if(cx){
+    let valorCaixa=0;
+    if(selectedPay==='dinheiro'||selectedPay==='pix'||selectedPay==='debito'){
+      valorCaixa=total;
+    } else if(selectedPay==='misto'){
+      valorCaixa=pagamentosMistos.filter(p=>['dinheiro','pix','debito'].includes(p.forma)).reduce((s,p)=>s+(p.valor||0),0);
+    }
+    if(valorCaixa>0){
+      batch.set(db.collection('caixa_movimentos').doc(),{caixaId:cx.id,tipo:'entrada',valor:valorCaixa,descricao:`Venda #${vRef.id.slice(0,5)}`,hora:nowStr()});
+      batch.update(db.collection('caixa').doc(cx.id),{saldoAtual:(cx.saldoAtual||0)+valorCaixa});
     }
   }
+
   batch.commit().then(()=>{
-    const clNome=pdvClienteId?(localClientes.find(c=>c.id===pdvClienteId)||{nome:'—'}).nome:'Consumidor Final';
     const clNomeComp = pdvClienteId ? (localClientes.find(c=>c.id===pdvClienteId)||{nome:'Consumidor Final'}).nome : 'Consumidor Final';
     ultimaVendaComprovante = {
       data: today(), hora: nowStr(),
       itens: [...cartItems],
       subtotal, desconto, descontoTipo: pdvDescontoTipo,
       total, formaPagamento: selectedPay,
+      pagamentosMistos: selectedPay==='misto'?pagamentosMistos.map(p=>({forma:p.forma,valor:p.valor})):null,
       cliente: clNomeComp, vendedor: currentOp.nome
     };
-    document.getElementById('vok-info').textContent=`Total: ${R(total)} · ${selectedPay.toUpperCase()}`;
+    const pagLabel = selectedPay==='misto'
+      ? pagamentosMistos.map(p=>p.forma.toUpperCase()+' '+R(p.valor)).join(' + ')
+      : selectedPay.toUpperCase();
+    document.getElementById('vok-info').textContent=`Total: ${R(total)} · ${pagLabel}`;
     document.getElementById('vok-cl').textContent=`Cliente: ${clNomeComp}`;
     openModal('m-venda-ok');
-    cartItems=[];selectedPay='dinheiro';parcelasCredito=1;pdvDesconto=0;pdvDescontoTipo='R';
-  }).catch(()=>toast('Erro ao registrar venda','err'));
+    cartItems=[];selectedPay='dinheiro';parcelasCredito=1;pdvDesconto=0;pdvDescontoTipo='R';pagamentosMistos=[];
+  }).catch(e=>{console.error(e);toast('Erro ao registrar venda','err');});
 }
 function novaVenda(){closeModal('m-venda-ok');renderCurrentPage();}
 
@@ -4241,10 +4416,13 @@ function abrirWhatsAppCobranca(r){
   const tel=cl?.telefone?.replace(/\D/g,'')||'';
   if(!tel){toast('Cliente sem telefone cadastrado','err');return;}
   const venc=r.vencimento?r.vencimento.split('-').reverse().join('/'):'—';
+  const PIX_CHAVE='36790364000160';
   const msg=encodeURIComponent(
     `Olá ${r.cliente}! 😊
 
 Passando para lembrar que você tem uma parcela de *${R(r.valor)}* com vencimento em *${venc}* referente à sua compra na *Loja Sempre Bonita*.
+
+Chave Pix para pagamento: *${PIX_CHAVE}*
 
 Podemos receber via Pix ou dinheiro. Qualquer dúvida estamos à disposição! 🌸`
   );
