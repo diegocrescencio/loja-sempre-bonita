@@ -9,17 +9,17 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0f1117;--bg2:#181c27;--bg3:#1e2333;--bg4:#252b3d;
-  --border:#2e3550;--border2:#3a4260;
-  --accent:#4f8ef7;--accent2:#3a7de8;--accent-glow:rgba(79,142,247,0.15);
-  --green:#34d399;--green-bg:rgba(52,211,153,0.12);
-  --red:#f87171;--red-bg:rgba(248,113,113,0.12);
-  --amber:#fbbf24;--amber-bg:rgba(251,191,36,0.12);
-  --purple:#a78bfa;--purple-bg:rgba(167,139,250,0.12);
-  --text:#e8eaf0;--text2:#9ba3bc;--text3:#636b85;
+  --bg:#f5f6fa;--bg2:#ffffff;--bg3:#eef0f6;--bg4:#e3e6ef;
+  --border:#dde0ea;--border2:#c8ccd8;
+  --accent:#6b1235;--accent2:#8a1845;--accent-glow:rgba(107,18,53,0.10);
+  --green:#16a34a;--green-bg:rgba(22,163,74,0.10);
+  --red:#dc2626;--red-bg:rgba(220,38,38,0.10);
+  --amber:#d97706;--amber-bg:rgba(217,119,6,0.10);
+  --purple:#7c3aed;--purple-bg:rgba(124,58,237,0.10);
+  --text:#1a1d2e;--text2:#4b5068;--text3:#8b90a8;
   --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
   --radius:10px;--radius-lg:14px;--radius-xl:18px;
-  --shadow:0 4px 24px rgba(0,0,0,0.4);
+  --shadow:0 2px 16px rgba(0,0,0,0.08);
   --sidebar-w:220px;
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5}
@@ -462,6 +462,7 @@ a{color:var(--accent);text-decoration:none}
       </div>
       <div class="nav-section">
         <div class="nav-label">Financeiro</div>
+        <div class="nav-item" id="m-contas-financeiras" onclick="goPage('contasFinanceiras',this)"><i class="ti ti-building-bank"></i>Contas Financeiras</div>
         <div class="nav-item" id="m-receber" onclick="goPage('receber',this)"><i class="ti ti-arrow-up-right"></i>A Receber</div>
         <div class="nav-item" id="m-trocas" onclick="goPage('trocas',this)"><i class="ti ti-arrows-exchange"></i>Trocas e Dev.</div>
         <div class="nav-item" id="m-pagar" onclick="goPage('pagar',this)"><i class="ti ti-arrow-down-left"></i>A Pagar</div>
@@ -907,6 +908,59 @@ a{color:var(--accent);text-decoration:none}
 </div>
 
 <!-- TROCA / DEVOLUÇÃO -->
+<!-- OPERADORA DE CARTÃO -->
+<div class="modal-overlay" id="m-operadora">
+  <div class="modal modal-lg" style="max-width:700px">
+    <div class="modal-header">
+      <span class="modal-title">Operadora de Cartão</span>
+      <button class="modal-close" onclick="closeModal('m-operadora')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nome da Operadora *</label>
+      <input class="form-input" id="op-nome" placeholder="Ex: Stone, SumUp, Cielo, PagSeguro...">
+    </div>
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Taxas por Bandeira e Parcelamento (%)</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Informe a taxa percentual para cada combinação. Deixe em branco as que não aceitar.</div>
+    <div style="overflow-x:auto;max-height:380px;overflow-y:auto">
+      <table class="data-table" style="font-size:12px;min-width:500px">
+        <thead>
+          <tr>
+            <th style="width:90px">Parcelas</th>
+            <th>Visa</th>
+            <th>Mastercard</th>
+            <th>Elo</th>
+            <th>Outros</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background:var(--bg3)">
+            <td style="font-weight:700;font-size:11px">Débito / 1x</td>
+            <td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-1" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td>
+            <td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-1" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td>
+            <td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-1" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td>
+            <td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-1" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td>
+          </tr>
+          <tr><td style="font-weight:600;font-size:11px">2x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-2" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-2" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-2" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-2" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
+          <tr><td style="font-weight:600;font-size:11px">3x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-3" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-3" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-3" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-3" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
+          <tr><td style="font-weight:600;font-size:11px">4x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-4" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-4" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-4" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-4" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
+          <tr><td style="font-weight:600;font-size:11px">5x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-5" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-5" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-5" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-5" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
+          <tr><td style="font-weight:600;font-size:11px">6x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-6" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-6" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-6" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-6" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
+          <tr><td style="font-weight:600;font-size:11px">7x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-7" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-7" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-7" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-7" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
+          <tr><td style="font-weight:600;font-size:11px">8x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-8" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-8" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-8" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-8" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
+          <tr><td style="font-weight:600;font-size:11px">9x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-9" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-9" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-9" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-9" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
+          <tr><td style="font-weight:600;font-size:11px">10x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-10" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-10" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-10" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-10" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
+          <tr><td style="font-weight:600;font-size:11px">11x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-11" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-11" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-11" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-11" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
+          <tr><td style="font-weight:600;font-size:11px">12x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-12" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-12" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-12" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-12" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-operadora')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarOperadora()"><i class="ti ti-device-floppy"></i>Salvar Operadora</button>
+    </div>
+  </div>
+</div>
+
 <!-- CADASTRO RÁPIDO DE CLIENTE -->
 <div class="modal-overlay" id="m-cadastro-rapido">
   <div class="modal" style="max-width:380px">
@@ -1183,7 +1237,7 @@ let metas = {meta1:5000,meta2:10000,meta3:20000,superMeta:30000};
 let currentOp=null, cartItems=[], selectedPay='dinheiro', parcelasCredito=1;
 let localProdutos=[], localClientes=[], localVendas=[], localReceber=[], localPagar=[], localCaixa=[];
 let editProdId=null, editClId=null;
-let localCondicionais=[], localCompras=[], localTrocas=[];
+let localCondicionais=[], localCompras=[], localTrocas=[], localOperadoras=[];
 let condItens=[], editCondId=null;
 let compraItens=[], editCompraId=null;
 let impClData=[], impEstData=[];
@@ -1310,10 +1364,18 @@ function startListeners(){
     if(b)b.style.display=atrasadas.length>0?'inline':'none';
     renderCurrentPage();
   },()=>setSyncStatus(false));
+  db.collection('operadoras').onSnapshot(s=>{
+    localOperadoras=s.docs.map(d=>({id:d.id,...d.data()}));
+    renderCurrentPage();
+  },()=>{});
   db.collection('trocas').onSnapshot(s=>{
     localTrocas=s.docs.map(d=>({id:d.id,...d.data()}));
     renderCurrentPage();
   },()=>setSyncStatus(false));
+  db.collection('operadoras').onSnapshot(s=>{
+    localOperadoras=s.docs.map(d=>({id:d.id,...d.data()}));
+    renderCurrentPage();
+  },()=>{});
   db.collection('trocas').onSnapshot(s=>{
     localTrocas=s.docs.map(d=>({id:d.id,...d.data()}));
     renderCurrentPage();
@@ -1352,6 +1414,7 @@ function renderCurrentPage(){
   else if(currentPage==='condicionais')renderCondicionais(c,a);
   else if(currentPage==='trocas')renderTrocas(c,a);
   else if(currentPage==='compras')renderCompras(c,a);
+  else if(currentPage==='contasFinanceiras')renderContasFinanceiras(c,a);
   else if(currentPage==='trocas')renderTrocas(c,a);
 }
 
@@ -1845,9 +1908,29 @@ function renderPDV(c,a){
       <!-- PARCELAMENTO (cartão até 10x / crediário até 6x) -->
       <div class="parcel-box ${(selectedPay==='cartao'||selectedPay==='crediario')?'show':''}" id="parcel-box">
         <div class="pay-section-label">${selectedPay==='crediario'?'Crediário (até 6x)':'Parcelamento (até 10x)'}</div>
-        <select class="parcel-sel" id="parcel-sel" onchange="parcelasCredito=parseInt(this.value);updateCartDisplay()">
+        ${selectedPay==='cartao'&&localOperadoras.length?`
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+          <div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-weight:600;text-transform:uppercase">Operadora</div>
+            <select id="pdv-operadora" class="parcel-sel" onchange="renderTaxaCartaoPreview()">
+              <option value="">Selecione...</option>
+              ${localOperadoras.filter(o=>o.ativa!==false).map(o=>`<option value="${o.id}">${o.nome}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-weight:600;text-transform:uppercase">Bandeira</div>
+            <select id="pdv-bandeira" class="parcel-sel" onchange="renderTaxaCartaoPreview()">
+              <option value="Visa">Visa</option>
+              <option value="Mastercard">Mastercard</option>
+              <option value="Elo">Elo</option>
+              <option value="Outros">Outros</option>
+            </select>
+          </div>
+        </div>`:''}
+        <select class="parcel-sel" id="parcel-sel" onchange="parcelasCredito=parseInt(this.value);updateCartDisplay();if(selectedPay==='cartao')renderTaxaCartaoPreview()">
           ${Array.from({length:maxParcelas},(_,i)=>{const x=i+1;return `<option value="${x}" ${parcelasCredito===x?'selected':''} >${x}x de ${R(total/x)}${x===1?' (à vista)':''}</option>`;}).join('')}
         </select>
+        <div id="taxa-cartao-preview"></div>
       </div>
 
       <button class="btn-checkout" id="btn-checkout" onclick="finalizarVenda()" ${cartItems.length===0?'disabled':''}>
@@ -2208,6 +2291,12 @@ function finalizarVenda(){
 
   const batch=db.batch();
   const vRef=db.collection('vendas').doc();
+  // Capturar taxa do cartão se selecionada
+  let taxaInfo=null;
+  if(selectedPay==='cartao'&&window._taxaCartaoAtual){
+    taxaInfo=window._taxaCartaoAtual;
+  }
+
   const vendaData={
     data:today(),hora:nowStr(),itens:[...cartItems],subtotal,desconto,descontoTipo:pdvDescontoTipo,total,
     formaPagamento:selectedPay,
@@ -2215,6 +2304,14 @@ function finalizarVenda(){
   };
   if(selectedPay==='misto'){
     vendaData.pagamentosMistos=pagamentosMistos.map(p=>({forma:p.forma,valor:p.valor}));
+  }
+  if(taxaInfo){
+    vendaData.operadoraId=taxaInfo.operadoraId;
+    vendaData.bandeira=taxaInfo.bandeira;
+    vendaData.parcelas=taxaInfo.parcelas;
+    vendaData.taxaPct=taxaInfo.taxa;
+    vendaData.taxaDesconto=taxaInfo.desconto;
+    vendaData.totalLiquido=taxaInfo.liquido;
   }
   batch.set(vRef,vendaData);
 
@@ -2271,7 +2368,7 @@ function finalizarVenda(){
     document.getElementById('vok-info').textContent=`Total: ${R(total)} · ${pagLabel}`;
     document.getElementById('vok-cl').textContent=`Cliente: ${clNomeComp}`;
     openModal('m-venda-ok');
-    cartItems=[];selectedPay='dinheiro';parcelasCredito=1;pdvDesconto=0;pdvDescontoTipo='R';pagamentosMistos=[];
+    cartItems=[];selectedPay='dinheiro';parcelasCredito=1;pdvDesconto=0;pdvDescontoTipo='R';pagamentosMistos=[];window._taxaCartaoAtual=null;
   }).catch(e=>{console.error(e);toast('Erro ao registrar venda','err');});
 }
 function novaVenda(){closeModal('m-venda-ok');renderCurrentPage();}
@@ -2737,6 +2834,128 @@ function renderModalVendasDash(titulo, vendas){
     }).join('');
   }
   openModal('m-vendas-dash');
+}
+
+// ══════════════════════════════════════════════
+// CONTAS FINANCEIRAS — OPERADORAS DE CARTÃO
+// ══════════════════════════════════════════════
+let editOperadoraId = null;
+const BANDEIRAS = ['Visa','Mastercard','Elo','Outros'];
+
+function calcularTaxaCartao(valorBruto, operadoraId, bandeira, parcelas){
+  const op=localOperadoras.find(o=>o.id===operadoraId);
+  if(!op||!op.taxas)return{taxa:0,desconto:0,liquido:valorBruto};
+  const pct=(op.taxas[bandeira]&&op.taxas[bandeira][parcelas])||0;
+  const desconto=valorBruto*(pct/100);
+  return{taxa:pct,desconto,liquido:valorBruto-desconto};
+}
+
+function renderTaxaCartaoPreview(){
+  const opId=document.getElementById('pdv-operadora')?.value;
+  const band=document.getElementById('pdv-bandeira')?.value||'Visa';
+  const parc=parseInt(document.getElementById('parcel-sel')?.value||1);
+  const subtotal=cartItems.reduce((s,i)=>s+(i.preco*i.qtd),0);
+  const total=totalComDesconto(subtotal);
+  const preview=document.getElementById('taxa-cartao-preview');
+  if(!preview)return;
+  if(!opId){preview.innerHTML='';return;}
+  const {taxa,desconto,liquido}=calcularTaxaCartao(total,opId,band,parc);
+  if(!taxa){preview.innerHTML='<div style="font-size:11px;color:var(--text3);padding:4px 0">Taxa não cadastrada para essa combinação</div>';return;}
+  preview.innerHTML=`
+    <div style="background:var(--bg3);border-radius:var(--radius);padding:10px;font-size:12px;margin-top:6px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:var(--text2)">Total bruto</span><span style="font-family:var(--mono)">${R(total)}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:var(--red)">Taxa ${taxa.toFixed(2)}%</span><span style="font-family:var(--mono);color:var(--red)">- ${R(desconto)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--border);padding-top:6px;margin-top:3px"><span style="color:var(--green)">Líquido a receber</span><span style="font-family:var(--mono);color:var(--green)">${R(liquido)}</span></div>
+    </div>`;
+  window._taxaCartaoAtual={taxa,desconto,liquido,operadoraId:opId,bandeira:band,parcelas:parc};
+}
+
+function renderContasFinanceiras(c,a){
+  a.innerHTML=`<button class="btn btn-primary btn-sm" onclick="abrirNovaOperadora()"><i class="ti ti-plus"></i>Nova Operadora</button>`;
+  c.innerHTML=`
+  <div class="card" style="margin-bottom:16px">
+    <div style="font-size:13px;color:var(--text2);line-height:1.7">
+      Cadastre suas operadoras (Stone, SumUp, Cielo, etc.) com as taxas por bandeira e parcelamento.
+      As taxas são calculadas automaticamente ao selecionar a operadora no PDV.
+    </div>
+  </div>
+  ${!localOperadoras.length?
+    '<div class="empty"><i class="ti ti-building-bank"></i><div class="empty-title">Nenhuma operadora cadastrada</div><div class="empty-sub">Adicione sua primeira operadora de cartão</div></div>'
+    :localOperadoras.map(op=>`
+    <div class="card" style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--text)">${op.nome}</div>
+          <div style="font-size:12px;color:var(--text3)">${op.ativa!==false?'Ativa':'Inativa'}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" onclick="editarOperadora('${op.id}')"><i class="ti ti-edit"></i>Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="excluirOperadora('${op.id}')"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table" style="font-size:12px">
+          <thead><tr><th>Parcelas</th>${BANDEIRAS.map(b=>`<th>${b}</th>`).join('')}</tr></thead>
+          <tbody>
+            ${Array.from({length:12},(_,i)=>i+1).map(p=>`
+            <tr>
+              <td style="font-weight:600">${p===1?'Déb / 1x':p+'x'}</td>
+              ${BANDEIRAS.map(b=>{
+                const tx=(op.taxas&&op.taxas[b]&&op.taxas[b][p])||0;
+                return `<td style="font-family:var(--mono);color:${tx>0?'var(--text)':'var(--text3)'}">${tx>0?tx.toFixed(2)+'%':'—'}</td>`;
+              }).join('')}
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`).join('')}`;
+}
+
+function abrirNovaOperadora(){
+  editOperadoraId=null;
+  document.getElementById('op-nome').value='';
+  BANDEIRAS.forEach(b=>Array.from({length:12},(_,i)=>i+1).forEach(p=>{
+    const el=document.getElementById('taxa-'+b+'-'+p);
+    if(el)el.value='';
+  }));
+  openModal('m-operadora');
+}
+
+function editarOperadora(id){
+  const op=localOperadoras.find(o=>o.id===id);
+  if(!op)return;
+  editOperadoraId=id;
+  document.getElementById('op-nome').value=op.nome||'';
+  BANDEIRAS.forEach(b=>Array.from({length:12},(_,i)=>i+1).forEach(p=>{
+    const el=document.getElementById('taxa-'+b+'-'+p);
+    if(el)el.value=(op.taxas&&op.taxas[b]&&op.taxas[b][p])||'';
+  }));
+  openModal('m-operadora');
+}
+
+function salvarOperadora(){
+  const nome=document.getElementById('op-nome').value.trim();
+  if(!nome){toast('Informe o nome da operadora','err');return;}
+  const taxas={};
+  BANDEIRAS.forEach(b=>{
+    taxas[b]={};
+    Array.from({length:12},(_,i)=>i+1).forEach(p=>{
+      const el=document.getElementById('taxa-'+b+'-'+p);
+      const v=parseFloat(el?.value||0);
+      if(v>0)taxas[b][p]=v;
+    });
+  });
+  const data={nome,taxas,ativa:true};
+  const ref=editOperadoraId?db.collection('operadoras').doc(editOperadoraId):db.collection('operadoras').doc();
+  ref.set(data,{merge:true}).then(()=>{
+    toast(editOperadoraId?'Operadora atualizada!':'Operadora cadastrada!');
+    closeModal('m-operadora');editOperadoraId=null;
+  }).catch(()=>toast('Erro ao salvar','err'));
+}
+
+function excluirOperadora(id){
+  if(!confirm('Excluir esta operadora?'))return;
+  db.collection('operadoras').doc(id).delete().then(()=>toast('Operadora excluída!')).catch(()=>toast('Erro','err'));
 }
 
 // ── COMPROVANTE DE VENDA ──
@@ -3859,6 +4078,11 @@ function renderRelatorios(c,a){
               <span style="font-size:12px;color:var(--text3)">${(v.itens||[]).length} item(s)${v.formaPagamento&&v.formaPagamento!=='—'?' · '+v.formaPagamento:''}</span>
               <strong style="font-size:15px;color:var(--green);font-family:var(--mono)">${R(v.total)}</strong>
             </div>
+            ${v.taxaPct>0?`
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:4px;padding-top:4px;border-top:1px dashed var(--border)">
+              <span>${(localOperadoras.find(o=>o.id===v.operadoraId)||{nome:'Operadora'}).nome} · ${v.bandeira||''} ${v.parcelas}x · Taxa ${v.taxaPct.toFixed(2)}%</span>
+              <span style="color:var(--green)">Líquido: ${R(v.totalLiquido)}</span>
+            </div>`:''}
           </div>`}
         </div>
       </div>`;
