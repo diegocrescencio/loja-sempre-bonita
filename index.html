@@ -921,11 +921,11 @@ a{color:var(--accent);text-decoration:none}
     </div>
     <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Taxas por Bandeira e Parcelamento (%)</div>
     <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Informe a taxa percentual para cada combinação. Deixe em branco as que não aceitar.</div>
-    <div style="overflow-x:auto;max-height:380px;overflow-y:auto">
-      <table class="data-table" style="font-size:12px;min-width:500px">
+    <div style="overflow-x:auto;max-height:420px;overflow-y:auto">
+      <table class="data-table" style="font-size:12px;min-width:520px">
         <thead>
           <tr>
-            <th style="width:90px">Parcelas</th>
+            <th style="width:100px">Tipo</th>
             <th>Visa</th>
             <th>Mastercard</th>
             <th>Elo</th>
@@ -933,24 +933,14 @@ a{color:var(--accent);text-decoration:none}
           </tr>
         </thead>
         <tbody>
-          <tr style="background:var(--bg3)">
-            <td style="font-weight:700;font-size:11px">Débito / 1x</td>
-            <td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-1" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td>
-            <td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-1" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td>
-            <td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-1" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td>
-            <td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-1" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td>
+          <!-- DÉBITO -->
+          <tr style="background:var(--amber-bg)">
+            <td style="font-weight:700;font-size:11px;color:var(--amber)">Débito</td>
+            <td><input type="number" step="0.01" min="0" max="30" id="taxa-deb-Visa-deb" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-deb-Mastercard-deb" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-deb-Elo-deb" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-deb-Outros-deb" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td>
           </tr>
-          <tr><td style="font-weight:600;font-size:11px">2x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-2" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-2" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-2" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-2" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
-          <tr><td style="font-weight:600;font-size:11px">3x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-3" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-3" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-3" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-3" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
-          <tr><td style="font-weight:600;font-size:11px">4x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-4" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-4" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-4" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-4" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
-          <tr><td style="font-weight:600;font-size:11px">5x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-5" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-5" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-5" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-5" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
-          <tr><td style="font-weight:600;font-size:11px">6x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-6" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-6" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-6" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-6" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
-          <tr><td style="font-weight:600;font-size:11px">7x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-7" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-7" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-7" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-7" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
-          <tr><td style="font-weight:600;font-size:11px">8x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-8" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-8" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-8" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-8" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
-          <tr><td style="font-weight:600;font-size:11px">9x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-9" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-9" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-9" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-9" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
-          <tr><td style="font-weight:600;font-size:11px">10x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-10" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-10" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-10" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-10" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
-          <tr><td style="font-weight:600;font-size:11px">11x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-11" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-11" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-11" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-11" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
-          <tr><td style="font-weight:600;font-size:11px">12x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Visa-12" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Mastercard-12" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Elo-12" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-Outros-12" class="form-input" style="padding:4px 6px;font-size:12px" placeholder="0.00"></td></tr>
+          <!-- SEPARADOR -->
+          <tr><td colspan="5" style="padding:4px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);background:var(--bg3)">Crédito — Parcelamento</td></tr>
+          <tr ><td style="font-weight:600;font-size:11px;color:var(--accent)">Créd. 1x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Visa-1" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Mastercard-1" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Elo-1" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Outros-1" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td></tr><tr style="background:var(--bg3)"><td style="font-weight:600;font-size:11px;color:var(--accent)">Créd. 2x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Visa-2" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Mastercard-2" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Elo-2" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Outros-2" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td></tr><tr ><td style="font-weight:600;font-size:11px;color:var(--accent)">Créd. 3x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Visa-3" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Mastercard-3" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Elo-3" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Outros-3" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td></tr><tr style="background:var(--bg3)"><td style="font-weight:600;font-size:11px;color:var(--accent)">Créd. 4x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Visa-4" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Mastercard-4" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Elo-4" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Outros-4" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td></tr><tr ><td style="font-weight:600;font-size:11px;color:var(--accent)">Créd. 5x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Visa-5" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Mastercard-5" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Elo-5" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Outros-5" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td></tr><tr style="background:var(--bg3)"><td style="font-weight:600;font-size:11px;color:var(--accent)">Créd. 6x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Visa-6" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Mastercard-6" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Elo-6" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Outros-6" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td></tr><tr ><td style="font-weight:600;font-size:11px;color:var(--accent)">Créd. 7x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Visa-7" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Mastercard-7" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Elo-7" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Outros-7" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td></tr><tr style="background:var(--bg3)"><td style="font-weight:600;font-size:11px;color:var(--accent)">Créd. 8x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Visa-8" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Mastercard-8" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Elo-8" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Outros-8" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td></tr><tr ><td style="font-weight:600;font-size:11px;color:var(--accent)">Créd. 9x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Visa-9" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Mastercard-9" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Elo-9" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Outros-9" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td></tr><tr style="background:var(--bg3)"><td style="font-weight:600;font-size:11px;color:var(--accent)">Créd. 10x</td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Visa-10" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Mastercard-10" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Elo-10" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td><td><input type="number" step="0.01" min="0" max="30" id="taxa-cred-Outros-10" class="form-input" style="padding:4px 6px;font-size:12px;width:100%" placeholder="0.00"></td></tr>
         </tbody>
       </table>
     </div>
@@ -2293,7 +2283,7 @@ function finalizarVenda(){
   const vRef=db.collection('vendas').doc();
   // Capturar taxa do cartão se selecionada
   let taxaInfo=null;
-  if(selectedPay==='cartao'&&window._taxaCartaoAtual){
+  if((selectedPay==='cartao'||selectedPay==='debito')&&window._taxaCartaoAtual){
     taxaInfo=window._taxaCartaoAtual;
   }
 
@@ -2842,10 +2832,15 @@ function renderModalVendasDash(titulo, vendas){
 let editOperadoraId = null;
 const BANDEIRAS = ['Visa','Mastercard','Elo','Outros'];
 
-function calcularTaxaCartao(valorBruto, operadoraId, bandeira, parcelas){
+function calcularTaxaCartao(valorBruto, operadoraId, bandeira, parcelas, tipoCartao){
   const op=localOperadoras.find(o=>o.id===operadoraId);
   if(!op||!op.taxas)return{taxa:0,desconto:0,liquido:valorBruto};
-  const pct=(op.taxas[bandeira]&&op.taxas[bandeira][parcelas])||0;
+  let pct=0;
+  if(tipoCartao==='debito'){
+    pct=(op.taxas?.debito?.[bandeira]?.['deb'])||0;
+  } else {
+    pct=(op.taxas?.credito?.[bandeira]?.[parcelas])||0;
+  }
   const desconto=valorBruto*(pct/100);
   return{taxa:pct,desconto,liquido:valorBruto-desconto};
 }
@@ -2859,7 +2854,8 @@ function renderTaxaCartaoPreview(){
   const preview=document.getElementById('taxa-cartao-preview');
   if(!preview)return;
   if(!opId){preview.innerHTML='';return;}
-  const {taxa,desconto,liquido}=calcularTaxaCartao(total,opId,band,parc);
+  const tipoCartao=selectedPay==='debito'?'debito':'credito';
+  const {taxa,desconto,liquido}=calcularTaxaCartao(total,opId,band,parc,tipoCartao);
   if(!taxa){preview.innerHTML='<div style="font-size:11px;color:var(--text3);padding:4px 0">Taxa não cadastrada para essa combinação</div>';return;}
   preview.innerHTML=`
     <div style="background:var(--bg3);border-radius:var(--radius);padding:10px;font-size:12px;margin-top:6px">
@@ -2895,13 +2891,18 @@ function renderContasFinanceiras(c,a){
       </div>
       <div style="overflow-x:auto">
         <table class="data-table" style="font-size:12px">
-          <thead><tr><th>Parcelas</th>${BANDEIRAS.map(b=>`<th>${b}</th>`).join('')}</tr></thead>
+          <thead><tr><th>Tipo</th>${BANDEIRAS.map(b=>`<th>${b}</th>`).join('')}</tr></thead>
           <tbody>
-            ${Array.from({length:12},(_,i)=>i+1).map(p=>`
+            <tr style="background:var(--amber-bg)">
+              <td style="font-weight:700;font-size:11px;color:var(--amber)">Débito</td>
+              ${BANDEIRAS.map(b=>{const tx=(op.taxas?.debito?.[b]?.['deb'])||0;return `<td style="font-family:var(--mono);color:${tx>0?'var(--text)':'var(--text3)'}">${tx>0?tx.toFixed(2)+'%':'—'}</td>`;}).join('')}
+            </tr>
+            <tr><td colspan="${BANDEIRAS.length+1}" style="padding:3px 10px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);background:var(--bg3)">Crédito</td></tr>
+            ${Array.from({length:10},(_,i)=>i+1).map(p=>`
             <tr>
-              <td style="font-weight:600">${p===1?'Déb / 1x':p+'x'}</td>
+              <td style="font-weight:600;color:var(--accent)">${p}x</td>
               ${BANDEIRAS.map(b=>{
-                const tx=(op.taxas&&op.taxas[b]&&op.taxas[b][p])||0;
+                const tx=(op.taxas?.credito?.[b]?.[p])||0;
                 return `<td style="font-family:var(--mono);color:${tx>0?'var(--text)':'var(--text3)'}">${tx>0?tx.toFixed(2)+'%':'—'}</td>`;
               }).join('')}
             </tr>`).join('')}
@@ -2914,10 +2915,14 @@ function renderContasFinanceiras(c,a){
 function abrirNovaOperadora(){
   editOperadoraId=null;
   document.getElementById('op-nome').value='';
-  BANDEIRAS.forEach(b=>Array.from({length:12},(_,i)=>i+1).forEach(p=>{
-    const el=document.getElementById('taxa-'+b+'-'+p);
-    if(el)el.value='';
-  }));
+  BANDEIRAS.forEach(b=>{
+    const elDeb=document.getElementById('taxa-deb-'+b+'-deb');
+    if(elDeb)elDeb.value='';
+    for(let p=1;p<=10;p++){
+      const el=document.getElementById('taxa-cred-'+b+'-'+p);
+      if(el)el.value='';
+    }
+  });
   openModal('m-operadora');
 }
 
@@ -2926,24 +2931,34 @@ function editarOperadora(id){
   if(!op)return;
   editOperadoraId=id;
   document.getElementById('op-nome').value=op.nome||'';
-  BANDEIRAS.forEach(b=>Array.from({length:12},(_,i)=>i+1).forEach(p=>{
-    const el=document.getElementById('taxa-'+b+'-'+p);
-    if(el)el.value=(op.taxas&&op.taxas[b]&&op.taxas[b][p])||'';
-  }));
+  BANDEIRAS.forEach(b=>{
+    // Preencher débito
+    const elDeb=document.getElementById('taxa-deb-'+b+'-deb');
+    if(elDeb)elDeb.value=(op.taxas?.debito?.[b]?.['deb'])||'';
+    // Preencher crédito
+    for(let p=1;p<=10;p++){
+      const el=document.getElementById('taxa-cred-'+b+'-'+p);
+      if(el)el.value=(op.taxas?.credito?.[b]?.[p])||'';
+    }
+  });
   openModal('m-operadora');
 }
 
 function salvarOperadora(){
   const nome=document.getElementById('op-nome').value.trim();
   if(!nome){toast('Informe o nome da operadora','err');return;}
-  const taxas={};
+  const taxas={debito:{},credito:{}};
   BANDEIRAS.forEach(b=>{
-    taxas[b]={};
-    Array.from({length:12},(_,i)=>i+1).forEach(p=>{
-      const el=document.getElementById('taxa-'+b+'-'+p);
+    // Débito
+    const vDeb=parseFloat(document.getElementById('taxa-deb-'+b+'-deb')?.value||0);
+    if(vDeb>0){if(!taxas.debito[b])taxas.debito[b]={};taxas.debito[b]['deb']=vDeb;}
+    // Crédito 1x a 10x
+    taxas.credito[b]={};
+    for(let p=1;p<=10;p++){
+      const el=document.getElementById('taxa-cred-'+b+'-'+p);
       const v=parseFloat(el?.value||0);
-      if(v>0)taxas[b][p]=v;
-    });
+      if(v>0)taxas.credito[b][p]=v;
+    }
   });
   const data={nome,taxas,ativa:true};
   const ref=editOperadoraId?db.collection('operadoras').doc(editOperadoraId):db.collection('operadoras').doc();
