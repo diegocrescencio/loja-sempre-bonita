@@ -153,6 +153,7 @@ a{color:var(--accent);text-decoration:none}
 
 /* ── CART ── */
 .cart{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);display:flex;flex-direction:column;height:100%;overflow:hidden}
+.cart-checkout-bar{padding:10px 14px;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg2)}
 .cart-head{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .cart-head-title{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:7px}
 .cart-badge{font-size:10px;font-weight:700;background:var(--accent);color:#fff;padding:1px 6px;border-radius:99px}
@@ -182,7 +183,7 @@ a{color:var(--accent);text-decoration:none}
 .ci-del:hover{color:var(--red)}
 
 /* footer do cart */
-.cart-foot{padding:12px 14px;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg2)}
+.cart-foot{padding:12px 14px;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg2);overflow-y:auto;max-height:65vh}
 .cart-total-line{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .cart-total-label{font-size:12px;color:var(--text2)}
 .cart-total-val{font-size:22px;font-weight:700;color:var(--green);font-family:var(--mono)}
@@ -1923,6 +1924,8 @@ function renderPDV(c,a){
         <div id="taxa-cartao-preview"></div>
       </div>
 
+    </div>
+    <div class="cart-checkout-bar">
       <button class="btn-checkout" id="btn-checkout" onclick="finalizarVenda()" ${cartItems.length===0?'disabled':''}>
         <i class="ti ti-circle-check"></i>Concluir Venda — ${R(totalComDesconto(total))}
       </button>
