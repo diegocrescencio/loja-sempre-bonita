@@ -152,8 +152,8 @@ a{color:var(--accent);text-decoration:none}
 .prod-tile-stock.zero{color:var(--red)}
 
 /* ── CART ── */
-.cart{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);display:flex;flex-direction:column;height:100%;overflow:hidden}
-.cart-checkout-bar{padding:10px 14px;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg2)}
+.cart{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);display:flex;flex-direction:column;height:100%;overflow:hidden;min-height:0}
+.cart-checkout-bar{padding:10px 14px;border-top:2px solid var(--border);flex-shrink:0;background:var(--bg2)}
 .cart-head{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .cart-head-title{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:7px}
 .cart-badge{font-size:10px;font-weight:700;background:var(--accent);color:#fff;padding:1px 6px;border-radius:99px}
@@ -165,7 +165,7 @@ a{color:var(--accent);text-decoration:none}
 .cart-cl-sel{width:100%;padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:12px;outline:none}
 
 /* items */
-.cart-items{flex:1;overflow-y:auto;padding:8px 10px}
+.cart-items{flex:1 1 0;overflow-y:auto;padding:8px 10px;min-height:40px}
 .cart-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text3);gap:6px;font-size:12px}
 .cart-empty i{font-size:28px;opacity:.3}
 .ci-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)}
@@ -183,7 +183,7 @@ a{color:var(--accent);text-decoration:none}
 .ci-del:hover{color:var(--red)}
 
 /* footer do cart */
-.cart-foot{padding:12px 14px;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg2);overflow-y:auto;max-height:65vh}
+.cart-foot{padding:12px 14px;border-top:1px solid var(--border);flex:0 1 auto;background:var(--bg2);overflow-y:auto;min-height:0}
 .cart-total-line{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .cart-total-label{font-size:12px;color:var(--text2)}
 .cart-total-val{font-size:22px;font-weight:700;color:var(--green);font-family:var(--mono)}
