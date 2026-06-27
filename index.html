@@ -2149,10 +2149,13 @@ function removerFormaMista(idx){
 }
 
 function atualizarFormaMista(idx,campo,valor){
-  if(campo==='valor') pagamentosMistos[idx].valor=parseFloat(valor)||0;
-  else pagamentosMistos[idx].forma=valor;
-  // Só atualizar o resumo (não recriar os inputs — causava perda de foco)
-  atualizarResumoMisto();
+  if(campo==='valor'){
+    pagamentosMistos[idx].valor=parseFloat(valor)||0;
+    atualizarResumoMisto(); // só atualiza resumo, não recria inputs
+  } else {
+    pagamentosMistos[idx].forma=valor;
+    renderMistoLinhas(); // recria linhas para mostrar/ocultar campos extras do cartão
+  }
 }
 
 function atualizarResumoMisto(){
