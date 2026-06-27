@@ -2151,31 +2151,15 @@ function removerFormaMista(idx){
 function atualizarFormaMista(idx,campo,valor){
   if(campo==='valor') pagamentosMistos[idx].valor=parseFloat(valor)||0;
   else pagamentosMistos[idx].forma=valor;
-  renderMistoLinhas();
+  // Só atualizar o resumo (não recriar os inputs — causava perda de foco)
+  atualizarResumoMisto();
 }
 
-function renderMistoLinhas(){
-  const cont=document.getElementById('misto-linhas');
+function atualizarResumoMisto(){
   const resumo=document.getElementById('misto-resumo');
-  if(!cont)return;
+  if(!resumo)return;
   const subtotal=cartItems.reduce((s,i)=>s+(i.preco*i.qtd),0);
   const total=totalComDesconto(subtotal);
-
-  cont.innerHTML=pagamentosMistos.map((p,i)=>`
-    <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
-      <select onchange="atualizarFormaMista(${i},'forma',this.value)" style="flex:1.3;padding:6px 8px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:12px">
-        <option value="dinheiro" ${p.forma==='dinheiro'?'selected':''}>Dinheiro</option>
-        <option value="pix" ${p.forma==='pix'?'selected':''}>Pix</option>
-        <option value="debito" ${p.forma==='debito'?'selected':''}>Débito</option>
-        <option value="cartao" ${p.forma==='cartao'?'selected':''}>Cartão Créd.</option>
-        <option value="crediario" ${p.forma==='crediario'?'selected':''}>Crediário</option>
-      </select>
-      <input type="number" min="0" step="0.01" value="${p.valor||''}" placeholder="0,00"
-        oninput="atualizarFormaMista(${i},'valor',this.value)"
-        style="flex:1;padding:6px 8px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:13px;font-weight:600">
-      ${pagamentosMistos.length>1?`<button onclick="removerFormaMista(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;padding:0 4px"><i class="ti ti-x"></i></button>`:''}
-    </div>`).join('');
-
   const somaPagamentos=pagamentosMistos.reduce((s,p)=>s+(p.valor||0),0);
   const diff=total-somaPagamentos;
   resumo.innerHTML=`
@@ -2185,13 +2169,59 @@ function renderMistoLinhas(){
       <span>${diff>0.01?'Falta':diff<-0.01?'Excede':'Confere ✓'}</span>
       <span style="font-family:var(--mono)">${Math.abs(diff)>=0.01?R(Math.abs(diff)):''}</span>
     </div>`;
-
-  // Atualizar botão de checkout
   const btn=document.getElementById('btn-checkout');
   if(btn){
-    const podeFinalizar=Math.abs(diff)<0.01 && total>0;
-    btn.disabled = cartItems.length===0 || (selectedPay==='misto' && !podeFinalizar);
+    const podeFinalizar=Math.abs(diff)<0.01&&total>0;
+    btn.disabled=cartItems.length===0||(selectedPay==='misto'&&!podeFinalizar);
   }
+}
+
+function renderMistoLinhas(){
+  const cont=document.getElementById('misto-linhas');
+  if(!cont)return;
+  const subtotal=cartItems.reduce((s,i)=>s+(i.preco*i.qtd),0);
+  const total=totalComDesconto(subtotal);
+
+  // Recriar linhas completas (chamado só ao adicionar/remover, não ao digitar valor)
+  cont.innerHTML=pagamentosMistos.map((p,i)=>`
+    <div style="margin-bottom:8px;background:var(--bg3);border-radius:var(--radius);padding:8px 10px">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:${p.forma==='cartao'?'8':'0'}px">
+        <select onchange="atualizarFormaMista(${i},'forma',this.value)"
+          style="flex:1.3;padding:6px 8px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:12px">
+          <option value="dinheiro" ${p.forma==='dinheiro'?'selected':''}>Dinheiro</option>
+          <option value="pix" ${p.forma==='pix'?'selected':''}>Pix</option>
+          <option value="debito" ${p.forma==='debito'?'selected':''}>Débito</option>
+          <option value="cartao" ${p.forma==='cartao'?'selected':''}>Cartão Créd.</option>
+          <option value="crediario" ${p.forma==='crediario'?'selected':''}>Crediário</option>
+        </select>
+        <input type="number" min="0" step="0.01" value="${p.valor||''}" placeholder="0,00"
+          id="misto-val-${i}"
+          oninput="pagamentosMistos[${i}].valor=parseFloat(this.value)||0;atualizarResumoMisto()"
+          style="flex:1;padding:6px 8px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:13px;font-weight:600;min-width:0">
+        ${pagamentosMistos.length>1?`<button onclick="removerFormaMista(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;padding:0 4px;flex-shrink:0"><i class="ti ti-x"></i></button>`:''}
+      </div>
+      ${p.forma==='cartao'&&localOperadoras.length?`
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:4px">
+        <select id="misto-op-${i}" onchange="pagamentosMistos[${i}].operadoraId=this.value"
+          style="padding:5px 6px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:11px">
+          <option value="">Operadora</option>
+          ${localOperadoras.filter(o=>o.ativa!==false).map(o=>`<option value="${o.id}" ${p.operadoraId===o.id?'selected':''}>${o.nome}</option>`).join('')}
+        </select>
+        <select id="misto-band-${i}" onchange="pagamentosMistos[${i}].bandeira=this.value"
+          style="padding:5px 6px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:11px">
+          <option value="Visa">Visa</option>
+          <option value="Mastercard">Mastercard</option>
+          <option value="Elo">Elo</option>
+          <option value="Outros">Outros</option>
+        </select>
+        <select id="misto-parc-${i}" onchange="pagamentosMistos[${i}].parcelas=parseInt(this.value)"
+          style="padding:5px 6px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:11px">
+          ${Array.from({length:10},(_,x)=>`<option value="${x+1}" ${(p.parcelas||1)===x+1?'selected':''}>${x+1}x</option>`).join('')}
+        </select>
+      </div>`:''}
+    </div>`).join('');
+
+  atualizarResumoMisto();
 }
 function buscarClientePDV(termo){
   const resultados=document.getElementById('cart-cl-resultados');
