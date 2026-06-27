@@ -2158,6 +2158,20 @@ function atualizarFormaMista(idx,campo,valor){
   }
 }
 
+function renderMistoTaxaPreview(i){
+  const prev=document.getElementById('misto-taxa-prev-'+i);
+  if(!prev)return;
+  const p=pagamentosMistos[i];
+  if(!p||!p.operadoraId||!p.valor){prev.innerHTML='';return;}
+  const tipo=p.forma==='debito'?'debito':'credito';
+  const {taxa,desconto,liquido}=calcularTaxaCartao(p.valor,p.operadoraId,p.bandeira||'Visa',p.parcelas||1,tipo);
+  if(!taxa){prev.innerHTML='';return;}
+  prev.innerHTML=`<div style="font-size:11px;margin-top:4px;padding:5px 8px;background:var(--bg);border-radius:var(--radius);display:flex;justify-content:space-between">
+    <span style="color:var(--red)">Taxa ${taxa.toFixed(2)}% = -${R(desconto)}</span>
+    <span style="color:var(--green);font-weight:600">Líq: ${R(liquido)}</span>
+  </div>`;
+}
+
 function atualizarResumoMisto(){
   const resumo=document.getElementById('misto-resumo');
   if(!resumo)return;
@@ -2203,25 +2217,26 @@ function renderMistoLinhas(){
           style="flex:1;padding:6px 8px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:13px;font-weight:600;min-width:0">
         ${pagamentosMistos.length>1?`<button onclick="removerFormaMista(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;padding:0 4px;flex-shrink:0"><i class="ti ti-x"></i></button>`:''}
       </div>
-      ${p.forma==='cartao'&&localOperadoras.length?`
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:4px">
-        <select id="misto-op-${i}" onchange="pagamentosMistos[${i}].operadoraId=this.value"
+      ${(p.forma==='cartao'||p.forma==='debito')&&localOperadoras.length?`
+      <div style="display:grid;grid-template-columns:1fr 1fr ${p.forma==='cartao'?'1fr':''};gap:6px;margin-top:6px">
+        <select id="misto-op-${i}" onchange="pagamentosMistos[${i}].operadoraId=this.value;renderMistoTaxaPreview(${i})"
           style="padding:5px 6px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:11px">
           <option value="">Operadora</option>
           ${localOperadoras.filter(o=>o.ativa!==false).map(o=>`<option value="${o.id}" ${p.operadoraId===o.id?'selected':''}>${o.nome}</option>`).join('')}
         </select>
-        <select id="misto-band-${i}" onchange="pagamentosMistos[${i}].bandeira=this.value"
+        <select id="misto-band-${i}" onchange="pagamentosMistos[${i}].bandeira=this.value;renderMistoTaxaPreview(${i})"
           style="padding:5px 6px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:11px">
-          <option value="Visa">Visa</option>
-          <option value="Mastercard">Mastercard</option>
-          <option value="Elo">Elo</option>
-          <option value="Outros">Outros</option>
+          <option value="Visa" ${(p.bandeira||'Visa')==='Visa'?'selected':''}>Visa</option>
+          <option value="Mastercard" ${p.bandeira==='Mastercard'?'selected':''}>Mastercard</option>
+          <option value="Elo" ${p.bandeira==='Elo'?'selected':''}>Elo</option>
+          <option value="Outros" ${p.bandeira==='Outros'?'selected':''}>Outros</option>
         </select>
-        <select id="misto-parc-${i}" onchange="pagamentosMistos[${i}].parcelas=parseInt(this.value)"
+        ${p.forma==='cartao'?`<select id="misto-parc-${i}" onchange="pagamentosMistos[${i}].parcelas=parseInt(this.value);renderMistoTaxaPreview(${i})"
           style="padding:5px 6px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:11px">
           ${Array.from({length:10},(_,x)=>`<option value="${x+1}" ${(p.parcelas||1)===x+1?'selected':''}>${x+1}x</option>`).join('')}
-        </select>
-      </div>`:''}
+        </select>`:''}
+      </div>
+      <div id="misto-taxa-prev-${i}"></div>`:''}
     </div>`).join('');
 
   atualizarResumoMisto();
@@ -2324,6 +2339,18 @@ function finalizarVenda(){
   if((selectedPay==='cartao'||selectedPay==='debito')&&window._taxaCartaoAtual){
     taxaInfo=window._taxaCartaoAtual;
   }
+  // Para pagamento misto: calcular taxa de cada linha de cartão/débito
+  if(selectedPay==='misto'){
+    pagamentosMistos.forEach((p,i)=>{
+      if((p.forma==='cartao'||p.forma==='debito')&&p.operadoraId){
+        const tipo=p.forma==='debito'?'debito':'credito';
+        const {taxa,desconto:desc,liquido}=calcularTaxaCartao(p.valor,p.operadoraId,p.bandeira||'Visa',p.parcelas||1,tipo);
+        p.taxaPct=taxa;
+        p.taxaDesconto=desc;
+        p.totalLiquido=liquido;
+      }
+    });
+  }
 
   const vendaData={
     data:today(),hora:nowStr(),itens:[...cartItems],subtotal,desconto,descontoTipo:pdvDescontoTipo,total,
@@ -2331,7 +2358,18 @@ function finalizarVenda(){
     clienteId:pdvClienteId||'Consumidor Geral',vendedor:currentOp.nome
   };
   if(selectedPay==='misto'){
-    vendaData.pagamentosMistos=pagamentosMistos.map(p=>({forma:p.forma,valor:p.valor}));
+    vendaData.pagamentosMistos=pagamentosMistos.map(p=>({
+      forma:p.forma,valor:p.valor,
+      operadoraId:p.operadoraId||null,
+      bandeira:p.bandeira||null,
+      parcelas:p.parcelas||1,
+      taxaPct:p.taxaPct||0,
+      taxaDesconto:p.taxaDesconto||0,
+      totalLiquido:p.totalLiquido||p.valor,
+    }));
+    // Calcular total líquido geral do misto
+    const liquidoMisto=pagamentosMistos.reduce((s,p)=>s+(p.totalLiquido||p.valor),0);
+    vendaData.totalLiquidoMisto=Math.round(liquidoMisto*100)/100;
   }
   if(taxaInfo){
     vendaData.operadoraId=taxaInfo.operadoraId;
@@ -4135,6 +4173,18 @@ function renderRelatorios(c,a){
             <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:4px;padding-top:4px;border-top:1px dashed var(--border)">
               <span>${(localOperadoras.find(o=>o.id===v.operadoraId)||{nome:'Operadora'}).nome} · ${v.bandeira||''} ${v.parcelas}x · Taxa ${v.taxaPct.toFixed(2)}%</span>
               <span style="color:var(--green)">Líquido: ${R(v.totalLiquido)}</span>
+            </div>`:''}
+            ${v.pagamentosMistos&&v.pagamentosMistos.some(p=>p.taxaPct>0)?`
+            <div style="margin-top:4px;padding-top:4px;border-top:1px dashed var(--border)">
+              ${v.pagamentosMistos.filter(p=>p.taxaPct>0).map(p=>`
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3)">
+                <span>${(localOperadoras.find(o=>o.id===p.operadoraId)||{nome:'Operadora'}).nome} · ${p.bandeira||''} ${p.parcelas}x · Taxa ${p.taxaPct.toFixed(2)}% (${R(p.valor)})</span>
+                <span style="color:var(--green)">Líq: ${R(p.totalLiquido)}</span>
+              </div>`).join('')}
+              <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-top:3px">
+                <span style="color:var(--text2)">Total líquido da venda</span>
+                <span style="color:var(--green);font-family:var(--mono)">${R(v.totalLiquidoMisto||v.total)}</span>
+              </div>
             </div>`:''}
           </div>`}
         </div>
