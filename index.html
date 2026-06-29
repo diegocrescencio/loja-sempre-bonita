@@ -393,6 +393,10 @@ a{color:var(--accent);text-decoration:none}
   color: #000;
   margin-top: 0.5mm;
 }
+.pill{padding:6px 14px;border-radius:99px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.pill:hover{border-color:var(--accent);color:var(--accent)}
+.pill-active{background:var(--accent);border-color:var(--accent);color:#fff}
+body.vendedora-mode .admin-only{display:none !important;}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#6b1235">
@@ -608,6 +612,7 @@ a{color:var(--accent);text-decoration:none}
       <div class="form-group"><label class="form-label">Telefone</label><input class="form-input" id="fc-tel" placeholder="(16) 99999-9999"></div>
       <div class="form-group"><label class="form-label">Limite Crédito (R$)</label><input class="form-input" id="fc-limite" type="number" step="0.01" placeholder="500.00"></div>
     </div>
+    <div class="form-group"><label class="form-label">Data de Nascimento</label><input class="form-input" id="fc-nasc" type="date"></div>
     <div class="form-group"><label class="form-label">Endereço</label><input class="form-input" id="fc-end" placeholder="Rua, número, bairro, cidade"></div>
     <div class="form-group"><label class="form-label">Observações</label><textarea class="form-input" id="fc-obs" rows="2" placeholder="Preferências..."></textarea></div>
     <div class="modal-footer">
@@ -952,6 +957,20 @@ a{color:var(--accent);text-decoration:none}
   </div>
 </div>
 
+<!-- FICHA DO CLIENTE -->
+<div class="modal-overlay" id="m-ficha-cliente">
+  <div class="modal modal-lg" style="max-width:640px">
+    <div class="modal-header">
+      <span class="modal-title" id="ficha-cl-nome">Ficha do Cliente</span>
+      <button class="modal-close" onclick="closeModal('m-ficha-cliente')"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="ficha-cl-body"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-ficha-cliente')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- CADASTRO RÁPIDO DE CLIENTE -->
 <div class="modal-overlay" id="m-cadastro-rapido">
   <div class="modal" style="max-width:380px">
@@ -1199,6 +1218,7 @@ a{color:var(--accent);text-decoration:none}
 
 <!-- FIREBASE -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -1226,6 +1246,7 @@ let metas = {meta1:5000,meta2:10000,meta3:20000,superMeta:30000};
 
 
 let currentOp=null, cartItems=[], selectedPay='dinheiro', parcelasCredito=1;
+function isAdmin(){return currentOp && currentOp.role==='Admin';}
 let localProdutos=[], localClientes=[], localVendas=[], localReceber=[], localPagar=[], localCaixa=[];
 let editProdId=null, editClId=null;
 let localCondicionais=[], localCompras=[], localTrocas=[], localOperadoras=[];
@@ -1287,6 +1308,7 @@ firebase.auth().onAuthStateChanged(user=>{
     document.getElementById('sb-av').textContent=currentOp.init;
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='flex';
+    aplicarPermissoes();
     startListeners();
   } else {
     document.getElementById('app').style.display='none';
@@ -1318,6 +1340,18 @@ function executeLogin(e){
       err.textContent=msg;
       err.style.display='block';
     });
+}
+
+function aplicarPermissoes(){
+  // Vendedoras (não-admin) não veem: Relatórios, Contas Financeiras, Compras, A Pagar, custos e DRE
+  const menusRestritos=['m-relatorios','m-contas-financeiras','m-compras','m-pagar'];
+  menusRestritos.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.style.display=isAdmin()?'':'none';
+  });
+  // Adicionar classe no body para esconder custos via CSS
+  if(isAdmin()) document.body.classList.remove('vendedora-mode');
+  else document.body.classList.add('vendedora-mode');
 }
 
 function logout(){
@@ -1452,6 +1486,15 @@ ${seedBanner}
   <div class="metric metric-sales" onclick="abrirVendasDia('${hoje}')" style="cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor=''">
     <div class="metric-label">Vendas de Hoje <i class="ti ti-eye" style="font-size:11px;opacity:.5;margin-left:4px"></i></div>
     <div class="metric-value">${R(vHoje)}</div>
+    ${(()=>{
+      const liqHoje=localVendas.filter(v=>extrairData(v)===hoje&&vendaValida(v)).reduce((s,v)=>{
+        if(v.pagamentosMistos&&v.totalLiquidoMisto)return s+v.totalLiquidoMisto;
+        if(v.totalLiquido&&(v.formaPagamento==='cartao'||v.formaPagamento==='debito'))return s+v.totalLiquido;
+        return s+(v.total||0);
+      },0);
+      const taxaHoje=vHoje-liqHoje;
+      return taxaHoje>0?`<div style="font-size:11px;color:var(--green);margin-bottom:3px">Líq: ${R(liqHoje)} <span style="color:var(--red)">(-${R(taxaHoje)} taxa)</span></div>`:'';
+    })()}
     <div class="progress-bar-bg"><div class="progress-bar-fill green" style="width:${pDia}%"></div></div>
     <div class="progress-text"><span>Meta dia: ${R(metaDia)}</span><span>${pDia.toFixed(0)}%</span></div>
     <i class="ti ti-cash metric-icon"></i>
@@ -1498,11 +1541,17 @@ ${seedBanner}
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
     <div>
       <div style="font-size:24px;font-weight:700;font-family:var(--mono);color:var(--text)">${R(vMes)}</div>
-      <div style="font-size:12px;color:var(--text3)">vendidos no mês</div>
+      <div style="font-size:12px;color:var(--text3)">total bruto do mês</div>
+    </div>
+    <div style="text-align:center">
+      ${taxasMes>0?`
+      <div style="font-size:11px;color:var(--text3);margin-bottom:2px">Taxas de cartão/débito</div>
+      <div style="font-size:14px;font-weight:700;color:var(--red);font-family:var(--mono)">- ${R(taxasMes)}</div>
+      `:''}
     </div>
     <div style="text-align:right">
-      <div style="font-size:14px;font-weight:700;color:${corMeta}">${metaAtingida}</div>
-      <div style="font-size:11px;color:var(--text3)">posição atual</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:2px">Líquido real recebido</div>
+      <div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--green)">${R(vMesLiquido)}</div>
     </div>
   </div>
   <div style="margin-bottom:10px">
@@ -1600,7 +1649,135 @@ ${(()=>{
     <p style="font-size:12px;color:var(--text2);margin-bottom:3px">Dist.: <strong style="color:var(--text)">${metas.pctS1||20}% · ${metas.pctS2||30}% · ${metas.pctS3||30}% · ${metas.pctS4||20}%</strong></p>
     <p style="font-size:12px;color:var(--text2)">Semana atual: <strong style="color:var(--accent)">${semNome}</strong></p>
   </div>
+</div>
+
+<!-- GRÁFICOS -->
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-top:16px">
+  <div class="card" style="margin:0">
+    <div class="card-title"><i class="ti ti-chart-line"></i> Vendas dos Últimos 30 Dias</div>
+    <div style="height:260px;position:relative"><canvas id="chart-vendas-30d"></canvas></div>
+  </div>
+  <div class="card" style="margin:0">
+    <div class="card-title"><i class="ti ti-chart-pie"></i> Formas de Pagamento (mês)</div>
+    <div style="height:260px;position:relative"><canvas id="chart-pagamentos"></canvas></div>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+  <div class="card" style="margin:0">
+    <div class="card-title"><i class="ti ti-chart-bar"></i> Comparativo Mensal (6 meses)</div>
+    <div style="height:240px;position:relative"><canvas id="chart-comparativo"></canvas></div>
+  </div>
+  <div class="card" style="margin:0">
+    <div class="card-title"><i class="ti ti-calendar-stats"></i> Vendas por Dia da Semana</div>
+    <div style="height:240px;position:relative"><canvas id="chart-diasemana"></canvas></div>
+  </div>
 </div>`;
+
+  // Renderizar gráficos após o DOM estar pronto
+  setTimeout(()=>renderDashboardCharts(), 50);
+}
+
+// ══════════════════════════════════════════════
+// GRÁFICOS DO DASHBOARD
+// ══════════════════════════════════════════════
+let _dashCharts = {};
+
+function destruirCharts(){
+  Object.values(_dashCharts).forEach(c=>{try{c.destroy();}catch(e){}});
+  _dashCharts = {};
+}
+
+function corCSS(nome){
+  return getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
+}
+
+function renderDashboardCharts(){
+  if(typeof Chart==='undefined')return;
+  destruirCharts();
+  const accent=corCSS('--accent')||'#6b1235';
+  const green=corCSS('--green')||'#16a34a';
+  const amber=corCSS('--amber')||'#d97706';
+  const red=corCSS('--red')||'#dc2626';
+  const text3=corCSS('--text3')||'#8b90a8';
+  const gridColor='rgba(0,0,0,0.06)';
+
+  // ── 1. Vendas dos últimos 30 dias (linha) ──
+  const c1=document.getElementById('chart-vendas-30d');
+  if(c1){
+    const dias=[], valores=[];
+    for(let i=29;i>=0;i--){
+      const d=new Date();d.setDate(d.getDate()-i);
+      const ds=d.toISOString().slice(0,10);
+      dias.push(d.getDate()+'/'+(d.getMonth()+1));
+      const tot=localVendas.filter(v=>extrairData(v)===ds&&vendaValida(v)).reduce((s,v)=>s+(v.total||0),0);
+      valores.push(tot);
+    }
+    _dashCharts.vendas30d=new Chart(c1,{
+      type:'line',
+      data:{labels:dias,datasets:[{label:'Vendas',data:valores,borderColor:accent,backgroundColor:accent+'22',fill:true,tension:0.3,pointRadius:2,borderWidth:2}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:gridColor},ticks:{callback:v=>'R$'+v,color:text3,font:{size:10}}},x:{grid:{display:false},ticks:{color:text3,font:{size:9},maxRotation:0,autoSkip:true,maxTicksLimit:10}}}}
+    });
+  }
+
+  // ── 2. Formas de pagamento (rosca) ──
+  const c2=document.getElementById('chart-pagamentos');
+  if(c2){
+    const mes=today().slice(0,7);
+    const formas={dinheiro:0,pix:0,cartao:0,debito:0,crediario:0,misto:0};
+    localVendas.filter(v=>extrairData(v).startsWith(mes)&&vendaValida(v)).forEach(v=>{
+      const f=v.formaPagamento||'dinheiro';
+      if(formas[f]!==undefined)formas[f]+=(v.total||0);else formas.dinheiro+=(v.total||0);
+    });
+    const labels=[],data=[],cores=[];
+    const mapa={dinheiro:['Dinheiro',green],pix:['Pix','#06b6d4'],cartao:['Cartão',accent],debito:['Débito',amber],crediario:['Crediário',red],misto:['Misto','#7c3aed']};
+    Object.keys(formas).forEach(k=>{if(formas[k]>0){labels.push(mapa[k][0]);data.push(formas[k]);cores.push(mapa[k][1]);}});
+    if(data.length){
+      _dashCharts.pagamentos=new Chart(c2,{
+        type:'doughnut',
+        data:{labels,datasets:[{data,backgroundColor:cores,borderWidth:2,borderColor:corCSS('--bg2')||'#fff'}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:text3,font:{size:11},padding:8,boxWidth:12}}}}
+      });
+    } else {
+      c2.parentelement && (c2.parentElement.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:12px">Sem vendas no mês</div>');
+    }
+  }
+
+  // ── 3. Comparativo mensal (barras, 6 meses) ──
+  const c3=document.getElementById('chart-comparativo');
+  if(c3){
+    const meses=[],valores=[];
+    for(let i=5;i>=0;i--){
+      const d=new Date();d.setMonth(d.getMonth()-i);
+      const ms=d.toISOString().slice(0,7);
+      const nomesMes=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      meses.push(nomesMes[d.getMonth()]);
+      const tot=localVendas.filter(v=>extrairData(v).startsWith(ms)&&vendaValida(v)).reduce((s,v)=>s+(v.total||0),0);
+      valores.push(tot);
+    }
+    _dashCharts.comparativo=new Chart(c3,{
+      type:'bar',
+      data:{labels:meses,datasets:[{label:'Vendas',data:valores,backgroundColor:accent,borderRadius:6,maxBarThickness:48}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:gridColor},ticks:{callback:v=>'R$'+(v>=1000?(v/1000).toFixed(0)+'k':v),color:text3,font:{size:10}}},x:{grid:{display:false},ticks:{color:text3,font:{size:11}}}}}
+    });
+  }
+
+  // ── 4. Vendas por dia da semana (barras) ──
+  const c4=document.getElementById('chart-diasemana');
+  if(c4){
+    const dias=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const totais=[0,0,0,0,0,0,0];
+    const mes3=new Date();mes3.setMonth(mes3.getMonth()-2);
+    const limite=mes3.toISOString().slice(0,10);
+    localVendas.filter(v=>vendaValida(v)&&extrairData(v)>=limite).forEach(v=>{
+      const d=extrairData(v);
+      if(d){const dt=new Date(d+'T12:00:00');totais[dt.getDay()]+=(v.total||0);}
+    });
+    _dashCharts.diasemana=new Chart(c4,{
+      type:'bar',
+      data:{labels:dias,datasets:[{label:'Vendas',data:totais,backgroundColor:dias.map((_,i)=>i===0?text3:green),borderRadius:6,maxBarThickness:40}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:gridColor},ticks:{callback:v=>'R$'+(v>=1000?(v/1000).toFixed(0)+'k':v),color:text3,font:{size:10}}},x:{grid:{display:false},ticks:{color:text3,font:{size:11}}}}}
+    });
+  }
 }
 
 // ── IMPORTAR ESTOQUE — upload de arquivo real (XLS/XLSX/CSV) ──
@@ -2757,38 +2934,164 @@ function confirmarImpEst(){
 // ══════════════════════════════════
 // CLIENTES
 // ══════════════════════════════════
+// ══════════════════════════════════════════════
+// CRM — ANÁLISE DE CLIENTES
+// ══════════════════════════════════════════════
+let clientesAba = 'todos';
+
+function comprasDoCliente(clienteId, nomeCliente){
+  return localVendas.filter(v=>{
+    if(!vendaValida(v))return false;
+    return v.clienteId===clienteId || (nomeCliente && v.cliente===nomeCliente);
+  });
+}
+
+function statsCliente(cl){
+  const compras=comprasDoCliente(cl.id, cl.nome);
+  const total=compras.reduce((s,v)=>s+(v.total||0),0);
+  const qtd=compras.length;
+  const ticket=qtd>0?total/qtd:0;
+  let ultimaData=null;
+  compras.forEach(v=>{const d=extrairData(v);if(d&&(!ultimaData||d>ultimaData))ultimaData=d;});
+  let diasSemComprar=null;
+  if(ultimaData){
+    const hoje=new Date(today()+'T12:00:00');
+    const ult=new Date(ultimaData+'T12:00:00');
+    diasSemComprar=Math.floor((hoje-ult)/(1000*60*60*24));
+  }
+  return {total,qtd,ticket,ultimaData,diasSemComprar};
+}
+
+function setClientesAba(aba){
+  clientesAba=aba;
+  renderCurrentPage();
+}
+
+function abrirWhatsAppCliente(id){
+  const cl=localClientes.find(c=>c.id===id);
+  if(!cl||!cl.telefone){toast('Cliente sem telefone','err');return;}
+  const tel=cl.telefone.replace(/\D/g,'');
+  const msg=encodeURIComponent(`Olá ${cl.nome}! 😊 Aqui é da *Loja Sempre Bonita*. `);
+  window.open(`https://wa.me/55${tel}?text=${msg}`,'_blank');
+}
+
+function abrirFichaCliente(id){
+  const cl=localClientes.find(c=>c.id===id);
+  if(!cl)return;
+  const compras=comprasDoCliente(cl.id,cl.nome).sort((a,b)=>(extrairData(b)||'').localeCompare(extrairData(a)||''));
+  const st=statsCliente(cl);
+  const deb=calcDebCrediario(cl.id),lim=parseFloat(cl.limite||0);
+
+  document.getElementById('ficha-cl-nome').textContent=cl.nome;
+  document.getElementById('ficha-cl-body').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
+      <div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase">Total Gasto</div>
+        <div style="font-size:16px;font-weight:700;color:var(--green);font-family:var(--mono)">${R(st.total)}</div>
+      </div>
+      <div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase">Compras</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text)">${st.qtd}</div>
+      </div>
+      <div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase">Ticket Médio</div>
+        <div style="font-size:16px;font-weight:700;color:var(--accent);font-family:var(--mono)">${R(st.ticket)}</div>
+      </div>
+      <div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase">Última Compra</div>
+        <div style="font-size:13px;font-weight:700;color:${st.diasSemComprar>60?'var(--red)':'var(--text)'}">${st.ultimaData?st.ultimaData.split('-').reverse().join('/'):'Nunca'}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      ${cl.telefone?`<span style="font-size:12px;color:var(--text2)">📞 ${cl.telefone}</span>`:''}
+      <span style="font-size:12px;color:var(--text2)">💳 Limite: ${R(lim)} · Disponível: ${R(lim-deb)}</span>
+    </div>
+    <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Histórico de Compras</div>
+    <div style="max-height:300px;overflow-y:auto">
+      ${!compras.length?'<p style="font-size:12px;color:var(--text3)">Nenhuma compra registrada.</p>':
+      compras.map(v=>`
+        <div style="padding:8px 10px;background:var(--bg3);border-radius:var(--radius);margin-bottom:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <span style="font-size:13px;font-weight:600;color:var(--text)">${extrairData(v)?extrairData(v).split('-').reverse().join('/'):'—'}</span>
+              <span style="font-size:11px;color:var(--text3);margin-left:6px">${v.formaPagamento||''} ${v.hora||''}</span>
+            </div>
+            <strong style="font-family:var(--mono);color:var(--green)">${R(v.total)}</strong>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:3px">${(v.itens||[]).map(i=>i.nome+(i.qtd>1?' ('+i.qtd+')':'')).join(', ')}</div>
+        </div>`).join('')}
+    </div>`;
+  openModal('m-ficha-cliente');
+}
+
 function renderClientes(c,a){
   a.innerHTML=`<button class="btn btn-sm" onclick="openModal('m-imp-cl')"><i class="ti ti-file-import"></i><span>Importar CSV</span></button>
     <button class="btn btn-primary btn-sm" onclick="editClId=null;abrirCliente()"><i class="ti ti-plus"></i><span>Novo Cliente</span></button>`;
-  const f=localClientes.filter(cl=>(cl.nome||'').toLowerCase().includes(clBusca.toLowerCase()));
-  c.innerHTML=`<div class="filter-bar"><input class="filter-input" placeholder="Buscar cliente... (Enter para buscar)" value="${clBusca}" onkeydown="if(event.key==='Enter'){clBusca=this.value;renderCurrentPage()}" style="min-width:200px"></div>
-  <div class="client-grid">${!f.length?'<div class="empty" style="grid-column:1/-1"><i class="ti ti-users"></i><div class="empty-title">Nenhum cliente</div></div>':
+
+  // Calcular conjuntos para as abas
+  const hojeD=new Date(today()+'T12:00:00');
+  const mesAtual=hojeD.getMonth()+1;
+
+  const aniversariantes=localClientes.filter(cl=>{
+    if(!cl.nascimento)return false;
+    const m=cl.nascimento.split('-');
+    return m.length>=2 && parseInt(m[1])===mesAtual;
+  });
+
+  const inativos=localClientes.filter(cl=>{
+    const st=statsCliente(cl);
+    return st.qtd>0 && st.diasSemComprar!==null && st.diasSemComprar>60;
+  });
+
+  const vips=[...localClientes].map(cl=>({cl,st:statsCliente(cl)})).filter(x=>x.st.total>0).sort((a,b)=>b.st.total-a.st.total).slice(0,20).map(x=>x.cl);
+
+  // Filtrar por aba
+  let base=localClientes;
+  if(clientesAba==='aniversariantes')base=aniversariantes;
+  else if(clientesAba==='inativos')base=inativos;
+  else if(clientesAba==='vip')base=vips;
+
+  const f=base.filter(cl=>(cl.nome||'').toLowerCase().includes(clBusca.toLowerCase()));
+
+  c.innerHTML=`
+  <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+    <button class="pill ${clientesAba==='todos'?'pill-active':''}" onclick="setClientesAba('todos')">Todos (${localClientes.length})</button>
+    <button class="pill ${clientesAba==='vip'?'pill-active':''}" onclick="setClientesAba('vip')">⭐ Top 20 VIP</button>
+    <button class="pill ${clientesAba==='aniversariantes'?'pill-active':''}" onclick="setClientesAba('aniversariantes')">🎂 Aniversariantes (${aniversariantes.length})</button>
+    <button class="pill ${clientesAba==='inativos'?'pill-active':''}" onclick="setClientesAba('inativos')">😴 Inativos +60d (${inativos.length})</button>
+  </div>
+  <div class="filter-bar"><input class="filter-input" placeholder="Buscar cliente... (Enter para buscar)" value="${clBusca}" onkeydown="if(event.key==='Enter'){clBusca=this.value;renderCurrentPage()}" style="min-width:200px"></div>
+  <div class="client-grid">${!f.length?'<div class="empty" style="grid-column:1/-1"><i class="ti ti-users"></i><div class="empty-title">Nenhum cliente nesta categoria</div></div>':
     f.map(cl=>{
       const deb=calcDebCrediario(cl.id),lim=parseFloat(cl.limite||0),disp=lim-deb;
       const ini=cl.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
+      const st=statsCliente(cl);
       return `<div class="client-card">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
           <div class="client-av">${ini}</div>
-          <div><div style="font-size:14px;font-weight:600;color:var(--text)">${cl.nome}</div><div style="font-size:11px;color:var(--text3)">${cl.cpf||'Sem CPF'}</div></div>
+          <div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--text)">${cl.nome}</div><div style="font-size:11px;color:var(--text3)">${cl.telefone||cl.cpf||'Sem contato'}</div></div>
         </div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:10px;line-height:1.7">
-          ${cl.telefone?`📞 ${cl.telefone}<br>`:''}${cl.endereco?`📍 ${cl.endereco}<br>`:''}${cl.observacoes?`💬 ${cl.observacoes}`:''}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+          <div class="cstat"><div class="cstat-label">Total Gasto</div><div class="cstat-val" style="color:var(--green)">${R(st.total)}</div></div>
+          <div class="cstat"><div class="cstat-label">Compras</div><div class="cstat-val">${st.qtd}</div></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
-          <div class="cstat"><div class="cstat-label">Limite</div><div class="cstat-val" style="color:var(--accent)">${R(lim)}</div></div>
-          <div class="cstat"><div class="cstat-label">Disponível</div><div class="cstat-val" style="color:${disp<0?'var(--red)':'var(--green)'}">${R(disp)}</div></div>
+          <div class="cstat"><div class="cstat-label">Disp. Crediário</div><div class="cstat-val" style="color:${disp<0?'var(--red)':'var(--accent)'}">${R(disp)}</div></div>
+          <div class="cstat"><div class="cstat-label">Últ. Compra</div><div class="cstat-val" style="font-size:11px;color:${st.diasSemComprar>60?'var(--red)':'var(--text2)'}">${st.ultimaData?st.ultimaData.split('-').reverse().join('/'):'—'}</div></div>
         </div>
         <div style="display:flex;gap:5px">
-          <button class="btn btn-sm" style="flex:1" onclick="editarCliente('${cl.id}')"><i class="ti ti-edit"></i>Editar</button>
-          <button class="btn btn-sm btn-success" style="flex:1" onclick="abrirLimite('${cl.id}')"><i class="ti ti-credit-card"></i>Limite</button>
-          <button class="btn btn-sm btn-danger" onclick="excluirCliente('${cl.id}')"><i class="ti ti-trash"></i></button>
+          <button class="btn btn-sm btn-primary" style="flex:1.3" onclick="abrirFichaCliente('${cl.id}')"><i class="ti ti-id"></i>Ficha</button>
+          <button class="btn btn-sm" onclick="editarCliente('${cl.id}')"><i class="ti ti-edit"></i></button>
+          <button class="btn btn-sm btn-success" onclick="abrirLimite('${cl.id}')"><i class="ti ti-credit-card"></i></button>
+          ${cl.telefone?`<button class="btn btn-sm" style="background:var(--green-bg);color:var(--green)" onclick="abrirWhatsAppCliente('${cl.id}')"><i class="ti ti-brand-whatsapp"></i></button>`:''}
         </div>
       </div>`;
     }).join('')}</div>`;
 }
+
 function abrirCliente(){
   document.getElementById('m-cl-title').textContent='Novo Cliente';
-  ['fc-nome','fc-cpf','fc-tel','fc-end','fc-obs'].forEach(id=>document.getElementById(id).value='');
+  ['fc-nome','fc-cpf','fc-tel','fc-end','fc-obs','fc-nasc'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('fc-limite').value='500';editClId=null;openModal('m-cliente');
 }
 function editarCliente(id){
@@ -2797,6 +3100,7 @@ function editarCliente(id){
   document.getElementById('fc-nome').value=cl.nome||'';document.getElementById('fc-cpf').value=cl.cpf||'';
   document.getElementById('fc-tel').value=cl.telefone||'';document.getElementById('fc-limite').value=cl.limite||500;
   document.getElementById('fc-end').value=cl.endereco||'';document.getElementById('fc-obs').value=cl.observacoes||'';
+  if(document.getElementById('fc-nasc'))document.getElementById('fc-nasc').value=cl.nascimento||'';
   openModal('m-cliente');
 }
 function salvarCliente(){
@@ -3843,7 +4147,25 @@ function fecharCaixa(){
 function renderReceber(c,a){
   const pend=localReceber.filter(r=>r.status==='Pendente');
   const tot=pend.reduce((s,r)=>s+(r.valor||0),0);
-  c.innerHTML=`<div class="metrics" style="grid-template-columns:repeat(2,1fr)">
+
+  // Fluxo de caixa projetado: próximas 8 semanas
+  const projecao=[];
+  for(let s=0;s<8;s++){
+    const inicio=new Date();inicio.setDate(inicio.getDate()+s*7);
+    const fim=new Date(inicio);fim.setDate(fim.getDate()+6);
+    const iniStr=inicio.toISOString().slice(0,10),fimStr=fim.toISOString().slice(0,10);
+    const receber=localReceber.filter(r=>r.status==='Pendente'&&r.vencimento>=iniStr&&r.vencimento<=fimStr).reduce((sum,r)=>sum+(r.valor||0),0);
+    const pagar=localPagar.filter(p=>p.status!=='Pago'&&p.vencimento>=iniStr&&p.vencimento<=fimStr).reduce((sum,p)=>sum+(p.valor||0),0);
+    projecao.push({label:`${inicio.getDate()}/${inicio.getMonth()+1}`,receber,pagar,saldo:receber-pagar});
+  }
+
+  c.innerHTML=`
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title"><i class="ti ti-chart-area"></i> Fluxo de Caixa Projetado — Próximas 8 Semanas</div>
+    <div style="height:220px;position:relative"><canvas id="chart-fluxo"></canvas></div>
+    <p style="font-size:11px;color:var(--text3);margin-top:8px">Verde = crediário a receber · Vermelho = contas a pagar. Ajuda a antecipar semanas apertadas.</p>
+  </div>
+  <div class="metrics" style="grid-template-columns:repeat(2,1fr)">
     <div class="metric metric-ticket"><div class="metric-label">Total a Receber</div><div class="metric-value" style="color:var(--green)">${R(tot)}</div><i class="ti ti-receipt metric-icon"></i></div>
     <div class="metric metric-sales"><div class="metric-label">Títulos Pendentes</div><div class="metric-value">${pend.length}</div><i class="ti ti-clock metric-icon"></i></div>
   </div>
@@ -3860,6 +4182,25 @@ function renderReceber(c,a){
         </div>`:'—'}</td>
       </tr>`).join('')}
     </tbody></table></div>`;
+
+  setTimeout(()=>{
+    if(typeof Chart==='undefined')return;
+    const ctx=document.getElementById('chart-fluxo');
+    if(!ctx)return;
+    if(window._fluxoChart){try{window._fluxoChart.destroy();}catch(e){}}
+    const green=getComputedStyle(document.documentElement).getPropertyValue('--green').trim();
+    const red=getComputedStyle(document.documentElement).getPropertyValue('--red').trim();
+    const text3=getComputedStyle(document.documentElement).getPropertyValue('--text3').trim();
+    window._fluxoChart=new Chart(ctx,{
+      type:'bar',
+      data:{labels:['S1','S2','S3','S4','S5','S6','S7','S8'].map((s,i)=>projecao[i]?projecao[i].label:s),
+        datasets:[
+          {label:'A Receber',data:projecao.map(p=>p.receber),backgroundColor:green,borderRadius:4},
+          {label:'A Pagar',data:projecao.map(p=>p.pagar),backgroundColor:red,borderRadius:4}
+        ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:text3,font:{size:11},boxWidth:12}}},scales:{y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.06)'},ticks:{callback:v=>'R$'+(v>=1000?(v/1000).toFixed(0)+'k':v),color:text3,font:{size:10}}},x:{grid:{display:false},ticks:{color:text3,font:{size:10}}}}}
+    });
+  },50);
 }
 let _baixaReceberPag = 'dinheiro';
 
@@ -4189,7 +4530,56 @@ function renderRelatorios(c,a){
           </div>`}
         </div>
       </div>`;
-    }).join('')}`;
+    }).join('')}
+
+  <!-- CURVA ABC + PRODUTOS PARADOS -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px">
+    <div class="card" style="margin:0">
+      <div class="card-title"><i class="ti ti-trophy"></i> Curva ABC — Produtos (período)</div>
+      ${(()=>{
+        const prods=rankingProdutos(vf);
+        if(!prods.length)return '<p style="font-size:12px;color:var(--text3)">Sem dados no período.</p>';
+        const totalGeral=prods.reduce((s,p)=>s+p.valor,0);
+        let acumulado=0;
+        return `<table class="data-table" style="font-size:12px"><thead><tr><th>Produto</th><th>Qtd</th><th>Faturamento</th><th>% Acum.</th><th>Classe</th></tr></thead><tbody>
+        ${prods.map(p=>{
+          acumulado+=p.valor;
+          const pctAcum=totalGeral>0?(acumulado/totalGeral*100):0;
+          const classe=pctAcum<=80?'A':pctAcum<=95?'B':'C';
+          const corClasse=classe==='A'?'var(--green)':classe==='B'?'var(--amber)':'var(--text3)';
+          return `<tr>
+            <td>${p.nome}</td>
+            <td>${p.qtd}</td>
+            <td style="font-family:var(--mono)">${R(p.valor)}</td>
+            <td style="font-family:var(--mono)">${pctAcum.toFixed(0)}%</td>
+            <td><span style="background:${corClasse};color:#fff;padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700">${classe}</span></td>
+          </tr>`;
+        }).join('')}</tbody></table>
+        <p style="font-size:11px;color:var(--text3);margin-top:8px">Classe A = 80% do faturamento (priorize reposição). Classe C = baixo giro.</p>`;
+      })()}
+    </div>
+    <div class="card" style="margin:0">
+      <div class="card-title"><i class="ti ti-alert-octagon" style="color:var(--amber)"></i> Produtos Parados (sem venda em 60 dias)</div>
+      ${(()=>{
+        const limite=new Date();limite.setDate(limite.getDate()-60);
+        const limiteStr=limite.toISOString().slice(0,10);
+        const vendidos60=new Set();
+        localVendas.filter(v=>vendaValida(v)&&extrairData(v)>=limiteStr).forEach(v=>(v.itens||[]).forEach(i=>vendidos60.add(i.id||i.nome)));
+        const parados=localProdutos.filter(p=>(p.estoque||0)>0 && !vendidos60.has(p.id) && !vendidos60.has(p.nome)).sort((a,b)=>(b.estoque*(b.custo||0))-(a.estoque*(a.custo||0))).slice(0,15);
+        if(!parados.length)return '<p style="font-size:12px;color:var(--green)">Nenhum produto parado! Estoque girando bem. 🎉</p>';
+        const capitalParado=parados.reduce((s,p)=>s+((p.custo||0)*(p.estoque||0)),0);
+        return `<div style="background:var(--amber-bg);padding:10px;border-radius:var(--radius);margin-bottom:10px">
+          <span style="font-size:12px;color:var(--text2)">Capital empatado nesses itens: </span><strong style="color:var(--amber);font-family:var(--mono)">${R(capitalParado)}</strong>
+        </div>
+        <table class="data-table" style="font-size:12px"><thead><tr><th>Produto</th><th>Estoque</th><th>Custo Parado</th></tr></thead><tbody>
+        ${parados.map(p=>`<tr>
+          <td>${p.nome}${p.cor?' · '+p.cor:''}${p.tamanho?' '+p.tamanho:''}</td>
+          <td>${p.estoque}</td>
+          <td style="font-family:var(--mono);color:var(--amber)">${R((p.custo||0)*(p.estoque||0))}</td>
+        </tr>`).join('')}</tbody></table>`;
+      })()}
+    </div>
+  </div>`;
 }
 
 // ══════════════════════════════════
@@ -4996,7 +5386,46 @@ function renderConfig(c,a){
       <button class="btn btn-sm" onclick="dlClientes()"><i class="ti ti-download"></i>Modelo Clientes</button>
       <button class="btn btn-sm" onclick="dlEstoque()"><i class="ti ti-download"></i>Modelo Estoque (Awise)</button>
     </div>
+  </div>
+
+  <div class="cfg-section">
+    <div class="cfg-title"><i class="ti ti-database-export"></i> Backup de Dados</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Baixe uma cópia completa dos seus dados em planilha Excel. Recomendamos fazer backup semanalmente por segurança.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm" onclick="exportarBackupCompleto()"><i class="ti ti-download"></i>Baixar Backup Completo (Excel)</button>
+    </div>
   </div>`;
+}
+
+function exportarBackupCompleto(){
+  if(typeof XLSX==='undefined'){toast('Biblioteca não carregada','err');return;}
+  toast('Gerando backup...','info');
+  try{
+    const wb=XLSX.utils.book_new();
+
+    // Produtos
+    const prodData=localProdutos.map(p=>({Nome:p.nome,SKU:p.sku,Cor:p.cor,Tamanho:p.tamanho,Categoria:p.categoria,Marca:p.marca,Fornecedor:p.fornecedor,'Preço Venda':p.precoVenda,Custo:p.custo,Estoque:p.estoque,'Código Barras':p.codigoBarras}));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(prodData),'Produtos');
+
+    // Clientes
+    const clData=localClientes.map(c=>({Nome:c.nome,CPF:c.cpf,Telefone:c.telefone,'Limite':c.limite,Endereço:c.endereco,Nascimento:c.nascimento,Observações:c.observacoes}));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(clData),'Clientes');
+
+    // Vendas
+    const vData=localVendas.filter(vendaValida).map(v=>({Data:extrairData(v),Hora:v.hora,Cliente:v.cliente||'',Vendedor:v.vendedor,'Forma Pagamento':v.formaPagamento,Total:v.total,'Taxa %':v.taxaPct||0,'Líquido':v.totalLiquido||v.totalLiquidoMisto||v.total,Itens:(v.itens||[]).map(i=>i.nome+' x'+i.qtd).join('; ')}));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(vData),'Vendas');
+
+    // Contas a Receber
+    const rData=localReceber.map(r=>({Cliente:r.cliente,Valor:r.valor,Vencimento:r.vencimento,Parcela:r.parcela,Status:r.status}));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rData),'A Receber');
+
+    const hoje=today();
+    XLSX.writeFile(wb,`backup-sempre-bonita-${hoje}.xlsx`);
+    toast('✅ Backup baixado com sucesso!');
+  }catch(e){
+    console.error(e);
+    toast('Erro ao gerar backup','err');
+  }
 }
 
 function atualizarPreviewMetas(){
