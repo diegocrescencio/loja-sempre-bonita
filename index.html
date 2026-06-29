@@ -1452,6 +1452,14 @@ function renderDashboard(c,a){
   const pctsSem=[0,(metas.pctS1||20)/100,(metas.pctS2||30)/100,(metas.pctS3||30)/100,(metas.pctS4||20)/100];
   const vHoje=localVendas.filter(v=>extrairData(v)===hoje).reduce((s,v)=>s+(v.total||0),0);
   const vMes=localVendas.filter(v=>extrairData(v).startsWith(mes)).reduce((s,v)=>s+(v.total||0),0);
+
+  // Total líquido do mês (descontando taxas de cartão/débito já calculadas)
+  const vMesLiquido=localVendas.filter(v=>extrairData(v).startsWith(mes)&&vendaValida(v)).reduce((s,v)=>{
+    if(v.pagamentosMistos&&v.totalLiquidoMisto) return s+v.totalLiquidoMisto;
+    if(v.totalLiquido&&(v.formaPagamento==='cartao'||v.formaPagamento==='debito')) return s+v.totalLiquido;
+    return s+(v.total||0);
+  },0);
+  const taxasMes=vMes-vMesLiquido;
   const ano=new Date().getFullYear(),mesN=new Date().getMonth();
   const diasNoMes=new Date(ano,mesN+1,0).getDate();
   const semInicio=semAtual===1?1:semAtual===2?8:semAtual===3?15:22;
