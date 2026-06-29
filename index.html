@@ -283,28 +283,100 @@ a{color:var(--accent);text-decoration:none}
 /* ── RESPONSIVE MOBILE ── */
 @media(max-width:768px){
   :root{--sidebar-w:240px}
-  .sidebar{position:fixed;top:0;left:0;height:100%;transform:translateX(-100%);box-shadow:var(--shadow)}
+  .sidebar{position:fixed;top:0;left:0;height:100%;transform:translateX(-100%);box-shadow:var(--shadow);z-index:200}
   .sidebar.open{transform:translateX(0)}
   .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199}
   .sidebar-overlay.show{display:block}
   .hamburger{display:flex}
   .main{width:100%}
-  .metrics{grid-template-columns:repeat(2,1fr)}
+  .metrics{grid-template-columns:repeat(2,1fr)!important}
   .meta-grid{grid-template-columns:1fr}
   .pdv-layout{grid-template-columns:1fr;height:auto;gap:12px}
-  .pdv-left{height:60vh}
-  .cart{height:auto;min-height:400px;max-height:70vh}
+  .pdv-left{height:auto;min-height:50vh}
+  .cart{height:auto;min-height:400px;max-height:none}
+  .cart-items{max-height:40vh!important}
   .form-row,.form-row-3,.form-row-4{grid-template-columns:1fr}
   .data-table{font-size:11px}
   .data-table th,.data-table td{padding:8px 10px}
   .client-grid{grid-template-columns:1fr}
   .topbar-actions .btn span{display:none}
   .content{padding:14px}
+  /* Grids do dashboard e relatórios viram coluna única no celular */
+  .content [style*="grid-template-columns:2fr 1fr"],
+  .content [style*="grid-template-columns:1fr 1fr"],
+  .content [style*="grid-template-columns:1fr 380px"],
+  .content [style*="grid-template-columns:repeat(3"],
+  .content [style*="grid-template-columns:repeat(4"]{
+    grid-template-columns:1fr!important;
+  }
+  /* Resumos de 3 e 4 colunas viram 2 colunas (cabem melhor) */
+  .content [style*="grid-template-columns:1fr 1fr 1fr"]{
+    grid-template-columns:1fr 1fr!important;
+  }
+  /* Tabelas largas com scroll horizontal */
+  .card{overflow-x:auto}
+  /* Pills de filtro com scroll horizontal suave */
+  .pill{white-space:nowrap}
+  /* Modais ocupam quase tela toda */
+  .modal{max-width:96vw!important;max-height:92vh;margin:0 auto}
+  .modal-lg{max-width:96vw!important}
+  /* Topbar título menor */
+  .topbar-title{font-size:16px}
+  /* Pills com scroll horizontal suave no celular */
+  .pill{flex-shrink:0}
+  .pill-bar{flex-wrap:nowrap!important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+  /* Resumos de pagamento misto: selects empilhados */
+  #misto-linhas [style*="grid-template-columns:1fr 1fr 1fr"]{
+    grid-template-columns:1fr 1fr!important;
+  }
+  /* Cards de operadora: tabela rola horizontal */
+  .data-table{min-width:auto}
+  /* Gráficos: altura controlada */
+  canvas{max-height:240px!important}
+  /* Botões de ação no topo: ícones sem texto economizam espaço */
+  .btn-sm span{font-size:12px}
+  /* Modais com padding menor */
+  .modal{padding:16px}
+  /* PDV busca e categoria empilhados */
+  .pdv-search-bar{flex-direction:column;align-items:stretch;gap:8px}
+  .pdv-search-bar > *{width:100%!important}
 }
 @media(max-width:480px){
-  .metrics{grid-template-columns:1fr 1fr}
+  .metrics{grid-template-columns:1fr!important}
   .pay-grid{grid-template-columns:repeat(3,1fr)}
   .pay-grid-2{grid-template-columns:1fr 1fr}
+  .content{padding:10px}
+  .card{padding:14px}
+  .metric-value{font-size:20px}
+  /* Cliente em coluna única */
+  .client-grid{grid-template-columns:1fr}
+  /* Gráficos com altura menor no celular */
+  canvas{max-height:220px!important}
+  /* Botões de filtro do dashboard menores */
+  .pill{padding:5px 10px;font-size:11px}
+  /* Tabela de taxas da operadora: fonte menor */
+  .data-table{font-size:10px}
+  .data-table th,.data-table td{padding:5px 6px}
+  /* Modal header e títulos */
+  .modal-title{font-size:15px}
+  /* PDV: grade de produtos com 2 colunas */
+  .pdv-grid{grid-template-columns:repeat(2,1fr)!important}
+  /* Cards de métricas: padding compacto */
+  .metric{padding:14px}
+  .metric-label{font-size:10px}
+  /* Resumos de 3 colunas viram 1 no celular pequeno */
+  .content [style*="grid-template-columns:1fr 1fr 1fr"]{
+    grid-template-columns:1fr!important;
+  }
+  /* Texto dos cards de progresso menor */
+  .progress-text{font-size:10px}
+  /* Botões de pagamento maiores para tocar com o dedo */
+  .pay-btn{padding:12px 8px;font-size:12px;min-height:48px}
+  /* Inputs maiores para touch */
+  .form-input,.filter-input{font-size:16px;padding:10px 12px}
+  /* Modal footer com botões empilhados */
+  .modal-footer{flex-direction:column-reverse;gap:8px}
+  .modal-footer .btn{width:100%}
 }
 
 /* ── IMPRESSÃO ── */
@@ -3062,7 +3134,7 @@ function renderClientes(c,a){
   const f=base.filter(cl=>(cl.nome||'').toLowerCase().includes(clBusca.toLowerCase()));
 
   c.innerHTML=`
-  <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+  <div class="pill-bar" style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
     <button class="pill ${clientesAba==='todos'?'pill-active':''}" onclick="setClientesAba('todos')">Todos (${localClientes.length})</button>
     <button class="pill ${clientesAba==='vip'?'pill-active':''}" onclick="setClientesAba('vip')">⭐ Top 20 VIP</button>
     <button class="pill ${clientesAba==='aniversariantes'?'pill-active':''}" onclick="setClientesAba('aniversariantes')">🎂 Aniversariantes (${aniversariantes.length})</button>
