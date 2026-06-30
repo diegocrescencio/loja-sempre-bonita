@@ -1035,6 +1035,26 @@ body.sem-excluir .excluir-only{display:none !important;}
   </div>
 </div>
 
+<!-- EXCLUIR VENDA (com senha) -->
+<div class="modal-overlay" id="m-excluir-venda">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <span class="modal-title" style="color:var(--red)"><i class="ti ti-alert-triangle"></i> Excluir Venda</span>
+      <button class="modal-close" onclick="closeModal('m-excluir-venda')"><i class="ti ti-x"></i></button>
+    </div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Esta ação não pode ser desfeita. Os itens vendidos voltarão automaticamente ao estoque.</p>
+    <div id="excl-venda-info"></div>
+    <div class="form-group">
+      <label class="form-label">Senha de Confirmação</label>
+      <input class="form-input" id="excl-venda-senha" type="password" placeholder="Digite a senha" onkeydown="if(event.key==='Enter')confirmarExclusaoVenda()">
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-excluir-venda')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmarExclusaoVenda()"><i class="ti ti-trash"></i>Confirmar Exclusão</button>
+    </div>
+  </div>
+</div>
+
 <!-- USUÁRIO -->
 <div class="modal-overlay" id="m-usuario">
   <div class="modal" style="max-width:420px">
@@ -3152,19 +3172,45 @@ function verHistoricoPrecos(produtoId, produtoNome){
     if(!historico.length){
       html_hist='<p style="font-size:12px;color:var(--text3);text-align:center;padding:20px">Nenhuma alteração de preço registrada para este produto.</p>';
     } else {
-      html_hist=historico.map(h=>`
-        <div style="padding:10px 0;border-bottom:1px solid var(--border)">
-          <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${h.data?h.data.split('-').reverse().join('/'):''} ${h.hora||''} · ${h.operador||''}</div>
+      html_hist=historico.map(h=>{
+        if(h.acao==='exclusao'){
+          return `<div style="padding:10px;border-radius:var(--radius);background:var(--red-bg);margin-bottom:6px">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:4px"><i class="ti ti-trash" style="color:var(--red)"></i> ${h.data?h.data.split('-').reverse().join('/'):''} ${h.hora||''} · <strong>${h.operador||''}</strong></div>
+            <div style="font-size:13px;color:var(--red);font-weight:600">Produto excluído do sistema</div>
+          </div>`;
+        }
+        return `<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${h.data?h.data.split('-').reverse().join('/'):''} ${h.hora||''} · <strong>${h.operador||''}</strong></div>
           ${h.precoVendaAntigo!==h.precoVendaNovo?`<div style="font-size:13px;color:var(--text)">Venda: <span style="text-decoration:line-through;color:var(--text3)">${R(h.precoVendaAntigo)}</span> → <strong style="color:var(--accent)">${R(h.precoVendaNovo)}</strong></div>`:''}
           ${h.custoAntigo!==h.custoNovo?`<div style="font-size:13px;color:var(--text)">Custo: <span style="text-decoration:line-through;color:var(--text3)">${R(h.custoAntigo)}</span> → <strong style="color:var(--amber)">${R(h.custoNovo)}</strong></div>`:''}
-        </div>`).join('');
+        </div>`;
+      }).join('');
     }
     document.getElementById('hist-precos-title').textContent='Histórico de Preços — '+produtoNome;
     document.getElementById('hist-precos-body').innerHTML=html_hist;
     openModal('m-hist-precos');
   }).catch(()=>toast('Erro ao buscar histórico','err'));
 }
-function excluirProd(id){if(!confirm('Excluir produto?'))return;db.collection('produtos').doc(id).delete().then(()=>toast('Excluído!')).catch(()=>toast('Erro','err'));}
+function excluirProd(id){
+  const prod=localProdutos.find(p=>p.id===id);
+  if(!prod)return;
+  if(!confirm(`Excluir "${prod.nome}"? Esta ação não pode ser desfeita.`))return;
+  const batch=db.batch();
+  // Registrar quem excluiu, quando e o que era o produto (fica no histórico mesmo após apagar)
+  batch.set(db.collection('historico_precos').doc(),{
+    produtoId:id,
+    produtoNome:prod.nome,
+    acao:'exclusao',
+    precoVendaAntigo:prod.precoVenda||0,
+    precoVendaNovo:0,
+    custoAntigo:prod.custo||0,
+    custoNovo:0,
+    data:today(),hora:nowStr(),
+    operador:currentOp.nome
+  });
+  batch.delete(db.collection('produtos').doc(id));
+  batch.commit().then(()=>toast('Produto excluído!')).catch(()=>toast('Erro','err'));
+}
 
 // ── IMPORTAR ESTOQUE (CSV Awise) ──
 document.getElementById('f-imp-est').addEventListener('change',function(){
@@ -3637,6 +3683,68 @@ function excluirOperadora(id){
 // ══════════════════════════════════════════════
 let acessosAba='usuarios';
 let editCargoNome=null;
+
+// ══════════════════════════════════════════════
+// EXCLUSÃO DE VENDA — COM SENHA DE CONFIRMAÇÃO
+// ══════════════════════════════════════════════
+let vendaParaExcluirId=null;
+
+function solicitarExclusaoVenda(vendaId){
+  const v=localVendas.find(x=>x.id===vendaId);
+  if(!v)return;
+  vendaParaExcluirId=vendaId;
+  document.getElementById('excl-venda-info').innerHTML=`
+    <div style="background:var(--bg3);border-radius:var(--radius);padding:10px;font-size:13px;margin-bottom:12px">
+      <div><strong>${v.cliente||'Consumidor Final'}</strong> — ${extrairData(v)?extrairData(v).split('-').reverse().join('/'):''} ${v.hora||''}</div>
+      <div style="color:var(--green);font-family:var(--mono);font-weight:700;margin-top:4px">${R(v.total)}</div>
+    </div>`;
+  document.getElementById('excl-venda-senha').value='';
+  openModal('m-excluir-venda');
+  setTimeout(()=>document.getElementById('excl-venda-senha').focus(),100);
+}
+
+function confirmarExclusaoVenda(){
+  const senhaDigitada=document.getElementById('excl-venda-senha').value;
+  const senhaCorreta=metas.senhaExclusao||'';
+  if(!senhaCorreta){
+    toast('Nenhuma senha de exclusão foi configurada. Vá em Configurações e defina uma.','err');
+    return;
+  }
+  if(senhaDigitada!==senhaCorreta){
+    toast('Senha incorreta!','err');
+    return;
+  }
+  const v=localVendas.find(x=>x.id===vendaParaExcluirId);
+  if(!v){toast('Venda não encontrada','err');return;}
+
+  const batch=db.batch();
+  // Devolver itens ao estoque
+  (v.itens||[]).forEach(item=>{
+    const prod=localProdutos.find(p=>p.id===item.id);
+    if(prod) batch.update(db.collection('produtos').doc(item.id),{estoque:(prod.estoque||0)+(item.qtd||0)});
+  });
+  // Registrar log da exclusão (guarda os dados da venda antes de apagar)
+  batch.set(db.collection('vendas_excluidas').doc(),{
+    vendaOriginalId:v.id,
+    cliente:v.cliente||'Consumidor Final',
+    data:extrairData(v),
+    hora:v.hora,
+    total:v.total,
+    formaPagamento:v.formaPagamento,
+    itens:v.itens||[],
+    excluidoPor:currentOp.nome,
+    excluidoEm:today(),
+    excluidoHora:nowStr(),
+  });
+  // Apagar a venda
+  batch.delete(db.collection('vendas').doc(v.id));
+
+  batch.commit().then(()=>{
+    toast('Venda excluída e estoque devolvido!');
+    closeModal('m-excluir-venda');
+    vendaParaExcluirId=null;
+  }).catch(e=>{console.error(e);toast('Erro ao excluir','err');});
+}
 
 function renderAcessos(c,a){
   if(currentOp.email!==ADMIN_MASTER){
@@ -5019,6 +5127,9 @@ function renderRelatorios(c,a){
                 <span style="color:var(--green);font-family:var(--mono)">${R(v.totalLiquidoMisto||v.total)}</span>
               </div>
             </div>`:''}
+            <div class="excluir-only" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);text-align:right">
+              <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();solicitarExclusaoVenda('${v.id}')"><i class="ti ti-trash"></i>Excluir Venda</button>
+            </div>
           </div>`}
         </div>
       </div>`;
@@ -5880,6 +5991,18 @@ function renderConfig(c,a){
     </div>
   </div>
 
+  <div class="cfg-section admin-only">
+    <div class="cfg-title"><i class="ti ti-shield-lock"></i> Senha de Confirmação para Exclusões</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Defina uma senha que será exigida sempre que alguém tentar excluir uma venda já lançada. Use uma senha diferente da sua senha de login, e compartilhe apenas com quem precisar.</p>
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+      <div class="form-group" style="margin:0;flex:1;min-width:200px">
+        <label class="form-label">Senha de Exclusão</label>
+        <input class="form-input" id="cfg-senha-exclusao" type="text" placeholder="Ex: 1234 ou uma palavra" value="${metas.senhaExclusao||''}">
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="salvarSenhaExclusao()"><i class="ti ti-device-floppy"></i>Salvar Senha</button>
+    </div>
+  </div>
+
   <div class="cfg-section">
     <div class="cfg-title"><i class="ti ti-database-export"></i> Backup de Dados</div>
     <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Baixe uma cópia completa dos seus dados em planilha Excel. Recomendamos fazer backup semanalmente por segurança.</p>
@@ -5887,6 +6010,14 @@ function renderConfig(c,a){
       <button class="btn btn-primary btn-sm" onclick="exportarBackupCompleto()"><i class="ti ti-download"></i>Baixar Backup Completo (Excel)</button>
     </div>
   </div>`;
+}
+
+function salvarSenhaExclusao(){
+  const senha=document.getElementById('cfg-senha-exclusao').value.trim();
+  if(!senha){toast('Informe uma senha','err');return;}
+  db.collection('config').doc('metas').set({senhaExclusao:senha},{merge:true}).then(()=>{
+    toast('Senha de exclusão salva!');
+  }).catch(()=>toast('Erro ao salvar','err'));
 }
 
 function exportarBackupCompleto(){
