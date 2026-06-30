@@ -469,6 +469,11 @@ a{color:var(--accent);text-decoration:none}
 .pill:hover{border-color:var(--accent);color:var(--accent)}
 .pill-active{background:var(--accent);border-color:var(--accent);color:#fff}
 body.vendedora-mode .admin-only{display:none !important;}
+body.sem-custos .custo-only{display:none !important;}
+body.sem-lucro .lucro-only{display:none !important;}
+body.sem-taxas .taxa-only{display:none !important;}
+body.sem-desconto .desconto-only{display:none !important;}
+body.sem-excluir .excluir-only{display:none !important;}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#6b1235">
@@ -552,6 +557,7 @@ body.vendedora-mode .admin-only{display:none !important;}
       <div class="nav-section">
         <div class="nav-label">Sistema</div>
         <div class="nav-item" id="m-configuracoes" onclick="goPage('configuracoes',this)"><i class="ti ti-settings"></i>Configurações</div>
+        <div class="nav-item" id="m-acessos" onclick="goPage('acessos',this)" style="display:none"><i class="ti ti-lock-access"></i>Gerenciar Acessos</div>
         <div class="nav-item" id="m-importar" onclick="openModal('m-imp-estoque')"><i class="ti ti-database-import"></i>Importar Estoque</div>
         <div class="nav-item" onclick="openModal('m-imp-cl')"><i class="ti ti-users-plus"></i>Importar Clientes</div>
         <div class="nav-item" onclick="openModal('m-imp-vendas')"><i class="ti ti-file-upload"></i>Importar Vendas</div>
@@ -1029,6 +1035,67 @@ body.vendedora-mode .admin-only{display:none !important;}
   </div>
 </div>
 
+<!-- USUÁRIO -->
+<div class="modal-overlay" id="m-usuario">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <span class="modal-title" id="m-usuario-title">Novo Usuário</span>
+      <button class="modal-close" onclick="closeModal('m-usuario')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nome *</label>
+      <input class="form-input" id="us-nome" placeholder="Nome da pessoa">
+    </div>
+    <div class="form-group">
+      <label class="form-label">E-mail (login do Firebase) *</label>
+      <input class="form-input" id="us-email" type="email" placeholder="email@exemplo.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Cargo</label>
+      <select class="form-input" id="us-cargo"></select>
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text2)">
+        <input type="checkbox" id="us-ativo" checked style="width:16px;height:16px;accent-color:var(--accent)">
+        Usuário ativo (pode acessar o sistema)
+      </label>
+    </div>
+    <div style="background:var(--bg3);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--text3);margin-bottom:14px">
+      💡 Lembre-se: o login (e-mail/senha) precisa existir no Firebase Authentication. Aqui você apenas vincula o cargo a esse e-mail.
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-usuario')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarUsuario()"><i class="ti ti-device-floppy"></i>Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CARGO -->
+<div class="modal-overlay" id="m-cargo">
+  <div class="modal modal-lg" style="max-width:560px">
+    <div class="modal-header">
+      <span class="modal-title" id="m-cargo-title">Novo Cargo</span>
+      <button class="modal-close" onclick="closeModal('m-cargo')"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <div class="form-group" style="flex:1;margin:0">
+        <label class="form-label">Nome do Cargo *</label>
+        <input class="form-input" id="cg-nome" placeholder="Ex: Gerente, Caixa, Estoquista">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-label">Cor</label>
+        <input type="color" id="cg-cor" value="#2563eb" style="width:48px;height:38px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg2);cursor:pointer">
+      </div>
+    </div>
+    <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Permissões deste Cargo</div>
+    <div id="cargo-permissoes" style="max-height:380px;overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-cargo')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarCargo()"><i class="ti ti-device-floppy"></i>Salvar Cargo</button>
+    </div>
+  </div>
+</div>
+
 <!-- FICHA DO CLIENTE -->
 <div class="modal-overlay" id="m-ficha-cliente">
   <div class="modal modal-lg" style="max-width:640px">
@@ -1314,11 +1381,82 @@ const USER_PROFILES = {
   "loja.semprebonita.sc@gmail.com":  {nome:"Vendedora",role:"Funcionário", init:"VD"}
 };
 
+// E-mail do administrador-mestre (sempre tem acesso total, não pode ser bloqueado)
+const ADMIN_MASTER = "diegocl1800@gmail.com";
+
+// Catálogo de todas as permissões disponíveis no sistema
+const PERMISSOES_CATALOGO = {
+  // Menus / telas
+  ver_dashboard:    {grupo:'Telas', label:'Dashboard'},
+  ver_pdv:          {grupo:'Telas', label:'PDV (Ponto de Venda)'},
+  ver_estoque:      {grupo:'Telas', label:'Estoque'},
+  ver_compras:      {grupo:'Telas', label:'Compras'},
+  ver_condicionais: {grupo:'Telas', label:'Condicionais'},
+  ver_clientes:     {grupo:'Telas', label:'Clientes'},
+  ver_caixa:        {grupo:'Telas', label:'Caixa'},
+  ver_contas_fin:   {grupo:'Telas', label:'Contas Financeiras'},
+  ver_receber:      {grupo:'Telas', label:'A Receber'},
+  ver_pagar:        {grupo:'Telas', label:'A Pagar'},
+  ver_trocas:       {grupo:'Telas', label:'Trocas e Devoluções'},
+  ver_relatorios:   {grupo:'Telas', label:'Relatórios'},
+  ver_config:       {grupo:'Telas', label:'Configurações'},
+  ver_importacoes:  {grupo:'Telas', label:'Importações (Estoque/Clientes/Vendas)'},
+  ver_etiquetas:    {grupo:'Telas', label:'Etiquetas'},
+  // Ações
+  dar_desconto:     {grupo:'Ações', label:'Dar desconto no PDV'},
+  excluir_registros:{grupo:'Ações', label:'Excluir registros (produtos, clientes, etc.)'},
+  cancelar_venda:   {grupo:'Ações', label:'Cancelar/estornar vendas'},
+  editar_precos:    {grupo:'Ações', label:'Editar preços de produtos'},
+  gerenciar_metas:  {grupo:'Ações', label:'Configurar metas'},
+  // Dados sensíveis
+  ver_custos:       {grupo:'Dados Sensíveis', label:'Ver custos e markup dos produtos'},
+  ver_lucro_dre:    {grupo:'Dados Sensíveis', label:'Ver lucro, DRE e indicadores financeiros'},
+  ver_taxas_liquido:{grupo:'Dados Sensíveis', label:'Ver taxas de cartão e valor líquido'},
+};
+
+// Cargos padrão (semente) — usados se ainda não houver nada no Firebase
+const CARGOS_PADRAO = {
+  Admin: {
+    nome:'Administrador', cor:'#6b1235',
+    permissoes: Object.keys(PERMISSOES_CATALOGO) // tudo
+  },
+  Gerente: {
+    nome:'Gerente', cor:'#2563eb',
+    permissoes:['ver_dashboard','ver_pdv','ver_estoque','ver_compras','ver_condicionais','ver_clientes','ver_caixa','ver_receber','ver_pagar','ver_trocas','ver_relatorios','ver_etiquetas','dar_desconto','cancelar_venda','editar_precos','ver_custos','ver_taxas_liquido']
+  },
+  Vendedora: {
+    nome:'Vendedora', cor:'#16a34a',
+    permissoes:['ver_dashboard','ver_pdv','ver_estoque','ver_condicionais','ver_clientes','ver_caixa','ver_receber','ver_trocas','ver_etiquetas','dar_desconto']
+  }
+};
+
 let metas = {meta1:5000,meta2:10000,meta3:20000,superMeta:30000};
 
 
 let currentOp=null, cartItems=[], selectedPay='dinheiro', parcelasCredito=1;
-function isAdmin(){return currentOp && currentOp.role==='Admin';}
+function isAdmin(){return currentOp && (currentOp.email===ADMIN_MASTER || currentOp.role==='Admin');}
+let localCargos={}, localUsuarios=[], minhasPermissoes=[];
+
+// Verifica se o usuário logado tem uma permissão específica
+function temPermissao(perm){
+  if(!currentOp) return false;
+  if(currentOp.email===ADMIN_MASTER) return true; // admin-mestre sempre pode tudo
+  return minhasPermissoes.includes(perm);
+}
+
+// Carrega as permissões do usuário logado com base no cargo dele
+function carregarMinhasPermissoes(){
+  if(!currentOp){minhasPermissoes=[];return;}
+  if(currentOp.email===ADMIN_MASTER){
+    minhasPermissoes=Object.keys(PERMISSOES_CATALOGO);
+    return;
+  }
+  // Buscar usuário pelo email
+  const usuario=localUsuarios.find(u=>u.email===currentOp.email);
+  const cargoNome=usuario?.cargo || 'Vendedora';
+  const cargo=localCargos[cargoNome] || CARGOS_PADRAO[cargoNome] || CARGOS_PADRAO.Vendedora;
+  minhasPermissoes=cargo.permissoes || [];
+}
 let localProdutos=[], localClientes=[], localVendas=[], localReceber=[], localPagar=[], localCaixa=[];
 let editProdId=null, editClId=null;
 let localCondicionais=[], localCompras=[], localTrocas=[], localOperadoras=[];
@@ -1415,15 +1553,45 @@ function executeLogin(e){
 }
 
 function aplicarPermissoes(){
-  // Vendedoras (não-admin) não veem: Relatórios, Contas Financeiras, Compras, A Pagar, custos e DRE
-  const menusRestritos=['m-relatorios','m-contas-financeiras','m-compras','m-pagar'];
-  menusRestritos.forEach(id=>{
+  if(!currentOp)return;
+  // Mapa: id do menu => permissão necessária
+  const menuPerms={
+    'm-dashboard':'ver_dashboard',
+    'm-pdv':'ver_pdv',
+    'm-estoque':'ver_estoque',
+    'm-compras':'ver_compras',
+    'm-condicionais':'ver_condicionais',
+    'm-clientes':'ver_clientes',
+    'm-caixa':'ver_caixa',
+    'm-contas-financeiras':'ver_contas_fin',
+    'm-receber':'ver_receber',
+    'm-pagar':'ver_pagar',
+    'm-trocas':'ver_trocas',
+    'm-relatorios':'ver_relatorios',
+    'm-configuracoes':'ver_config',
+    'm-importar':'ver_importacoes',
+    'm-importar-clientes':'ver_importacoes',
+    'm-importar-vendas':'ver_importacoes',
+    'm-etiquetas':'ver_etiquetas',
+  };
+  Object.entries(menuPerms).forEach(([id,perm])=>{
     const el=document.getElementById(id);
-    if(el)el.style.display=isAdmin()?'':'none';
+    if(el) el.style.display=temPermissao(perm)?'':'none';
   });
-  // Adicionar classe no body para esconder custos via CSS
-  if(isAdmin()) document.body.classList.remove('vendedora-mode');
-  else document.body.classList.add('vendedora-mode');
+
+  // Menu "Gerenciar Acessos" só para admin-mestre
+  const menuAcessos=document.getElementById('m-acessos');
+  if(menuAcessos) menuAcessos.style.display=(currentOp.email===ADMIN_MASTER)?'':'none';
+
+  // Classes no body para esconder dados sensíveis via CSS
+  document.body.classList.toggle('sem-custos', !temPermissao('ver_custos'));
+  document.body.classList.toggle('sem-lucro', !temPermissao('ver_lucro_dre'));
+  document.body.classList.toggle('sem-taxas', !temPermissao('ver_taxas_liquido'));
+  document.body.classList.toggle('sem-desconto', !temPermissao('dar_desconto'));
+  document.body.classList.toggle('sem-excluir', !temPermissao('excluir_registros'));
+
+  // Compatibilidade com regra antiga
+  document.body.classList.toggle('vendedora-mode', !isAdmin());
 }
 
 function logout(){
@@ -1465,12 +1633,42 @@ function startListeners(){
     localOperadoras=s.docs.map(d=>({id:d.id,...d.data()}));
     renderCurrentPage();
   },()=>{});
+  db.collection('cargos').onSnapshot(s=>{
+    localCargos={};
+    s.docs.forEach(d=>{localCargos[d.id]={...d.data()};});
+    // Se vazio, usar padrão
+    if(Object.keys(localCargos).length===0) localCargos={...CARGOS_PADRAO};
+    carregarMinhasPermissoes();
+    aplicarPermissoes();
+    renderCurrentPage();
+  },()=>{});
+  db.collection('usuarios').onSnapshot(s=>{
+    localUsuarios=s.docs.map(d=>({id:d.id,...d.data()}));
+    carregarMinhasPermissoes();
+    aplicarPermissoes();
+    renderCurrentPage();
+  },()=>{});
   db.collection('trocas').onSnapshot(s=>{
     localTrocas=s.docs.map(d=>({id:d.id,...d.data()}));
     renderCurrentPage();
   },()=>setSyncStatus(false));
   db.collection('operadoras').onSnapshot(s=>{
     localOperadoras=s.docs.map(d=>({id:d.id,...d.data()}));
+    renderCurrentPage();
+  },()=>{});
+  db.collection('cargos').onSnapshot(s=>{
+    localCargos={};
+    s.docs.forEach(d=>{localCargos[d.id]={...d.data()};});
+    // Se vazio, usar padrão
+    if(Object.keys(localCargos).length===0) localCargos={...CARGOS_PADRAO};
+    carregarMinhasPermissoes();
+    aplicarPermissoes();
+    renderCurrentPage();
+  },()=>{});
+  db.collection('usuarios').onSnapshot(s=>{
+    localUsuarios=s.docs.map(d=>({id:d.id,...d.data()}));
+    carregarMinhasPermissoes();
+    aplicarPermissoes();
     renderCurrentPage();
   },()=>{});
   db.collection('trocas').onSnapshot(s=>{
@@ -1512,6 +1710,7 @@ function renderCurrentPage(){
   else if(currentPage==='trocas')renderTrocas(c,a);
   else if(currentPage==='compras')renderCompras(c,a);
   else if(currentPage==='contasFinanceiras')renderContasFinanceiras(c,a);
+  else if(currentPage==='acessos')renderAcessos(c,a);
   else if(currentPage==='trocas')renderTrocas(c,a);
 }
 
@@ -2721,7 +2920,7 @@ function renderEstoqueTabela(f){
     <thead>
       <tr>
         <th>Produto</th><th>SKU</th><th>Grade (Cor / Tam)</th>
-        <th>Preço Venda</th><th>Preço Custo</th><th>Markup</th>
+        <th>Preço Venda</th><th class="custo-only">Preço Custo</th><th class="custo-only">Markup</th>
         <th>Fornecedor</th><th>Estoque</th><th>Status</th>
         <th style="text-align:right">Ações</th>
       </tr>
@@ -2743,8 +2942,8 @@ function renderEstoqueTabela(f){
             ${!cor&&!tam?'<span style="color:var(--text3);font-size:12px">—</span>':''}
           </td>
           <td style="font-family:var(--mono);font-weight:700;color:var(--accent)">${R(venda)}</td>
-          <td style="font-family:var(--mono);font-size:12px;color:var(--text2)">${custo>0?R(custo):'<span style="color:var(--text3)">—</span>'}</td>
-          <td style="font-family:var(--mono);font-size:13px;font-weight:700;color:${markupColor}">${custo>0?markup.toFixed(0)+'%':'<span style="color:var(--text3)">—</span>'}</td>
+          <td class="custo-only" style="font-family:var(--mono);font-size:12px;color:var(--text2)">${custo>0?R(custo):'<span style="color:var(--text3)">—</span>'}</td>
+          <td class="custo-only" style="font-family:var(--mono);font-size:13px;font-weight:700;color:${markupColor}">${custo>0?markup.toFixed(0)+'%':'<span style="color:var(--text3)">—</span>'}</td>
           <td style="font-size:12px;color:var(--text2)">${p.marca||p.fornecedor||'<span style="color:var(--text3)">—</span>'}</td>
           <td style="font-family:var(--mono);font-weight:600;font-size:14px">${est}</td>
           <td>${status}</td>
@@ -3431,6 +3630,219 @@ function salvarOperadora(){
 function excluirOperadora(id){
   if(!confirm('Excluir esta operadora?'))return;
   db.collection('operadoras').doc(id).delete().then(()=>toast('Operadora excluída!')).catch(()=>toast('Erro','err'));
+}
+
+// ══════════════════════════════════════════════
+// GERENCIAR ACESSOS — CARGOS E USUÁRIOS
+// ══════════════════════════════════════════════
+let acessosAba='usuarios';
+let editCargoNome=null;
+
+function renderAcessos(c,a){
+  if(currentOp.email!==ADMIN_MASTER){
+    c.innerHTML='<div class="empty"><i class="ti ti-lock"></i><div class="empty-title">Acesso restrito</div><div class="empty-sub">Apenas o administrador pode gerenciar acessos.</div></div>';
+    return;
+  }
+  a.innerHTML='';
+  const cargos=Object.keys(localCargos).length?localCargos:CARGOS_PADRAO;
+
+  c.innerHTML=`
+  <div class="pill-bar" style="display:flex;gap:6px;margin-bottom:16px">
+    <button class="pill ${acessosAba==='usuarios'?'pill-active':''}" onclick="setAcessosAba('usuarios')">👤 Usuários</button>
+    <button class="pill ${acessosAba==='cargos'?'pill-active':''}" onclick="setAcessosAba('cargos')">🛡️ Cargos e Permissões</button>
+  </div>
+  ${acessosAba==='usuarios'?renderAbaUsuarios(cargos):renderAbaCargos(cargos)}`;
+}
+
+function setAcessosAba(aba){acessosAba=aba;renderCurrentPage();}
+
+function renderAbaUsuarios(cargos){
+  return `
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div style="font-size:13px;color:var(--text2);max-width:600px;line-height:1.6">
+        Cadastre aqui cada pessoa que usa o sistema e atribua um cargo. O login (e-mail/senha) deve ser criado primeiro no painel do Firebase Authentication; depois registre o mesmo e-mail aqui para definir o cargo.
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="abrirNovoUsuario()"><i class="ti ti-user-plus"></i>Novo Usuário</button>
+    </div>
+  </div>
+  ${!localUsuarios.length?
+    '<div class="empty"><i class="ti ti-users"></i><div class="empty-title">Nenhum usuário cadastrado</div><div class="empty-sub">Adicione o primeiro usuário com seu cargo</div></div>'
+    :`<table class="data-table"><thead><tr><th>Nome</th><th>E-mail</th><th>Cargo</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+    ${localUsuarios.map(u=>{
+      const cargo=cargos[u.cargo]||{nome:u.cargo||'—',cor:'#888'};
+      return `<tr>
+        <td style="font-weight:600">${u.nome}</td>
+        <td style="font-family:var(--mono);font-size:12px">${u.email}</td>
+        <td><span style="background:${cargo.cor||'#888'};color:#fff;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:600">${cargo.nome||u.cargo}</span></td>
+        <td>${u.ativo!==false?'<span style="color:var(--green);font-size:12px">● Ativo</span>':'<span style="color:var(--text3);font-size:12px">○ Inativo</span>'}</td>
+        <td>
+          <button class="btn btn-sm" onclick="editarUsuario('${u.id}')"><i class="ti ti-edit"></i></button>
+          <button class="btn btn-sm btn-danger" onclick="excluirUsuario('${u.id}')"><i class="ti ti-trash"></i></button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody></table>`}`;
+}
+
+function renderAbaCargos(cargos){
+  return `
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div style="font-size:13px;color:var(--text2);max-width:600px;line-height:1.6">
+        Cargos agrupam permissões. Crie cargos como "Gerente" ou "Caixa" e marque exatamente o que cada um pode ver e fazer. As mudanças valem para todos os usuários daquele cargo.
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="abrirNovoCargo()"><i class="ti ti-plus"></i>Novo Cargo</button>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
+    ${Object.entries(cargos).map(([nome,cargo])=>`
+      <div class="card" style="margin:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <span style="background:${cargo.cor||'#888'};color:#fff;padding:3px 12px;border-radius:99px;font-size:13px;font-weight:700">${cargo.nome||nome}</span>
+          ${nome!=='Admin'?`<div style="display:flex;gap:4px">
+            <button class="btn btn-sm" onclick="editarCargo('${nome}')"><i class="ti ti-edit"></i></button>
+            <button class="btn btn-sm btn-danger" onclick="excluirCargo('${nome}')"><i class="ti ti-trash"></i></button>
+          </div>`:'<span style="font-size:10px;color:var(--text3)">Acesso total</span>'}
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:6px">${(cargo.permissoes||[]).length} permissões</div>
+        <div style="display:flex;flex-wrap:wrap;gap:3px">
+          ${(cargo.permissoes||[]).slice(0,6).map(p=>`<span style="background:var(--bg3);font-size:10px;padding:2px 7px;border-radius:99px;color:var(--text2)">${PERMISSOES_CATALOGO[p]?.label||p}</span>`).join('')}
+          ${(cargo.permissoes||[]).length>6?`<span style="font-size:10px;color:var(--text3);padding:2px">+${(cargo.permissoes||[]).length-6}</span>`:''}
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+// ── USUÁRIOS ──
+function abrirNovoUsuario(){
+  editUsuarioId=null;
+  document.getElementById('us-nome').value='';
+  document.getElementById('us-email').value='';
+  document.getElementById('us-ativo').checked=true;
+  preencherSelectCargos('us-cargo');
+  document.getElementById('m-usuario-title').textContent='Novo Usuário';
+  openModal('m-usuario');
+}
+
+let editUsuarioId=null;
+function editarUsuario(id){
+  const u=localUsuarios.find(x=>x.id===id);
+  if(!u)return;
+  editUsuarioId=id;
+  document.getElementById('us-nome').value=u.nome||'';
+  document.getElementById('us-email').value=u.email||'';
+  document.getElementById('us-ativo').checked=u.ativo!==false;
+  preencherSelectCargos('us-cargo',u.cargo);
+  document.getElementById('m-usuario-title').textContent='Editar Usuário';
+  openModal('m-usuario');
+}
+
+function preencherSelectCargos(selectId,selecionado){
+  const cargos=Object.keys(localCargos).length?localCargos:CARGOS_PADRAO;
+  const sel=document.getElementById(selectId);
+  if(!sel)return;
+  sel.innerHTML=Object.entries(cargos).map(([nome,c])=>`<option value="${nome}" ${selecionado===nome?'selected':''}>${c.nome||nome}</option>`).join('');
+}
+
+function salvarUsuario(){
+  const nome=document.getElementById('us-nome').value.trim();
+  const email=document.getElementById('us-email').value.trim().toLowerCase();
+  const cargo=document.getElementById('us-cargo').value;
+  const ativo=document.getElementById('us-ativo').checked;
+  if(!nome||!email){toast('Preencha nome e e-mail','err');return;}
+  const data={nome,email,cargo,ativo};
+  const ref=editUsuarioId?db.collection('usuarios').doc(editUsuarioId):db.collection('usuarios').doc();
+  ref.set(data,{merge:true}).then(()=>{
+    toast(editUsuarioId?'Usuário atualizado!':'Usuário cadastrado!');
+    closeModal('m-usuario');editUsuarioId=null;
+  }).catch(()=>toast('Erro ao salvar','err'));
+}
+
+function excluirUsuario(id){
+  const u=localUsuarios.find(x=>x.id===id);
+  if(u&&u.email===ADMIN_MASTER){toast('O administrador-mestre não pode ser removido','err');return;}
+  if(!confirm('Remover este usuário? Ele perderá o cargo, mas o login no Firebase continua existindo.'))return;
+  db.collection('usuarios').doc(id).delete().then(()=>toast('Usuário removido!')).catch(()=>toast('Erro','err'));
+}
+
+// ── CARGOS ──
+function montarChecklistPermissoes(){
+  const cont=document.getElementById('cargo-permissoes');
+  if(!cont)return;
+  // Agrupar permissões por grupo
+  const grupos={};
+  Object.entries(PERMISSOES_CATALOGO).forEach(([key,info])=>{
+    if(!grupos[info.grupo])grupos[info.grupo]=[];
+    grupos[info.grupo].push({key,label:info.label});
+  });
+  cont.innerHTML=Object.entries(grupos).map(([grupo,perms])=>`
+    <div style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:700;color:var(--accent)">${grupo}</div>
+        <button class="btn btn-sm" style="font-size:10px;padding:2px 8px" onclick="toggleGrupoPermissoes('${grupo}')">Marcar/desmarcar todos</button>
+      </div>
+      ${perms.map(p=>`
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--radius);cursor:pointer;font-size:13px;color:var(--text2)" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+          <input type="checkbox" id="perm-${p.key}" data-grupo="${grupo}" style="width:16px;height:16px;accent-color:var(--accent)">
+          ${p.label}
+        </label>`).join('')}
+    </div>`).join('');
+}
+
+function toggleGrupoPermissoes(grupo){
+  const checks=document.querySelectorAll(`#cargo-permissoes input[data-grupo="${grupo}"]`);
+  const todosMarcados=Array.from(checks).every(c=>c.checked);
+  checks.forEach(c=>c.checked=!todosMarcados);
+}
+
+function abrirNovoCargo(){
+  editCargoNome=null;
+  document.getElementById('cg-nome').value='';
+  document.getElementById('cg-cor').value='#2563eb';
+  montarChecklistPermissoes();
+  Object.keys(PERMISSOES_CATALOGO).forEach(p=>{
+    const el=document.getElementById('perm-'+p);
+    if(el)el.checked=false;
+  });
+  document.getElementById('m-cargo-title').textContent='Novo Cargo';
+  openModal('m-cargo');
+}
+
+function editarCargo(nome){
+  const cargos=Object.keys(localCargos).length?localCargos:CARGOS_PADRAO;
+  const cargo=cargos[nome];
+  if(!cargo)return;
+  editCargoNome=nome;
+  montarChecklistPermissoes();
+  document.getElementById('cg-nome').value=cargo.nome||nome;
+  document.getElementById('cg-cor').value=cargo.cor||'#2563eb';
+  Object.keys(PERMISSOES_CATALOGO).forEach(p=>{
+    const el=document.getElementById('perm-'+p);
+    if(el)el.checked=(cargo.permissoes||[]).includes(p);
+  });
+  document.getElementById('m-cargo-title').textContent='Editar Cargo';
+  openModal('m-cargo');
+}
+
+function salvarCargo(){
+  const nomeExibicao=document.getElementById('cg-nome').value.trim();
+  const cor=document.getElementById('cg-cor').value;
+  if(!nomeExibicao){toast('Informe o nome do cargo','err');return;}
+  const permissoes=Object.keys(PERMISSOES_CATALOGO).filter(p=>document.getElementById('perm-'+p)?.checked);
+  // ID do cargo: usa o nome existente (edição) ou gera a partir do nome
+  const cargoId=editCargoNome||nomeExibicao.replace(/\s+/g,'_');
+  db.collection('cargos').doc(cargoId).set({nome:nomeExibicao,cor,permissoes},{merge:true}).then(()=>{
+    toast(editCargoNome?'Cargo atualizado!':'Cargo criado!');
+    closeModal('m-cargo');editCargoNome=null;
+  }).catch(()=>toast('Erro ao salvar','err'));
+}
+
+function excluirCargo(nome){
+  if(nome==='Admin'){toast('O cargo Administrador não pode ser excluído','err');return;}
+  const usando=localUsuarios.filter(u=>u.cargo===nome).length;
+  if(usando>0){toast(`${usando} usuário(s) usam este cargo. Reatribua antes de excluir.`,'err');return;}
+  if(!confirm('Excluir este cargo?'))return;
+  db.collection('cargos').doc(nome).delete().then(()=>toast('Cargo excluído!')).catch(()=>toast('Erro','err'));
 }
 
 // ── COMPROVANTE DE VENDA ──
@@ -4459,7 +4871,7 @@ function renderRelatorios(c,a){
   </div>
 
   <!-- DRE -->
-  <div class="card" style="margin-bottom:16px">
+  <div class="card lucro-only" style="margin-bottom:16px">
     <div class="card-title"><i class="ti ti-chart-pie"></i> Resultado do Período (DRE Simplificado)</div>
     ${(()=>{
       const dre=calcularDRE(vf,localCompras,localPagar);

@@ -1,4 +1,4 @@
-const CACHE = "sempre-bonita-v5";
+const CACHE = "sempre-bonita-v6";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
