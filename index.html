@@ -469,6 +469,59 @@ a{color:var(--accent);text-decoration:none}
 .pill:hover{border-color:var(--accent);color:var(--accent)}
 .pill-active{background:var(--accent);border-color:var(--accent);color:#fff}
 body.vendedora-mode .admin-only{display:none !important;}
+
+/* ── BARRA DE FAVORITOS ── */
+.favbar{
+  display:flex;align-items:center;gap:2px;
+  padding:0 16px;height:38px;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  overflow-x:auto;overflow-y:hidden;
+  flex-shrink:0;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+}
+.favbar::-webkit-scrollbar{display:none}
+.fav-tab{
+  display:flex;align-items:center;gap:6px;
+  padding:0 14px;height:30px;
+  border-radius:var(--radius);
+  font-size:12px;font-weight:500;
+  color:var(--text2);
+  cursor:pointer;white-space:nowrap;
+  transition:all .15s;
+  flex-shrink:0;
+  border:none;background:none;
+  position:relative;
+}
+.fav-tab:hover{background:var(--bg3);color:var(--text)}
+.fav-tab.active{
+  background:var(--accent-glow);
+  color:var(--accent);
+  font-weight:700;
+}
+.fav-tab.active::after{
+  content:'';position:absolute;bottom:-1px;left:8px;right:8px;
+  height:2px;background:var(--accent);border-radius:2px;
+}
+.fav-tab i{font-size:14px}
+.fav-add{
+  display:flex;align-items:center;gap:4px;
+  padding:0 10px;height:28px;
+  border-radius:var(--radius);
+  font-size:11px;color:var(--text3);
+  cursor:pointer;white-space:nowrap;
+  border:1px dashed var(--border2);
+  background:none;
+  margin-left:4px;
+  transition:all .15s;
+  flex-shrink:0;
+}
+.fav-add:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-glow)}
+@media(max-width:768px){
+  .fav-tab{padding:0 10px;font-size:11px}
+  .fav-tab span{display:none}
+}
 body.sem-custos .custo-only{display:none !important;}
 body.sem-lucro .lucro-only{display:none !important;}
 body.sem-taxas .taxa-only{display:none !important;}
@@ -581,6 +634,7 @@ body.sem-excluir .excluir-only{display:none !important;}
       <span class="topbar-title" id="page-title">Dashboard</span>
       <div class="topbar-actions" id="topbar-actions"></div>
     </div>
+    <div class="favbar" id="favbar"></div>
     <div class="content" id="content"></div>
   </div>
 </div>
@@ -1035,6 +1089,26 @@ body.sem-excluir .excluir-only{display:none !important;}
   </div>
 </div>
 
+<!-- GERENCIAR FAVORITOS -->
+<div class="modal-overlay" id="m-favs">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <span class="modal-title"><i class="ti ti-star"></i> Gerenciar Favoritos</span>
+      <button class="modal-close" onclick="closeModal('m-favs')"><i class="ti ti-x"></i></button>
+    </div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:12px">
+      Escolha quais telas aparecem na barra de acesso rápido. Clique direito em qualquer aba para remover rapidamente.
+    </p>
+    <div id="favs-lista" style="max-height:420px;overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="localFavoritos=[...FAVS_PADRAO];salvarFavoritos();renderFavbar();abrirGerenciarFavs()">
+        <i class="ti ti-refresh"></i>Restaurar padrão
+      </button>
+      <button class="btn btn-primary" onclick="closeModal('m-favs')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- EXCLUIR VENDA (com senha) -->
 <div class="modal-overlay" id="m-excluir-venda">
   <div class="modal" style="max-width:400px">
@@ -1455,6 +1529,122 @@ let metas = {meta1:5000,meta2:10000,meta3:20000,superMeta:30000};
 
 
 let currentOp=null, cartItems=[], selectedPay='dinheiro', parcelasCredito=1;
+// ══════════════════════════════════════════════
+// BARRA DE FAVORITOS
+// ══════════════════════════════════════════════
+
+// Catálogo de todas as páginas disponíveis para favoritar
+const PAGES_CATALOGO = [
+  {id:'dashboard',        label:'Dashboard',        icon:'ti-dashboard'},
+  {id:'pdv',              label:'PDV',               icon:'ti-shopping-cart'},
+  {id:'estoque',          label:'Estoque',           icon:'ti-box'},
+  {id:'clientes',         label:'Clientes',          icon:'ti-users'},
+  {id:'compras',          label:'Compras',           icon:'ti-truck'},
+  {id:'condicionais',     label:'Condicionais',      icon:'ti-briefcase'},
+  {id:'caixa',            label:'Caixa',             icon:'ti-cash'},
+  {id:'receber',          label:'A Receber',         icon:'ti-arrow-up-right'},
+  {id:'pagar',            label:'A Pagar',           icon:'ti-arrow-down-right'},
+  {id:'trocas',           label:'Trocas',            icon:'ti-replace'},
+  {id:'relatorios',       label:'Relatórios',        icon:'ti-chart-bar'},
+  {id:'contasFinanceiras',label:'Contas Financeiras',icon:'ti-building-bank'},
+  {id:'configuracoes',    label:'Configurações',     icon:'ti-settings'},
+  {id:'acessos',          label:'Gerenciar Acessos', icon:'ti-lock-access'},
+];
+
+// Favoritos padrão (antes do usuário personalizar)
+const FAVS_PADRAO = ['dashboard','pdv','estoque','clientes','caixa'];
+
+let localFavoritos = [...FAVS_PADRAO];
+
+function carregarFavoritos(){
+  try{
+    const saved = localStorage.getItem('favs_'+( currentOp?.email||'guest'));
+    if(saved) localFavoritos = JSON.parse(saved);
+    else localFavoritos = [...FAVS_PADRAO];
+  }catch(e){
+    localFavoritos = [...FAVS_PADRAO];
+  }
+  renderFavbar();
+}
+
+function salvarFavoritos(){
+  try{
+    localStorage.setItem('favs_'+(currentOp?.email||'guest'), JSON.stringify(localFavoritos));
+  }catch(e){}
+}
+
+function renderFavbar(){
+  const bar = document.getElementById('favbar');
+  if(!bar) return;
+
+  const tabs = localFavoritos.map(pageId => {
+    const page = PAGES_CATALOGO.find(p=>p.id===pageId);
+    if(!page) return '';
+    const isActive = currentPage === pageId;
+    return `<button class="fav-tab ${isActive?'active':''}"
+      onclick="goPage('${pageId}',document.getElementById('m-${pageId==='relatorios'?'relatorios':pageId==='receber'?'receber':pageId==='pagar'?'pagar':pageId}'))"
+      oncontextmenu="event.preventDefault();removerFavorito('${pageId}')"
+      title="${page.label} (clique direito para remover)">
+      <i class="ti ${page.icon}"></i>
+      <span>${page.label}</span>
+    </button>`;
+  }).join('');
+
+  bar.innerHTML = tabs + `
+    <button class="fav-add" onclick="abrirGerenciarFavs()" title="Gerenciar favoritos">
+      <i class="ti ti-star"></i> Editar
+    </button>`;
+}
+
+function adicionarFavorito(pageId){
+  if(!localFavoritos.includes(pageId)){
+    localFavoritos.push(pageId);
+    salvarFavoritos();
+    renderFavbar();
+    toast('Adicionado aos favoritos!');
+  } else {
+    toast('Já está nos favoritos','err');
+  }
+}
+
+function removerFavorito(pageId){
+  localFavoritos = localFavoritos.filter(f=>f!==pageId);
+  salvarFavoritos();
+  renderFavbar();
+  toast('Removido dos favoritos');
+}
+
+function abrirGerenciarFavs(){
+  // Montar lista de todas as páginas com toggle
+  const corpo = document.getElementById('favs-lista');
+  if(!corpo) return;
+  corpo.innerHTML = PAGES_CATALOGO.map(p=>{
+    const ativo = localFavoritos.includes(p.id);
+    const pos   = localFavoritos.indexOf(p.id)+1;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:var(--radius);margin-bottom:4px;background:${ativo?'var(--accent-glow)':'var(--bg3)'}">
+      <div style="display:flex;align-items:center;gap:10px">
+        <i class="ti ${p.icon}" style="color:${ativo?'var(--accent)':'var(--text3)'};font-size:16px;width:20px;text-align:center"></i>
+        <span style="font-size:13px;font-weight:${ativo?'600':'400'};color:${ativo?'var(--text)':'var(--text2)'}">${p.label}</span>
+        ${ativo?`<span style="font-size:10px;color:var(--accent);background:var(--accent-glow);padding:1px 7px;border-radius:99px">#${pos}</span>`:''}
+      </div>
+      <button onclick="toggleFavorito('${p.id}')" style="background:${ativo?'var(--red-bg)':'var(--accent-glow)'};border:none;border-radius:var(--radius);padding:4px 12px;font-size:11px;font-weight:600;color:${ativo?'var(--red)':'var(--accent)'};cursor:pointer">
+        ${ativo?'Remover':'+ Adicionar'}
+      </button>
+    </div>`;
+  }).join('');
+  openModal('m-favs');
+}
+
+function toggleFavorito(pageId){
+  if(localFavoritos.includes(pageId)){
+    removerFavorito(pageId);
+  } else {
+    adicionarFavorito(pageId);
+  }
+  // Atualizar o modal sem fechar
+  abrirGerenciarFavs();
+}
+
 function isAdmin(){return currentOp && (currentOp.email===ADMIN_MASTER || currentOp.role==='Admin');}
 let localCargos={}, localUsuarios=[], minhasPermissoes=[];
 
@@ -1540,6 +1730,7 @@ firebase.auth().onAuthStateChanged(user=>{
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='flex';
     aplicarPermissoes();
+    carregarFavoritos();
     startListeners();
   } else {
     document.getElementById('app').style.display='none';
@@ -1754,9 +1945,8 @@ function renderDashboard(c,a){
   const taxasMes=vMes-vMesLiquido;
   const ano=new Date().getFullYear(),mesN=new Date().getMonth();
   const diasNoMes=new Date(ano,mesN+1,0).getDate();
-  // Calcular início e fim da semana atual (suporta 5 semanas)
-  const semInicio=semAtual===1?1:semAtual===2?8:semAtual===3?15:semAtual===4?22:29;
-  const semFim=semAtual===1?7:semAtual===2?14:semAtual===3?21:semAtual===4?(diasNoMes>28?28:diasNoMes):diasNoMes;
+  // Calcular início e fim da semana atual usando calendário real
+  const [semInicio, semFim]=getInicioFimSemana(semAtual);
   const diasSem=semFim-semInicio+1;
   const vSemana=localVendas.filter(v=>{
     const dt=extrairData(v);
@@ -1775,8 +1965,8 @@ function renderDashboard(c,a){
   const pDia=metaDia>0?Math.min(100,vHoje/metaDia*100):0;
   const pHoje=localPagar.filter(p=>p.vencimento===hoje&&p.status==='Pendente').reduce((s,p)=>s+(p.valor||0),0);
   const rHoje=localReceber.filter(r=>r.vencimento===hoje&&r.status==='Pendente').reduce((s,r)=>s+(r.valor||0),0);
-  const semNome=['','1ª Semana','2ª Semana','3ª Semana','4ª Semana','5ª Semana'][semAtual]||'';
-  const semDatas=['','dias 1–7','dias 8–14','dias 15–21',diasNoMes>28?'dias 22–28':'dia 22+',`dias 29–${diasNoMes}`][semAtual]||'';
+  const semNome = semAtual + 'ª Semana';
+  const semDatas = `dias ${semInicio}–${semFim}`;
   const metaAtingida=vMes>=sm?'Super Meta 🏆':vMes>=m3?'Meta 3 🥇':vMes>=m2?'Meta 2 🥈':vMes>=m1?'Meta 1 🥉':'Abaixo da Meta 1';
   const corMeta=vMes>=sm?'var(--accent)':vMes>=m3?'var(--green)':vMes>=m2?'var(--amber)':'var(--red)';
   const seedBanner='';
@@ -5205,29 +5395,58 @@ function calcularMetas(refAnoPassado){
   };
 }
 
+// Calcula as semanas REAIS do mês (dom-sáb), fundindo a primeira semana
+// se tiver menos de 3 dias (evita "S1 = 1 dia" em meses que começam no sábado)
+function calcularSemanasDoMes(ano, mes){
+  // mes aqui é 0-indexado (janeiro=0)
+  const diasNoMes = new Date(ano, mes+1, 0).getDate();
+  const diaSemana = new Date(ano, mes, 1).getDay(); // 0=dom,6=sáb
+  // Dias até o próximo sábado (sábado = 6 no getDay())
+  const diasAteSabado = diaSemana === 6 ? 0 : (6 - diaSemana);
+  const semanas = [];
+  let ini = 1;
+  let fim1 = Math.min(ini + diasAteSabado, diasNoMes);
+  // Fundir se primeira semana tiver menos de 3 dias
+  if((fim1 - ini + 1) < 3 && fim1 < diasNoMes){
+    fim1 = Math.min(fim1 + 7, diasNoMes);
+  }
+  semanas.push([ini, fim1]);
+  ini = fim1 + 1;
+  while(ini <= diasNoMes){
+    const fim = Math.min(ini + 6, diasNoMes);
+    semanas.push([ini, fim]);
+    ini = fim + 1;
+  }
+  return semanas; // array de [inicio, fim] (dia do mês, 1-indexado)
+}
+
 function totalSemanasNoMes(){
-  const ano=new Date().getFullYear(), mes=new Date().getMonth();
-  const diasNoMes=new Date(ano,mes+1,0).getDate();
-  return diasNoMes>28?5:4;
+  const d = new Date();
+  return calcularSemanasDoMes(d.getFullYear(), d.getMonth()).length;
 }
 
 function getSemanaAtual(){
-  const d=new Date().getDate();
-  if(d<=7)  return 1;
-  if(d<=14) return 2;
-  if(d<=21) return 3;
-  if(d<=28) return 4;
-  return 5;
+  const d   = new Date();
+  const dia = d.getDate();
+  const sems = calcularSemanasDoMes(d.getFullYear(), d.getMonth());
+  for(let i=0; i<sems.length; i++){
+    if(dia >= sems[i][0] && dia <= sems[i][1]) return i+1;
+  }
+  return sems.length;
 }
 
 function getDiasNaSemana(semana){
-  const ano=new Date().getFullYear(), mes=new Date().getMonth();
-  const diasNoMes=new Date(ano,mes+1,0).getDate();
-  if(semana===1) return 7;
-  if(semana===2) return 7;
-  if(semana===3) return 7;
-  if(semana===4) return diasNoMes>28?7:diasNoMes-21;
-  return diasNoMes-28;
+  const d = new Date();
+  const sems = calcularSemanasDoMes(d.getFullYear(), d.getMonth());
+  const s = sems[semana-1];
+  if(!s) return 7;
+  return s[1] - s[0] + 1;
+}
+
+function getInicioFimSemana(semana){
+  const d = new Date();
+  const sems = calcularSemanasDoMes(d.getFullYear(), d.getMonth());
+  return sems[semana-1] || [1,7];
 }
 
 function getMetaSemana(metaMensal, semana){
@@ -5954,34 +6173,7 @@ function renderConfig(c,a){
       Defina o peso de cada semana do mês. Semanas com maior volume de compras (pagamentos) recebem maior peso.<br>
       <span style="color:var(--amber);font-size:12px">A soma deve ser 100%.</span>
     </p>
-    <div class="meta-grid">
-      <div class="meta-card">
-        <div class="meta-card-label">Semana 1 — Dias 1 a 7 (%)</div>
-        <input type="number" class="meta-card-inp" id="cfg-s1" value="${pcts.s1}" min="0" max="100" oninput="atualizarPreviewMetas()">
-        <div class="meta-card-sub">Dias após virada do mês</div>
-      </div>
-      <div class="meta-card">
-        <div class="meta-card-label">Semana 2 — Dias 8 a 14 (%) 💰 5º dia útil</div>
-        <input type="number" class="meta-card-inp" id="cfg-s2" value="${pcts.s2}" min="0" max="100" oninput="atualizarPreviewMetas()">
-        <div class="meta-card-sub">Semana do pagamento</div>
-      </div>
-      <div class="meta-card">
-        <div class="meta-card-label">Semana 3 — Dias 15 a 21 (%) 💰 Dia 20</div>
-        <input type="number" class="meta-card-inp" id="cfg-s3" value="${pcts.s3}" min="0" max="100" oninput="atualizarPreviewMetas()">
-        <div class="meta-card-sub">Semana do pagamento</div>
-      </div>
-      <div class="meta-card">
-        <div class="meta-card-label">${totalSemanasNoMes()===5?'Semana 4 — Dias 22 a 28 (%)':'Semana 4 — Dia 22 em diante (%)'}</div>
-        <input type="number" class="meta-card-inp" id="cfg-s4" value="${pcts.s4}" min="0" max="100" oninput="atualizarPreviewMetas()">
-        <div class="meta-card-sub">${totalSemanasNoMes()===5?'Semana do meio':'Final do mês'}</div>
-      </div>
-      ${totalSemanasNoMes()===5?`
-      <div class="meta-card" style="border-color:var(--amber);background:var(--amber-bg)">
-        <div class="meta-card-label" style="color:var(--amber)">Semana 5 — Dia 29 em diante (%) ⭐</div>
-        <input type="number" class="meta-card-inp" id="cfg-s5" value="${pcts.s5||0}" min="0" max="100" oninput="atualizarPreviewMetas()">
-        <div class="meta-card-sub">Este mês tem 5 semanas!</div>
-      </div>`:'<div style="display:none"><input id="cfg-s5" value="0"></div>'}
-    </div>
+    ${renderGridMetas(pcts)}
     <div id="cfg-soma-alert" style="display:none;background:var(--red-bg);border:1px solid rgba(248,113,113,.3);border-radius:var(--radius);padding:10px 14px;margin-top:8px;font-size:13px;color:var(--red)">
       <i class="ti ti-alert-triangle"></i> A soma das semanas está em <strong id="cfg-soma-val">0%</strong>. Ajuste para totalizar 100%.
     </div>
@@ -6068,6 +6260,31 @@ function exportarBackupCompleto(){
     console.error(e);
     toast('Erro ao gerar backup','err');
   }
+}
+
+function renderGridMetas(pcts){
+  const d=new Date();
+  const sems=calcularSemanasDoMes(d.getFullYear(),d.getMonth());
+  const nSem=sems.length;
+  const ids=['s1','s2','s3','s4','s5'];
+  const vals=[pcts.s1,pcts.s2,pcts.s3,pcts.s4,pcts.s5||0];
+  const sublabels=['Semana do pagamento (5º dia útil)','Semana do dia 20','','Final do mês',''];
+  let html='<div class="meta-grid">';
+  sems.forEach(function(s,i){
+    const ini=s[0], fim=s[1], dias=fim-ini+1;
+    const ultima=(i===nSem-1&&nSem===5);
+    const borda=ultima?'border-color:var(--amber);background:var(--amber-bg)':'';
+    const corL=ultima?'color:var(--amber)':'';
+    const sub=sublabels[i]||(ultima?'⭐ Semana extra deste mês':'');
+    html+='<div class="meta-card" style="'+borda+'">';
+    html+='<div class="meta-card-label" style="'+corL+'">Semana '+(i+1)+' — dias '+ini+'–'+fim+' ('+dias+'d) (%)</div>';
+    html+='<input type="number" class="meta-card-inp" id="cfg-'+ids[i]+'" value="'+vals[i]+'" min="0" max="100" oninput="atualizarPreviewMetas()">';
+    if(sub) html+='<div class="meta-card-sub">'+sub+'</div>';
+    html+='</div>';
+  });
+  if(nSem<5) html+='<div style="display:none"><input id="cfg-s5" value="0"></div>';
+  html+='</div>';
+  return html;
 }
 
 function atualizarPreviewMetas(){
