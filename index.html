@@ -1397,8 +1397,9 @@ const db = firebase.firestore();
 
 // ── MAPEAMENTO DE USUÁRIOS (e-mail → perfil) ──
 const USER_PROFILES = {
-  "diegocl1800@gmail.com":          {nome:"Diego",   role:"Admin",       init:"DG"},
-  "loja.semprebonita.sc@gmail.com":  {nome:"Vendedora",role:"Funcionário", init:"VD"}
+  "diegocl1800@gmail.com":           {nome:"Diego",   role:"Admin",    init:"DG"},
+  "loja.semprebonita.sc@gmail.com":  {nome:"Kamilly", role:"Gerente",  init:"KA"},
+  "loja.semprebonita.sc2@gmail.com": {nome:"Iasmim",  role:"Vendedora",init:"IA"},
 };
 
 // E-mail do administrador-mestre (sempre tem acesso total, não pode ser bloqueado)
@@ -1904,7 +1905,7 @@ ${(()=>{
 
 <!-- METAS POR VENDEDORA -->
 ${(()=>{
-  if(!metas.metaKamilly && !metas.metaGiovanna) return '';
+  if(!metas.metaKamilly && !metas.metaIasmim) return '';
   const mesAtual=today().slice(0,7);
   const vendasMes=localVendas.filter(v=>extrairData(v).startsWith(mesAtual)&&vendaValida(v));
   const porVendedor={};
@@ -1915,7 +1916,7 @@ ${(()=>{
   });
   const vendedoras=[
     {nome:'Kamilly', meta:metas.metaKamilly||0, vendido:porVendedor['Kamilly']||0},
-    {nome:'Giovanna', meta:metas.metaGiovanna||0, vendido:porVendedor['Giovanna']||0}
+    {nome:'Iasmim',  meta:metas.metaIasmim||0,  vendido:porVendedor['Iasmim']||0},
   ].filter(v=>v.meta>0);
   if(!vendedoras.length) return '';
   return `<div class="card" style="margin-bottom:16px">
@@ -5991,12 +5992,12 @@ function renderConfig(c,a){
     <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Defina uma meta individual de vendas no mês para cada funcionária. Deixe em branco para não acompanhar individualmente.</p>
     <div class="meta-grid">
       <div class="meta-card">
-        <div class="meta-card-label">Kamilly — Meta do Mês (R$)</div>
+        <div class="meta-card-label">Kamilly (Gerente) — Meta do Mês (R$)</div>
         <input type="number" class="meta-card-inp" id="cfg-meta-kamilly" value="${metas.metaKamilly||''}" step="100" placeholder="0,00">
       </div>
       <div class="meta-card">
-        <div class="meta-card-label">Giovanna — Meta do Mês (R$)</div>
-        <input type="number" class="meta-card-inp" id="cfg-meta-giovanna" value="${metas.metaGiovanna||''}" step="100" placeholder="0,00">
+        <div class="meta-card-label">Iasmim — Meta do Mês (R$)</div>
+        <input type="number" class="meta-card-inp" id="cfg-meta-iasmim" value="${metas.metaIasmim||''}" step="100" placeholder="0,00">
       </div>
     </div>
   </div>
@@ -6108,13 +6109,13 @@ function salvarMetas(){
   const soma=nSem===5?s1+s2+s3+s4+s5:s1+s2+s3+s4;
   if(soma!==100){toast(`A soma das semanas deve ser 100% (está em ${soma}%)`, 'err');return;}
   const calc=calcularMetas(ref);
-  const metaKamilly =parseFloat(document.getElementById('cfg-meta-kamilly')?.value)||0;
-  const metaGiovanna=parseFloat(document.getElementById('cfg-meta-giovanna')?.value)||0;
+  const metaKamilly=parseFloat(document.getElementById('cfg-meta-kamilly')?.value)||0;
+  const metaIasmim =parseFloat(document.getElementById('cfg-meta-iasmim')?.value)||0;
   const nm={
     refAnoPassado:ref,
     meta1:calc.meta1, meta2:calc.meta2, meta3:calc.meta3, superMeta:calc.superMeta,
     pctS1:s1, pctS2:s2, pctS3:s3, pctS4:s4, pctS5:s5,
-    metaKamilly, metaGiovanna
+    metaKamilly, metaIasmim
   };
   db.collection('config').doc('metas').set(nm,{merge:true}).then(()=>{
     metas=nm;
