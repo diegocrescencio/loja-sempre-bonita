@@ -4363,6 +4363,69 @@ function selecionarPagImp(tipo){
   if(impVendasBruto.length>0) refiltrarVendas();
 }
 
+function renderPreviewVendas(){
+  const mistas=impVendasData.filter(function(v){return v.formaPagamento==='misto';});
+  let html='';
+  if(mistas.length){
+    let btns='';
+    ['dinheiro','pix','cartao','debito'].forEach(function(f){
+      const label=f==='cartao'?'Cartao Cred.':f.charAt(0).toUpperCase()+f.slice(1);
+      btns+='<button class="btn btn-sm misto-comp-btn" data-forma="'+f+'" id="misto-comp-'+f+'" style="font-size:11px">'+label+'</button>';
+    });
+    html+='<div style="background:var(--amber-bg);border:1px solid var(--amber);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;font-size:12px">';
+    html+='<strong style="color:var(--amber)">⚠ '+mistas.length+' venda(s) com pagamento misto detectadas</strong><br>';
+    html+='<span style="color:var(--text2)">O Awise não exporta a segunda forma. Selecione qual foi a outra forma usada:</span>';
+    html+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">'+btns+'</div>';
+    html+='<div id="misto-comp-aviso" style="font-size:11px;color:var(--text3);margin-top:6px">Nenhuma forma selecionada</div>';
+    html+='</div>';
+  }
+  html+='<div style="font-size:11px;color:var(--text3);margin-bottom:6px">Prévia (primeiras 8):</div>';
+  html+='<table class="data-table" style="font-size:11px"><thead><tr><th>Data</th><th>Cliente</th><th>Forma</th><th>Total</th></tr></thead><tbody>';
+  impVendasData.slice(0,8).forEach(function(v){
+    const forma=v.formaPagamento==='misto'
+      ?'<span style="color:var(--amber)">Misto 🔀</span>'
+      :(v.formaPagamento||'<span style="color:var(--text3)">—</span>');
+    html+='<tr><td>'+(v.data?v.data.split('-').reverse().join('/'):'—')+' '+v.hora+'</td><td>'+v.cliente+'</td><td>'+forma+'</td><td style="font-family:var(--mono);font-weight:600;color:var(--green)">'+R(v.total)+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  if(impVendasData.length>8) html+='<p style="font-size:11px;color:var(--text3);margin-top:4px">...e mais '+(impVendasData.length-8)+' venda(s)</p>';
+  return html;
+}
+
+// Delegação de evento para botões de forma mista (evita problemas de aspas no onclick)
+document.addEventListener('click', function(e){
+  const btn = e.target.closest('.misto-comp-btn');
+  if(btn && btn.dataset.forma) definirFormaMisto(btn.dataset.forma);
+});
+
+function definirFormaMisto(forma){
+  // Marcar botão selecionado
+  ['dinheiro','pix','cartao','debito'].forEach(f=>{
+    const btn=document.getElementById('misto-comp-'+f);
+    if(btn) btn.style.background=f===forma?'var(--accent)':''
+          , btn.style.color=f===forma?'#fff':'';
+  });
+  // Atualizar a segunda parte de cada venda mista
+  impVendasData=impVendasData.map(v=>{
+    if(v.formaPagamento!=='misto'||!v.pagamentosMistos) return v;
+    const pag=[...v.pagamentosMistos];
+    pag[1]={...pag[1], forma};
+    return {...v, pagamentosMistos:pag};
+  });
+  impVendasBruto=impVendasBruto.map(v=>{
+    if(v.formaPagamento!=='misto'||!v.pagamentosMistos) return v;
+    const pag=[...v.pagamentosMistos];
+    pag[1]={...pag[1], forma};
+    return {...v, pagamentosMistos:pag};
+  });
+  const aviso=document.getElementById('misto-comp-aviso');
+  if(aviso){
+    const nomes={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão Crédito',debito:'Débito'};
+    aviso.textContent='Outra forma selecionada: '+nomes[forma]+'. Será salvo assim ao importar.';
+    aviso.style.color='var(--green)';
+  }
+}
+
 function lerArquivoVendas(file){
   const ext=file.name.split('.').pop().toLowerCase();
   const reader=new FileReader();
@@ -4464,10 +4527,21 @@ function processarVendasXLS(headers, rows){
       vendasMap[numVenda].creditoTotal+=credito;
       if(credito>0)vendasMap[numVenda].formaPagamento='crediario';
     });
-    impVendasData=Object.values(vendasMap).map(v=>({
-      ...v,total:Math.round(v.total*100)/100,
-      formaPagamento:v.formaPagamento||''
-    })).filter(v=>v.total>0);
+    impVendasData=Object.values(vendasMap).map(v=>{
+      const total=Math.round(v.total*100)/100;
+      const cred=Math.round(v.creditoTotal*100)/100;
+      let formaPagamento=v.formaPagamento||'';
+      let pagamentosMistos=null;
+      // Misto: tem crédito mas não cobre 100% do total
+      if(cred>0 && Math.abs(cred-total)>0.01){
+        formaPagamento='misto';
+        pagamentosMistos=[
+          {forma:'crediario', valor:cred},
+          {forma:'', valor:Math.round((total-cred)*100)/100} // outra forma — usuário define
+        ];
+      }
+      return {...v, total, formaPagamento, pagamentosMistos};
+    }).filter(v=>v.total>0);
 
   } else {
     // Formato sem número — agrupar por data+hora+cliente
@@ -4491,10 +4565,20 @@ function processarVendasXLS(headers, rows){
       vendasMap[chave].creditoTotal+=credito;
       if(credito>0)vendasMap[chave].formaPagamento='crediario';
     });
-    impVendasData=Object.values(vendasMap).map(v=>({
-      ...v,total:Math.round(v.total*100)/100,
-      formaPagamento:v.formaPagamento||''
-    })).filter(v=>v.total>0);
+    impVendasData=Object.values(vendasMap).map(v=>{
+      const total=Math.round(v.total*100)/100;
+      const cred=Math.round(v.creditoTotal*100)/100;
+      let formaPagamento=v.formaPagamento||'';
+      let pagamentosMistos=null;
+      if(cred>0 && Math.abs(cred-total)>0.01){
+        formaPagamento='misto';
+        pagamentosMistos=[
+          {forma:'crediario', valor:cred},
+          {forma:'', valor:Math.round((total-cred)*100)/100}
+        ];
+      }
+      return {...v, total, formaPagamento, pagamentosMistos};
+    }).filter(v=>v.total>0);
   }
 
   // Aplicar pagamento forçado se selecionado
@@ -4525,17 +4609,7 @@ function processarVendasXLS(headers, rows){
           <div style="font-size:16px;font-weight:700;color:var(--accent)">${R(totalGeral/impVendasData.length)}</div>
         </div>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Previa (primeiras 6):</div>
-      <table class="data-table" style="font-size:11px">
-        <thead><tr><th>Data</th><th>Cliente</th><th>Itens</th><th>Total</th></tr></thead>
-        <tbody>${impVendasData.slice(0,6).map(v=>`<tr>
-          <td>${v.data?v.data.split('-').reverse().join('/'):'-'} ${v.hora}</td>
-          <td>${v.cliente}</td>
-          <td>${v.itens.length} item(s)</td>
-          <td style="font-family:var(--mono);font-weight:600;color:var(--green)">${R(v.total)}</td>
-        </tr>`).join('')}</tbody>
-      </table>
-      ${impVendasData.length>6?`<p style="font-size:11px;color:var(--text3);margin-top:4px">...e mais ${impVendasData.length-6} venda(s)</p>`:''}`;
+      ${renderPreviewVendas()}`;
     btn.disabled=false;
   }
   prev.style.display='block';
@@ -4550,7 +4624,7 @@ function confirmarImpVendas(){
       const batch=db.batch();
       impVendasData.slice(i,i+BATCH).forEach(v=>{
         const ref=db.collection('vendas').doc();
-        batch.set(ref,{
+        const vendaObj={
           data:           v.data||today(),
           hora:           v.hora||'',
           clienteId:      'Consumidor Geral',
@@ -4560,7 +4634,24 @@ function confirmarImpVendas(){
           itens:          v.itens||[],
           vendedor:       v.vendedor||currentOp.nome,
           importado:      true,
-        });
+        };
+        if(v.pagamentosMistos) vendaObj.pagamentosMistos=v.pagamentosMistos;
+        if(v.creditoTotal>0){
+          vendaObj.creditoTotal=Math.round(v.creditoTotal*100)/100;
+          // Gerar contas a receber para a parte de crediário
+          const clId=localClientes.find(c=>c.nome===v.cliente)?.id||null;
+          if(clId){
+            const vp=v.creditoTotal;
+            const vd=new Date(v.data||today());vd.setMonth(vd.getMonth()+1);
+            batch.set(db.collection('contas_receber').doc(),{
+              clienteId:clId, cliente:v.cliente,
+              valor:Math.round(vp*100)/100,
+              vencimento:vd.toISOString().slice(0,10),
+              parcela:'1/1', status:'Pendente', importado:true
+            });
+          }
+        }
+        batch.set(ref,vendaObj);
       });
       await batch.commit();
     }
