@@ -578,7 +578,7 @@ body.sem-excluir .excluir-only{display:none !important;}
     <div class="brand">
       <div class="brand-logo">
         <div class="brand-icon" style="background:#6b1235;font-family:Georgia,serif;font-size:16px;color:#f4ede7;font-weight:700">S</div>
-        <div><div class="brand-name">Sempre Bonita</div><div class="brand-sub">Gestão de Varejo · v11</div></div>
+        <div><div class="brand-name">Sempre Bonita</div><div class="brand-sub">Gestão de Varejo · v13</div></div>
       </div>
     </div>
     <nav class="nav">
@@ -1318,7 +1318,10 @@ body.sem-excluir .excluir-only{display:none !important;}
         <div class="pay-btn" id="ps-debito" onclick="selecionarPagImp('debito')"><i class="ti ti-device-mobile"></i>Debito</div>
         <div class="pay-btn" id="ps-crediario" onclick="selecionarPagImp('crediario')"><i class="ti ti-notebook"></i>Crediario</div>
       </div>
-      <p style="font-size:11px;color:var(--text3);margin-top:8px">"Auto" detecta crediario pelo campo de credito do Awise. Para os demais, selecione antes de carregar o arquivo.</p>
+      <p style="font-size:11px;color:var(--text3);margin-top:8px">
+  <strong style="color:var(--accent)">Deixe em "Auto"</strong> para o sistema detectar automaticamente crediário e pagamentos mistos. 
+  Só selecione outra forma se o arquivo for <em>exclusivamente</em> de uma forma de pagamento (ex: só Pix, só Dinheiro).
+</p>
     </div>
     <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px">
       <div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px"><i class="ti ti-calendar-event" style="font-size:14px;vertical-align:middle;margin-right:4px"></i>Filtrar por periodo (opcional)</div>
@@ -4359,8 +4362,12 @@ function selecionarPagImp(tipo){
     const el=document.getElementById('ps-'+t);
     if(el)el.classList.toggle('sel', t===tipo);
   });
-  // Se já tem dados carregados, reaplicar pagamento
-  if(impVendasBruto.length>0) refiltrarVendas();
+  if(impVendasBruto.length>0){
+    // Reaplicar forma selecionada sem reprocessar o arquivo
+    const forma=tipo==='auto'?'':tipo;
+    impVendasData=impVendasBruto.map(v=>({...v,formaPagamento:forma}));
+    renderPreviewVendasAtualizado();
+  }
 }
 
 function renderPreviewVendas(){
@@ -4500,121 +4507,125 @@ function processarVendasXLS(headers, rows){
   const iTotal    = idx(['valor total','total']);
   const iVendedor = idx(['vendedor','seller']);
   const iCredito  = idx(['crédito utilizado','credito utilizado','valor de crédito','credito']);
+  const iDesconto = idx(['desconto']);
 
   const temNumVenda = iNumVenda >= 0;
   const temData     = iData >= 0;
 
-  if(temNumVenda){
-    // Formato com número da venda — agrupar por número
-    const vendasMap={};
-    rows.forEach(r=>{
-      const numVenda=String(r[iNumVenda]||'').trim();
-      if(!numVenda)return;
-      if(!vendasMap[numVenda]){
-        const {data,hora}=temData?parseDateBR(r[iData]):{data:today(),hora:''};
-        vendasMap[numVenda]={numVenda,data,hora,
-          cliente:String(iCliente>=0?r[iCliente]:'Consumidor Final').trim(),
-          vendedor:limparVendedor(iVendedor>=0?r[iVendedor]:''),
-          itens:[],total:0,creditoTotal:0,formaPagamento:'',importado:true};
-      }
-      const preco=parseFloat(String(iValUnit>=0?r[iValUnit]:0).replace(',','.'))||0;
-      const qtd=parseInt(iQtd>=0?r[iQtd]:1)||1;
-      const subtotal=parseFloat(String(iTotal>=0?r[iTotal]:preco*qtd).replace(',','.'))||0;
-      const credito=parseFloat(String(iCredito>=0?r[iCredito]:0).replace(',','.'))||0;
-      if(iProduto>=0&&r[iProduto])
-        vendasMap[numVenda].itens.push({nome:String(r[iProduto]).trim(),qtd,preco});
-      vendasMap[numVenda].total+=subtotal;
-      vendasMap[numVenda].creditoTotal+=credito;
-      if(credito>0)vendasMap[numVenda].formaPagamento='crediario';
-    });
-    impVendasData=Object.values(vendasMap).map(v=>{
-      const total=Math.round(v.total*100)/100;
-      const cred=Math.round(v.creditoTotal*100)/100;
-      let formaPagamento=v.formaPagamento||'';
-      let pagamentosMistos=null;
-      // Misto: tem crédito mas não cobre 100% do total
-      if(cred>0 && Math.abs(cred-total)>0.01){
-        formaPagamento='misto';
-        pagamentosMistos=[
-          {forma:'crediario', valor:cred},
-          {forma:'', valor:Math.round((total-cred)*100)/100} // outra forma — usuário define
-        ];
-      }
-      return {...v, total, formaPagamento, pagamentosMistos};
-    }).filter(v=>v.total>0);
+  const vendasMap={};
 
-  } else {
-    // Formato sem número — agrupar por data+hora+cliente
-    const vendasMap={};
-    rows.forEach(r=>{
+  rows.forEach(r=>{
+    // Chave de agrupamento: número da venda se existir, senão data+hora+cliente
+    let chave;
+    if(temNumVenda){
+      chave=String(r[iNumVenda]||'').trim();
+      if(!chave||chave==='nan') return;
+    } else {
       const {data,hora}=temData?parseDateBR(r[iData]):{data:today(),hora:''};
-      const cliente=String(iCliente>=0?r[iCliente]:'Consumidor Final').trim();
-      const chave=data+'|'+hora+'|'+cliente;
-      if(!vendasMap[chave]){
-        vendasMap[chave]={data,hora,cliente,
-          vendedor:limparVendedor(iVendedor>=0?r[iVendedor]:''),
-          itens:[],total:0,creditoTotal:0,formaPagamento:'',importado:true};
-      }
-      const preco=parseFloat(String(iValUnit>=0?r[iValUnit]:0).replace(',','.'))||0;
-      const qtd=parseInt(iQtd>=0?r[iQtd]:1)||1;
-      const subtotal=parseFloat(String(iTotal>=0?r[iTotal]:preco*qtd).replace(',','.'))||0;
-      const credito=parseFloat(String(iCredito>=0?r[iCredito]:0).replace(',','.'))||0;
-      if(iProduto>=0&&r[iProduto])
-        vendasMap[chave].itens.push({nome:String(r[iProduto]).trim(),qtd,preco});
-      vendasMap[chave].total+=subtotal;
-      vendasMap[chave].creditoTotal+=credito;
-      if(credito>0)vendasMap[chave].formaPagamento='crediario';
-    });
-    impVendasData=Object.values(vendasMap).map(v=>{
-      const total=Math.round(v.total*100)/100;
-      const cred=Math.round(v.creditoTotal*100)/100;
-      let formaPagamento=v.formaPagamento||'';
-      let pagamentosMistos=null;
-      if(cred>0 && Math.abs(cred-total)>0.01){
-        formaPagamento='misto';
-        pagamentosMistos=[
-          {forma:'crediario', valor:cred},
-          {forma:'', valor:Math.round((total-cred)*100)/100}
-        ];
-      }
-      return {...v, total, formaPagamento, pagamentosMistos};
-    }).filter(v=>v.total>0);
-  }
+      const cl=String(iCliente>=0?r[iCliente]:'Consumidor Final').trim();
+      chave=data+'|'+hora+'|'+cl;
+    }
 
-  // Aplicar pagamento forçado se selecionado
-  if(impVendasPagamento!=='auto'){
-    impVendasData=impVendasData.map(v=>({...v,formaPagamento:impVendasPagamento}));
-  }
+    if(!vendasMap[chave]){
+      const {data,hora}=temData?parseDateBR(r[iData]):{data:today(),hora:''};
+      vendasMap[chave]={
+        numVenda: temNumVenda?chave:'',
+        data, hora,
+        cliente:   String(iCliente>=0?r[iCliente]:'Consumidor Final').trim(),
+        vendedor:  limparVendedor(iVendedor>=0?r[iVendedor]:''),
+        itens:[], total:0, creditoTroca:0, importado:true
+      };
+    }
+
+    const preco    = parseFloat(String(iValUnit>=0?r[iValUnit]:0).replace(',','.'))||0;
+    const qtd      = parseInt(iQtd>=0?r[iQtd]:1)||1;
+    const subtotal = parseFloat(String(iTotal>=0?r[iTotal]:preco*qtd).replace(',','.'))||0;
+    // Crédito de troca/devolução (não é forma de pagamento)
+    const credTroca = parseFloat(String(iCredito>=0?r[iCredito]:0).replace(',','.'))||0;
+
+    if(iProduto>=0&&r[iProduto])
+      vendasMap[chave].itens.push({nome:String(r[iProduto]).trim(),qtd,preco});
+    vendasMap[chave].total      += subtotal;
+    vendasMap[chave].creditoTroca += credTroca;
+  });
+
+  impVendasData = Object.values(vendasMap)
+    .map(v=>({...v, total:Math.round(v.total*100)/100, creditoTroca:Math.round(v.creditoTroca*100)/100}))
+    .filter(v=>v.total>0);
+
+  // Aplicar forma de pagamento selecionada (ou deixar em branco para definir depois)
+  const forma = impVendasPagamento==='auto' ? '' : impVendasPagamento;
+  impVendasData = impVendasData.map(v=>({...v, formaPagamento:forma}));
+
   impVendasBruto=[...impVendasData];
-  const btnRef=document.getElementById('btn-refiltrar');
-  if(btnRef)btnRef.style.display='inline-flex';
 
-  if(!impVendasData.length){
-    prev.innerHTML='<p style="color:var(--red);font-size:12px">Nenhuma venda encontrada no periodo selecionado.</p>';
-    btn.disabled=true;
-  } else {
-    const totalGeral=impVendasData.reduce((s,v)=>s+v.total,0);
-    prev.innerHTML=`
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
-        <div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center">
-          <div style="font-size:10px;color:var(--text3);margin-bottom:3px">VENDAS</div>
-          <div style="font-size:18px;font-weight:700;color:var(--text)">${impVendasData.length}</div>
-        </div>
-        <div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center">
-          <div style="font-size:10px;color:var(--text3);margin-bottom:3px">TOTAL</div>
-          <div style="font-size:16px;font-weight:700;color:var(--green)">${R(totalGeral)}</div>
-        </div>
-        <div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center">
-          <div style="font-size:10px;color:var(--text3);margin-bottom:3px">TICKET MEDIO</div>
-          <div style="font-size:16px;font-weight:700;color:var(--accent)">${R(totalGeral/impVendasData.length)}</div>
-        </div>
-      </div>
-      ${renderPreviewVendas()}`;
-    btn.disabled=false;
-  }
-  prev.style.display='block';
-  if(mapDiv)mapDiv.style.display='none'; // Nao precisa de mapeamento manual
+  const btnRef=document.getElementById('btn-refiltrar');
+  if(btnRef) btnRef.style.display='inline-flex';
+
+  renderPreviewVendasAtualizado();
 }
+
+function renderPreviewVendasAtualizado(){
+  const prev=document.getElementById('imp-vendas-prev');
+  const btn=document.getElementById('btn-imp-vendas');
+  if(!impVendasData.length){
+    prev.innerHTML='<p style="color:var(--red);font-size:12px">Nenhuma venda encontrada.</p>';
+    btn.disabled=true; prev.style.display='block'; return;
+  }
+
+  const totalGeral=impVendasData.reduce((s,v)=>s+v.total,0);
+  const comCredTroca=impVendasData.filter(v=>v.creditoTroca>0);
+  const formaSel=impVendasPagamento==='auto'?'<span style="color:var(--text3)">Não definida</span>':
+    '<span style="color:var(--accent);font-weight:600">'+impVendasPagamento.toUpperCase()+'</span>';
+
+  let html='';
+
+  // Resumo
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">';
+  html+='<div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">VENDAS</div><div style="font-size:18px;font-weight:700;color:var(--text)">'+impVendasData.length+'</div></div>';
+  html+='<div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">TOTAL</div><div style="font-size:16px;font-weight:700;color:var(--green)">'+R(totalGeral)+'</div></div>';
+  html+='<div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">FORMA</div><div style="font-size:13px;font-weight:600">'+formaSel+'</div></div>';
+  html+='</div>';
+
+  // Alerta de crédito de troca
+  if(comCredTroca.length){
+    html+='<div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;font-size:12px">';
+    html+='<strong style="color:var(--text)">ℹ '+comCredTroca.length+' venda(s) com crédito de troca utilizado</strong><br>';
+    html+='<span style="color:var(--text2)">O crédito de troca será registrado separadamente. A forma de pagamento do restante segue o selecionado acima.</span>';
+    html+='</div>';
+  }
+
+  // Aviso se forma não definida
+  if(impVendasPagamento==='auto'){
+    html+='<div style="background:var(--amber-bg);border:1px solid var(--amber);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;font-size:12px">';
+    html+='<strong style="color:var(--amber)">⚠ Forma de pagamento não definida</strong><br>';
+    html+='<span style="color:var(--text2)">Selecione acima qual forma de pagamento é este arquivo antes de importar. Se o arquivo mistura formas, importe um grupo de cada vez.</span>';
+    html+='</div>';
+    document.getElementById('btn-imp-vendas').disabled=true;
+  } else {
+    document.getElementById('btn-imp-vendas').disabled=false;
+  }
+
+  // Preview das primeiras 8 vendas
+  html+='<div style="font-size:11px;color:var(--text3);margin-bottom:6px">Prévia (primeiras 8):</div>';
+  html+='<table class="data-table" style="font-size:11px"><thead><tr><th>Data</th><th>Cliente</th><th>Vendedor</th><th>Total</th><th>Crédito Troca</th></tr></thead><tbody>';
+  impVendasData.slice(0,8).forEach(function(v){
+    const credCell=v.creditoTroca>0?('<span style="color:var(--amber)">'+R(v.creditoTroca)+'</span>'):'—';
+    html+='<tr>';
+    html+='<td>'+(v.data?v.data.split('-').reverse().join('/'):'—')+' '+v.hora+'</td>';
+    html+='<td>'+v.cliente+'</td>';
+    html+='<td>'+v.vendedor+'</td>';
+    html+='<td style="font-family:var(--mono);font-weight:600;color:var(--green)">'+R(v.total)+'</td>';
+    html+='<td>'+credCell+'</td>';
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  if(impVendasData.length>8) html+='<p style="font-size:11px;color:var(--text3);margin-top:4px">...e mais '+(impVendasData.length-8)+' venda(s)</p>';
+
+  prev.innerHTML=html;
+  prev.style.display='block';
+}
+
 
 function confirmarImpVendas(){
   if(!impVendasData.length){toast('Nenhum dado para importar','err');return;}
@@ -4685,9 +4696,13 @@ function refiltrarVendas(){
   const filtroInicio = document.getElementById('imp-v-inicio')?.value||'';
   const filtroFim    = document.getElementById('imp-v-fim')?.value||'';
   if(filtroInicio||filtroFim){
-    // Aplicar pagamento forçado
+    // Aplicar pagamento forçado (proteger mistas e crediário)
   if(impVendasPagamento!=='auto'){
-    impVendasData = impVendasData.map(v=>({...v, formaPagamento:impVendasPagamento}));
+    impVendasData = impVendasData.map(v=>{
+      if(v.formaPagamento==='misto') return v;
+      if(v.formaPagamento==='crediario') return v;
+      return {...v, formaPagamento:impVendasPagamento};
+    });
   }
   impVendasData = impVendasData.filter(v=>{
       if(!v.data) return false;
@@ -4696,48 +4711,8 @@ function refiltrarVendas(){
       return true;
     });
   }
-  const prev = document.getElementById('imp-vendas-prev');
-  const btn  = document.getElementById('btn-imp-vendas');
-  if(!impVendasData.length){
-    prev.innerHTML='<p style="color:var(--red);font-size:12px">Nenhuma venda no periodo selecionado. Ajuste as datas.</p>';
-    btn.disabled=true;
-    prev.style.display='block';
-    return;
-  }
-  const totalGeral=impVendasData.reduce((s,v)=>s+v.total,0);
-  const filtroLabel = (filtroInicio||filtroFim)
-    ? `<span style="color:var(--accent)">${filtroInicio?filtroInicio.split('-').reverse().join('/'):''} ate ${filtroFim?filtroFim.split('-').reverse().join('/'):'fim'}</span>`
-    : '<span style="color:var(--text3)">Sem filtro — todas as vendas</span>';
-  prev.innerHTML=`
-    <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Periodo filtrado: ${filtroLabel}</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
-      <div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:3px">VENDAS</div>
-        <div style="font-size:18px;font-weight:700;color:var(--text)">${impVendasData.length}</div>
-      </div>
-      <div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:3px">TOTAL</div>
-        <div style="font-size:16px;font-weight:700;color:var(--green)">${R(totalGeral)}</div>
-      </div>
-      <div style="background:var(--bg3);padding:10px;border-radius:var(--radius);text-align:center">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:3px">TICKET MEDIO</div>
-        <div style="font-size:16px;font-weight:700;color:var(--accent)">${R(totalGeral/impVendasData.length)}</div>
-      </div>
-    </div>
-    <table class="data-table" style="font-size:11px">
-      <thead><tr><th>Data</th><th>Cliente</th><th>Itens</th><th>Total</th></tr></thead>
-      <tbody>${impVendasData.slice(0,6).map(v=>`<tr>
-        <td>${v.data?v.data.split('-').reverse().join('/'):'-'} ${v.hora}</td>
-        <td>${v.cliente}</td>
-        <td>${v.itens.length}</td>
-        <td style="font-family:var(--mono);font-weight:600;color:var(--green)">${R(v.total)}</td>
-      </tr>`).join('')}</tbody>
-    </table>
-    ${impVendasData.length>6?`<p style="font-size:11px;color:var(--text3);margin-top:4px">...e mais ${impVendasData.length-6} venda(s)</p>`:''}`;
-  prev.style.display='block';
-  btn.disabled=false;
+    renderPreviewVendasAtualizado();
 }
-
 document.addEventListener('DOMContentLoaded',()=>{
   const fv=document.getElementById('f-imp-vendas');
   if(fv)fv.addEventListener('change',function(){if(this.files[0])lerArquivoVendas(this.files[0]);});
