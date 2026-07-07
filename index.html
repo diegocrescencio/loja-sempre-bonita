@@ -22,6 +22,17 @@
   --shadow:0 2px 16px rgba(0,0,0,0.08);
   --sidebar-w:220px;
 }
+body.dark-mode{
+  --bg:#14151f;--bg2:#1c1e2b;--bg3:#242637;--bg4:#2e3145;
+  --border:#333650;--border2:#40435e;
+  --accent:#e8558f;--accent2:#f0709e;--accent-glow:rgba(232,85,143,0.15);
+  --green:#34d399;--green-bg:rgba(52,211,153,0.12);
+  --red:#f87171;--red-bg:rgba(248,113,113,0.12);
+  --amber:#fbbf24;--amber-bg:rgba(251,191,36,0.12);
+  --purple:#a78bfa;--purple-bg:rgba(167,139,250,0.12);
+  --text:#eef0f6;--text2:#c2c5d8;--text3:#8b90a8;
+  --shadow:0 2px 16px rgba(0,0,0,0.35);
+}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5}
 input,select,button,textarea{font-family:var(--font);font-size:14px}
 button{cursor:pointer}
@@ -611,6 +622,7 @@ body.sem-excluir .excluir-only{display:none !important;}
         <div class="nav-label">Sistema</div>
         <div class="nav-item" id="m-configuracoes" onclick="goPage('configuracoes',this)"><i class="ti ti-settings"></i>Configurações</div>
         <div class="nav-item" id="m-acessos" onclick="goPage('acessos',this)" style="display:none"><i class="ti ti-lock-access"></i>Gerenciar Acessos</div>
+        <div class="nav-item" id="m-auditoria" onclick="goPage('auditoria',this)" style="display:none"><i class="ti ti-history"></i>Auditoria</div>
         <div class="nav-item" id="m-importar" onclick="openModal('m-imp-estoque')"><i class="ti ti-database-import"></i>Importar Estoque</div>
         <div class="nav-item" onclick="openModal('m-imp-cl')"><i class="ti ti-users-plus"></i>Importar Clientes</div>
         <div class="nav-item" onclick="openModal('m-imp-vendas')"><i class="ti ti-file-upload"></i>Importar Vendas</div>
@@ -623,6 +635,7 @@ body.sem-excluir .excluir-only{display:none !important;}
         <div><div class="user-name" id="sb-name">Diego</div><div class="user-role" id="sb-role">Admin</div></div>
         <button class="logout-btn" onclick="logout()" title="Sair"><i class="ti ti-logout"></i></button>
       </div>
+      <button class="btn btn-sm" style="width:100%;margin-top:8px" onclick="toggleTheme()" id="theme-toggle-btn"><i class="ti ti-moon"></i>Modo Escuro</button>
       <div class="sync-row"><div class="sync-dot" id="sync-dot"></div><span id="sync-lbl">Conectado</span></div>
     </div>
   </div>
@@ -653,6 +666,16 @@ body.sem-excluir .excluir-only{display:none !important;}
     <div class="form-row">
       <div class="form-group"><label class="form-label">Nome do Produto *</label><input class="form-input" id="fp-nome" placeholder="Ex: Blusa Estela"></div>
       <div class="form-group"><label class="form-label">Código SKU *</label><input class="form-input" id="fp-sku" placeholder="Ex: 3022"></div>
+    </div>
+
+    <!-- FOTO DO PRODUTO -->
+    <div class="form-group">
+      <label class="form-label">Foto do Produto (URL da imagem)</label>
+      <div style="display:flex;gap:10px;align-items:center">
+        <img id="fp-foto-preview" src="" style="width:56px;height:56px;border-radius:var(--radius);object-fit:cover;background:var(--bg3);border:1px solid var(--border);display:none">
+        <input class="form-input" id="fp-foto" placeholder="https://... (cole o link da foto)" oninput="atualizarPreviewFoto()" style="flex:1">
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">Dica: suba a foto no Google Fotos, Imgur ou Drive e cole o link público aqui.</div>
     </div>
 
     <!-- 2. GRADE DE COR E TAMANHO -->
@@ -1484,6 +1507,11 @@ const USER_PROFILES = {
 
 // E-mail do administrador-mestre (sempre tem acesso total, não pode ser bloqueado)
 const ADMIN_MASTER = "diegocl1800@gmail.com";
+// Preparação para futura expansão multi-loja: hoje só existe 1 unidade, mas manter esse ID
+// pronto evita ter que reestruturar todo o banco de dados se você abrir uma segunda loja.
+// Quando expandir, a ideia é adicionar lojaId: LOJA_ATUAL em cada novo documento criado
+// (produtos, vendas, clientes, etc.) e filtrar as consultas por esse campo.
+const LOJA_ATUAL = "loja-principal";
 
 // Catálogo de todas as permissões disponíveis no sistema
 const PERMISSOES_CATALOGO = {
@@ -1674,7 +1702,7 @@ function carregarMinhasPermissoes(){
   const cargo=localCargos[cargoNome] || CARGOS_PADRAO[cargoNome] || CARGOS_PADRAO.Vendedora;
   minhasPermissoes=cargo.permissoes || [];
 }
-let localProdutos=[], localClientes=[], localVendas=[], localReceber=[], localPagar=[], localCaixa=[];
+let localProdutos=[], localClientes=[], localVendas=[], localReceber=[], localPagar=[], localCaixa=[], localLogAuditoria=[];
 let editProdId=null, editClId=null;
 let localCondicionais=[], localCompras=[], localTrocas=[], localOperadoras=[];
 let condItens=[], editCondId=null;
@@ -1704,6 +1732,37 @@ function addDias(dataStr,n){
   const dt=new Date(y,m-1,d);
   dt.setDate(dt.getDate()+n);
   return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+// ── LOG DE AUDITORIA ──
+// Registra ações sensíveis (exclusões, alterações de cargo, pagamentos) para rastreabilidade.
+// ── TEMA CLARO/ESCURO ──
+function toggleTheme(){
+  const isDark=document.body.classList.toggle('dark-mode');
+  localStorage.setItem('tema_sempre_bonita', isDark?'dark':'light');
+  atualizarBotaoTema(isDark);
+}
+function atualizarBotaoTema(isDark){
+  const btn=document.getElementById('theme-toggle-btn');
+  if(btn)btn.innerHTML=isDark?'<i class="ti ti-sun"></i>Modo Claro':'<i class="ti ti-moon"></i>Modo Escuro';
+}
+(function aplicarTemaSalvo(){
+  const tema=localStorage.getItem('tema_sempre_bonita');
+  if(tema==='dark'){
+    document.body.classList.add('dark-mode');
+  }
+  document.addEventListener('DOMContentLoaded',()=>atualizarBotaoTema(tema==='dark'));
+})();
+function registrarLog(acao,detalhes){
+  try{
+    db.collection('log_auditoria').add({
+      acao,
+      detalhes:detalhes||'',
+      data:today(),
+      hora:nowStr(),
+      operador:currentOp?currentOp.nome:'—',
+      operadorEmail:currentOp?currentOp.email:''
+    }).catch(()=>{});
+  }catch(e){}
 }
 function toast(msg,type='ok'){
   const t=document.getElementById('toast');
@@ -1806,6 +1865,8 @@ function aplicarPermissoes(){
   // Menu "Gerenciar Acessos" só para admin-mestre
   const menuAcessos=document.getElementById('m-acessos');
   if(menuAcessos) menuAcessos.style.display=(currentOp.email===ADMIN_MASTER)?'':'none';
+  const menuAuditoria=document.getElementById('m-auditoria');
+  if(menuAuditoria) menuAuditoria.style.display=(currentOp.email===ADMIN_MASTER)?'':'none';
 
   // Classes no body para esconder dados sensíveis via CSS
   document.body.classList.toggle('sem-custos', !temPermissao('ver_custos'));
@@ -1839,6 +1900,7 @@ function startListeners(){
   db.collection('contas_receber').onSnapshot(s=>{localReceber=s.docs.map(d=>({id:d.id,...d.data()}));renderCurrentPage();},()=>setSyncStatus(false));
   db.collection('contas_pagar').onSnapshot(s=>{localPagar=s.docs.map(d=>({id:d.id,...d.data()}));renderCurrentPage();},()=>setSyncStatus(false));
   db.collection('caixa').onSnapshot(s=>{localCaixa=s.docs.map(d=>({id:d.id,...d.data()}));setSyncStatus(true);renderCurrentPage();},()=>setSyncStatus(false));
+  db.collection('log_auditoria').orderBy('data','desc').limit(300).onSnapshot(s=>{localLogAuditoria=s.docs.map(d=>({id:d.id,...d.data()}));if(currentPage==='auditoria')renderCurrentPage();},()=>{});
   db.collection('config').doc('metas').onSnapshot(s=>{if(s.exists){metas={...metas,...s.data()};renderCurrentPage();}});
   db.collection('condicionais').onSnapshot(s=>{
     localCondicionais=s.docs.map(d=>({id:d.id,...d.data()}));
@@ -1918,7 +1980,7 @@ function goPage(page,el){
 function renderCurrentPage(){
   const c=document.getElementById('content');
   const a=document.getElementById('topbar-actions');
-  const titles={dashboard:'Dashboard',pdv:'PDV — Ponto de Venda',estoque:'Estoque',clientes:'Clientes',caixa:'Caixa',receber:'Contas a Receber',pagar:'Contas a Pagar',relatorios:'Relatórios',configuracoes:'Configurações'};
+  const titles={dashboard:'Dashboard',pdv:'PDV — Ponto de Venda',estoque:'Estoque',clientes:'Clientes',caixa:'Caixa',receber:'Contas a Receber',pagar:'Contas a Pagar',relatorios:'Relatórios',configuracoes:'Configurações',auditoria:'Log de Auditoria'};
   document.getElementById('page-title').textContent=titles[currentPage]||currentPage;
   a.innerHTML='';
   if(currentPage==='dashboard')renderDashboard(c,a);
@@ -1935,6 +1997,7 @@ function renderCurrentPage(){
   else if(currentPage==='compras')renderCompras(c,a);
   else if(currentPage==='contasFinanceiras')renderContasFinanceiras(c,a);
   else if(currentPage==='acessos')renderAcessos(c,a);
+  else if(currentPage==='auditoria')renderAuditoria(c,a);
   else if(currentPage==='trocas')renderTrocas(c,a);
 }
 
@@ -2719,6 +2782,7 @@ function renderPDVGrid(){
     const s=p.estoque||0;
     const varStr=[p.cor,p.tamanho].filter(Boolean).join(' · ');
     return `<div class="prod-tile" onclick="addToCart('${p.id}')">
+      ${p.foto?`<img src="${p.foto}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--radius);margin-bottom:6px" onerror="this.remove()">`:''}
       <div class="prod-tile-cat">${p.categoria||'—'}</div>
       <div class="prod-tile-name">${p.nome}</div>
       ${varStr?`<div class="prod-tile-var">${varStr}</div>`:''}
@@ -3085,6 +3149,16 @@ function finalizarVenda(){
     batch.update(db.collection('produtos').doc(i.id),{estoque:Math.max(0,(orig?.estoque||0)-i.qtd)});
   });
 
+  // Programa de fidelidade: 1 ponto a cada R$10 vendidos, só para cliente identificado
+  let pontosGanhos=0;
+  if(pdvClienteId){
+    const clFid=localClientes.find(c=>c.id===pdvClienteId);
+    pontosGanhos=Math.floor(total/10);
+    if(pontosGanhos>0 && clFid){
+      batch.update(db.collection('clientes').doc(pdvClienteId),{pontosFidelidade:(clFid.pontosFidelidade||0)+pontosGanhos});
+    }
+  }
+
   // Crediário puro
   if(selectedPay==='crediario'&&pdvClienteId){
     const cl=localClientes.find(c=>c.id===pdvClienteId);
@@ -3131,7 +3205,7 @@ function finalizarVenda(){
       ? pagamentosMistos.map(p=>p.forma.toUpperCase()+' '+R(p.valor)).join(' + ')
       : selectedPay.toUpperCase();
     document.getElementById('vok-info').textContent=`Total: ${R(total)} · ${pagLabel}`;
-    document.getElementById('vok-cl').textContent=`Cliente: ${clNomeComp}`;
+    document.getElementById('vok-cl').textContent=`Cliente: ${clNomeComp}${pontosGanhos>0?` · 🎁 +${pontosGanhos} pontos de fidelidade`:''}`;
     openModal('m-venda-ok');
     cartItems=[];selectedPay='dinheiro';parcelasCredito=1;pdvDesconto=0;pdvDescontoTipo='R';pagamentosMistos=[];window._taxaCartaoAtual=null;
   }).catch(e=>{console.error(e);toast('Erro ao registrar venda','err');});
@@ -3177,7 +3251,7 @@ function renderEstoqueTabela(f){
         const markupColor=markup<=0?'var(--red)':markup<50?'var(--amber)':'var(--green)';
         const status=est===0?'<span class="badge badge-red">Sem Estoque</span>':est===1?'<span class="badge badge-amber">Crítico</span>':'<span class="badge badge-green">OK</span>';
         return `<tr>
-          <td><div style="font-weight:600;color:var(--text)">${p.nome}</div><div style="font-size:10px;color:var(--text3)">${p.categoria||'—'}</div></td>
+          <td><div style="display:flex;align-items:center;gap:8px">${p.foto?`<img src="${p.foto}" style="width:32px;height:32px;border-radius:6px;object-fit:cover;flex-shrink:0;background:var(--bg3)" onerror="this.style.display='none'">`:''}<div><div style="font-weight:600;color:var(--text)">${p.nome}</div><div style="font-size:10px;color:var(--text3)">${p.categoria||'—'}</div></div></div></td>
           <td><span style="font-family:var(--mono);font-size:12px;color:var(--text3)">${p.sku||'—'}</span></td>
           <td>
             ${cor?`<span class="badge badge-blue" style="font-size:10px;margin-right:3px">${cor}</span>`:''}
@@ -3321,10 +3395,17 @@ function calcMarkup(){
 }
 function abrirProd(){
   document.getElementById('m-prod-title').textContent='Novo Produto';
-  ['fp-nome','fp-sku','fp-marca','fp-cor','fp-preco','fp-custo','fp-markup','fp-qtd','fp-barras'].forEach(id=>document.getElementById(id).value='');
+  ['fp-nome','fp-sku','fp-marca','fp-cor','fp-preco','fp-custo','fp-markup','fp-qtd','fp-barras','fp-foto'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fp-min').value='2';
   document.getElementById('fp-tam').value='';
+  atualizarPreviewFoto();
   openModal('m-produto');
+}
+function atualizarPreviewFoto(){
+  const url=document.getElementById('fp-foto').value.trim();
+  const img=document.getElementById('fp-foto-preview');
+  if(url){img.src=url;img.style.display='';}
+  else{img.style.display='none';}
 }
 function editarProd(id){
   const p=localProdutos.find(x=>x.id===id);if(!p)return;
@@ -3339,6 +3420,8 @@ function editarProd(id){
   document.getElementById('fp-qtd').value=p.estoque||0;
   document.getElementById('fp-min').value=p.estoqueMin||2;
   document.getElementById('fp-barras').value=p.codigoBarras||'';
+  document.getElementById('fp-foto').value=p.foto||'';
+  atualizarPreviewFoto();
   const cat=document.getElementById('fp-cat');
   for(let o of cat.options)if(o.value===p.categoria)o.selected=true;
   const tam=document.getElementById('fp-tam');
@@ -3360,7 +3443,8 @@ function salvarProduto(){
     markup:parseFloat(document.getElementById('fp-markup').value)||0,
     estoque:parseInt(document.getElementById('fp-qtd').value)||0,
     estoqueMin:parseInt(document.getElementById('fp-min').value)||2,
-    codigoBarras:document.getElementById('fp-barras').value.trim()
+    codigoBarras:document.getElementById('fp-barras').value.trim(),
+    foto:document.getElementById('fp-foto').value.trim()
   };
   if(!d.nome){toast('Informe o nome','err');return;}
 
@@ -3432,7 +3516,7 @@ function excluirProd(id){
     operador:currentOp.nome
   });
   batch.delete(db.collection('produtos').doc(id));
-  batch.commit().then(()=>toast('Produto excluído!')).catch(()=>toast('Erro','err'));
+  batch.commit().then(()=>{toast('Produto excluído!');registrarLog('Exclusão de produto',`${prod.nome} (SKU ${prod.sku||'—'})`);}).catch(()=>toast('Erro','err'));
 }
 
 // ── IMPORTAR ESTOQUE (CSV Awise) ──
@@ -3623,9 +3707,13 @@ function renderClientes(c,a){
           <div class="cstat"><div class="cstat-label">Total Gasto</div><div class="cstat-val" style="color:var(--green)">${R(st.total)}</div></div>
           <div class="cstat"><div class="cstat-label">Compras</div><div class="cstat-val">${st.qtd}</div></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
           <div class="cstat"><div class="cstat-label">Disp. Crediário</div><div class="cstat-val" style="color:${disp<0?'var(--red)':'var(--accent)'}">${R(disp)}</div></div>
           <div class="cstat"><div class="cstat-label">Últ. Compra</div><div class="cstat-val" style="font-size:11px;color:${st.diasSemComprar>60?'var(--red)':'var(--text2)'}">${st.ultimaData?st.ultimaData.split('-').reverse().join('/'):'—'}</div></div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--purple-bg);border-radius:var(--radius);padding:6px 10px;margin-bottom:10px">
+          <span style="font-size:11px;color:var(--purple);font-weight:600"><i class="ti ti-gift" style="font-size:12px"></i> ${cl.pontosFidelidade||0} pontos</span>
+          ${(cl.pontosFidelidade||0)>0?`<button class="btn btn-sm" style="padding:2px 8px;font-size:11px" onclick="resgatarPontos('${cl.id}')">Resgatar</button>`:''}
         </div>
         <div style="display:flex;gap:5px">
           <button class="btn btn-sm btn-primary" style="flex:1.3" onclick="abrirFichaCliente('${cl.id}')"><i class="ti ti-id"></i>Ficha</button>
@@ -3637,6 +3725,18 @@ function renderClientes(c,a){
     }).join('')}</div>`;
 }
 
+function resgatarPontos(id){
+  const cl=localClientes.find(x=>x.id===id);
+  if(!cl)return;
+  const disponiveis=cl.pontosFidelidade||0;
+  const qtd=parseInt(prompt(`${cl.nome} tem ${disponiveis} pontos.\nQuantos pontos deseja resgatar agora? (ex: 100 pontos = defina o benefício combinado com a cliente)`,''));
+  if(!qtd||qtd<=0)return;
+  if(qtd>disponiveis){toast('Cliente não tem pontos suficientes','err');return;}
+  db.collection('clientes').doc(id).update({pontosFidelidade:disponiveis-qtd}).then(()=>{
+    toast(`${qtd} pontos resgatados!`);
+    registrarLog('Resgate de pontos de fidelidade',`${cl.nome} — ${qtd} pontos`);
+  }).catch(()=>toast('Erro','err'));
+}
 function abrirCliente(){
   document.getElementById('m-cl-title').textContent='Novo Cliente';
   ['fc-nome','fc-cpf','fc-tel','fc-end','fc-obs','fc-nasc'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -3657,7 +3757,11 @@ function salvarCliente(){
   const ref=editClId?db.collection('clientes').doc(editClId):db.collection('clientes').doc();
   ref.set(d,{merge:true}).then(()=>{toast(editClId?'Cliente atualizado!':'Cliente cadastrado!');closeModal('m-cliente');editClId=null;}).catch(()=>toast('Erro','err'));
 }
-function excluirCliente(id){if(!confirm('Excluir cliente?'))return;db.collection('clientes').doc(id).delete().then(()=>toast('Excluído!')).catch(()=>toast('Erro','err'));}
+function excluirCliente(id){
+  if(!confirm('Excluir cliente?'))return;
+  const cl=localClientes.find(x=>x.id===id);
+  db.collection('clientes').doc(id).delete().then(()=>{toast('Excluído!');registrarLog('Exclusão de cliente',cl?cl.nome:id);}).catch(()=>toast('Erro','err'));
+}
 function abrirLimite(id){
   const cl=localClientes.find(c=>c.id===id);if(!cl)return;
   document.getElementById('lim-id').value=id;document.getElementById('lim-val').value=cl.limite||0;
@@ -4164,6 +4268,7 @@ function salvarCargo(){
   const cargoId=editCargoNome||nomeExibicao.replace(/\s+/g,'_');
   db.collection('cargos').doc(cargoId).set({nome:nomeExibicao,cor,permissoes},{merge:true}).then(()=>{
     toast(editCargoNome?'Cargo atualizado!':'Cargo criado!');
+    registrarLog(editCargoNome?'Alteração de cargo':'Criação de cargo',`${nomeExibicao} — permissões: ${permissoes.join(', ')||'nenhuma'}`);
     closeModal('m-cargo');editCargoNome=null;
   }).catch(()=>toast('Erro ao salvar','err'));
 }
@@ -5125,6 +5230,27 @@ function confirmarBaixaReceber(){
 }
 
 // ══════════════════════════════════
+// AUDITORIA
+// ══════════════════════════════════
+const ACAO_ICONE={'Exclusão de produto':'ti-trash','Exclusão de cliente':'ti-user-x','Alteração de cargo':'ti-shield','Criação de cargo':'ti-shield-plus','Baixa em conta a pagar':'ti-cash-banknote'};
+function renderAuditoria(c,a){
+  a.innerHTML='';
+  if(!localLogAuditoria.length){
+    c.innerHTML=`<div class="empty"><i class="ti ti-inbox"></i><div class="empty-title">Nenhum registro de auditoria ainda</div><div style="font-size:12px;color:var(--text3);margin-top:4px">Exclusões, mudanças de cargo e baixas de contas aparecerão aqui.</div></div>`;
+    return;
+  }
+  c.innerHTML=`
+  <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Histórico das últimas ${localLogAuditoria.length} ações sensíveis realizadas no sistema (exclusões, alterações de cargo, pagamentos). Visível apenas para o administrador.</p>
+  <div class="table-wrap"><table class="data-table"><thead><tr><th>Data/Hora</th><th>Ação</th><th>Detalhes</th><th>Operador</th></tr></thead>
+    <tbody>${localLogAuditoria.map(l=>`<tr>
+      <td style="white-space:nowrap;font-size:12px">${l.data?l.data.split('-').reverse().join('/'):'—'} ${l.hora||''}</td>
+      <td><span class="badge badge-red" style="display:inline-flex;align-items:center;gap:4px"><i class="ti ${ACAO_ICONE[l.acao]||'ti-info-circle'}" style="font-size:12px"></i>${l.acao||'—'}</span></td>
+      <td style="font-size:12px;color:var(--text2)">${l.detalhes||'—'}</td>
+      <td style="font-size:12px">${l.operador||'—'}</td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+
+// ══════════════════════════════════
 // CONTAS A PAGAR
 // ══════════════════════════════════
 const TIPO_DESPESA_LABEL={fixa:'Fixa',variavel:'Variável',pessoal:'Pessoal'};
@@ -5179,7 +5305,10 @@ function salvarContaPagar(){
   if(!d.fornecedor){toast('Informe fornecedor','err');return;}
   db.collection('contas_pagar').add(d).then(()=>{toast('Conta cadastrada!');closeModal('m-pagar-novo');document.getElementById('cp-forn').value='';document.getElementById('cp-val').value='';document.getElementById('cp-data').value='';}).catch(()=>toast('Erro','err'));
 }
-function pagarConta(id){db.collection('contas_pagar').doc(id).update({status:'Pago',dataPagamento:today()}).then(()=>toast('Pago!')).catch(()=>toast('Erro','err'));}
+function pagarConta(id){
+  const p=localPagar.find(x=>x.id===id);
+  db.collection('contas_pagar').doc(id).update({status:'Pago',dataPagamento:today()}).then(()=>{toast('Pago!');registrarLog('Baixa em conta a pagar',p?`${p.fornecedor} — ${R(p.valor)}`:id);}).catch(()=>toast('Erro','err'));
+}
 
 // ══════════════════════════════════
 // RELATÓRIOS
@@ -5219,6 +5348,12 @@ function formatarDataVenda(data, hora){
   return {dataFmt, horaFmt};
 }
 
+// Retorna o valor líquido realmente recebido pela loja em uma venda (descontando taxa de cartão/débito)
+function liquidoVenda(v){
+  if(v.pagamentosMistos&&v.totalLiquidoMisto) return v.totalLiquidoMisto;
+  if(v.totalLiquido&&(v.formaPagamento==='cartao'||v.formaPagamento==='debito')) return v.totalLiquido;
+  return v.total||0;
+}
 function vendaValida(v){
   if(!v.data) return false;
   const d = String(v.data);
@@ -5350,6 +5485,36 @@ function renderRelatorios(c,a){
         ${linha('Variáveis',porTipo.variavel,'var(--amber)','badge-amber')}
         ${linha('Pessoais',porTipo.pessoal,'var(--purple)','badge-purple')}
         <div style="font-size:11px;color:var(--text3);margin-top:8px">💡 Despesas pessoais não entram no Lucro Líquido da DRE acima — só aparecem aqui para você acompanhar seu próprio gasto separado do negócio.</div>`;
+    })()}
+  </div>
+
+  <!-- COMISSÃO SEMANAL POR META BATIDA -->
+  <div class="card lucro-only" style="margin-bottom:16px">
+    <div class="card-title"><i class="ti ti-percentage"></i> Comissões da Semana — Mês Atual</div>
+    ${(()=>{
+      const {semanas,liquidoMesTotal,superMetaBatida,mesFechado,bonusPorPessoa}=calcularComissoesSemanais();
+      const linhas=semanas.map(s=>{
+        const statusCor=s.pct>0?'var(--green)':'var(--text3)';
+        return `<tr>
+          <td>S${s.semanaNum} (dia ${s.diaIni}–${s.diaFim})${s.status==='atual'?' <span style="color:var(--amber);font-size:10px">(em andamento)</span>':s.status==='futura'?' <span style="color:var(--text3);font-size:10px">(ainda não começou)</span>':''}</td>
+          <td style="font-family:var(--mono)">${R(s.liquidoLoja)}</td>
+          <td><span class="badge ${s.pct>=2?'badge-green':s.pct>=1.5?'badge-amber':s.pct>=1?'badge-blue':'badge-red'}">${s.nivelLabel}${s.pct>0?' · '+s.pct+'%':''}</span></td>
+          <td style="font-family:var(--mono);font-weight:700;color:${statusCor}">${R(s.comissaoKamilly)}</td>
+          <td style="font-family:var(--mono);font-weight:700;color:${statusCor}">${R(s.comissaoIasmim)}</td>
+        </tr>`;
+      }).join('');
+      return `<p style="font-size:12px;color:var(--text2);margin-bottom:10px">
+        A % de comissão da semana depende de qual meta semanal (1, 2 ou 3) a loja bateu naquela semana especificamente — não é acumulado do mês. Kamilly recebe sobre o líquido total da loja na semana; Iasmim recebe só sobre o líquido das vendas que ela mesma lançou.
+      </p>
+      <table class="data-table" style="font-size:12px"><thead><tr><th>Semana</th><th>Líquido da Loja</th><th>Meta Batida</th><th>Comissão Kamilly</th><th>Comissão Iasmim</th></tr></thead>
+      <tbody>${linhas}</tbody></table>
+      <div style="margin-top:14px;padding:12px;border-radius:var(--radius);background:${superMetaBatida?'var(--green-bg)':'var(--bg3)'};border:1px solid ${superMetaBatida?'rgba(52,211,153,.3)':'var(--border)'}">
+        <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">🏆 Super Meta do Mês (não é semanal — só no fechamento do mês)</div>
+        <div style="font-size:13px;color:var(--text2)">Líquido do mês até agora: <strong style="font-family:var(--mono);color:var(--text)">${R(liquidoMesTotal)}</strong> · Super Meta: <strong style="font-family:var(--mono)">${R(metas.superMeta||0)}</strong></div>
+        ${superMetaBatida
+          ?`<div style="margin-top:6px;font-size:14px;font-weight:700;color:var(--green)">✅ Super Meta batida! +${R(bonusPorPessoa)} de bônus para Kamilly e +${R(bonusPorPessoa)} para Iasmim ${mesFechado?'(mês fechado)':'(confirmar no fechamento do mês)'}</div>`
+          :`<div style="margin-top:6px;font-size:12px;color:var(--text3)">Ainda não batida. Falta ${R(Math.max(0,(metas.superMeta||0)-liquidoMesTotal))} para o bônus de ${R(BONUS_SUPER_META)} por pessoa.</div>`}
+      </div>`;
     })()}
   </div>
 
@@ -5525,6 +5690,40 @@ function renderRelatorios(c,a){
         </tr>`).join('')}</tbody></table>`;
       })()}
     </div>
+  </div>
+
+  <!-- SUGESTÃO AUTOMÁTICA DE REPOSIÇÃO -->
+  <div class="card" style="margin-top:14px">
+    <div class="card-title"><i class="ti ti-truck-delivery" style="color:var(--green)"></i> Sugestão de Reposição (baseada em giro real de vendas)</div>
+    ${(()=>{
+      const prods=rankingProdutos(vf);
+      if(!prods.length)return '<p style="font-size:12px;color:var(--text3)">Sem dados de venda suficientes no período para sugerir reposição.</p>';
+      const totalGeral=prods.reduce((s,p)=>s+p.valor,0);
+      let acumulado=0;
+      const classeA=new Set();
+      prods.forEach(p=>{acumulado+=p.valor;const pctAcum=totalGeral>0?(acumulado/totalGeral*100):0;if(pctAcum<=80)classeA.add(p.nome);});
+      // Dias distintos com venda no período filtrado, para calcular a média diária real
+      const diasComVenda=new Set(vf.map(v=>extrairData(v)).filter(Boolean)).size||1;
+      const diasCobertura=15; // meta: manter estoque suficiente para 15 dias de venda no ritmo atual
+      const sugestoes=prods.filter(p=>classeA.has(p.nome)).map(p=>{
+        const mediaDiaria=p.qtd/diasComVenda;
+        const estoqueAtual=localProdutos.filter(x=>x.nome===p.nome).reduce((s,x)=>s+(x.estoque||0),0);
+        const estoqueAlvo=Math.ceil(mediaDiaria*diasCobertura);
+        const sugerido=Math.max(0,estoqueAlvo-estoqueAtual);
+        return {nome:p.nome,mediaDiaria,estoqueAtual,estoqueAlvo,sugerido};
+      }).filter(s=>s.sugerido>0).sort((a,b)=>b.sugerido-a.sugerido);
+      if(!sugestoes.length)return '<p style="font-size:12px;color:var(--green)">Os produtos classe A estão com estoque saudável para o giro atual. 👍</p>';
+      return `<p style="font-size:12px;color:var(--text2);margin-bottom:10px">Considerando os produtos <strong>Classe A</strong> (80% do faturamento) e o ritmo real de vendas do período, mantendo uma cobertura de ${diasCobertura} dias de estoque:</p>
+      <table class="data-table" style="font-size:12px"><thead><tr><th>Produto</th><th>Média/dia</th><th>Estoque Atual</th><th>Estoque Alvo (${diasCobertura}d)</th><th>Sugestão de Compra</th></tr></thead><tbody>
+      ${sugestoes.map(s=>`<tr>
+        <td>${s.nome}</td>
+        <td style="font-family:var(--mono)">${s.mediaDiaria.toFixed(1)}</td>
+        <td style="font-family:var(--mono)">${s.estoqueAtual}</td>
+        <td style="font-family:var(--mono)">${s.estoqueAlvo}</td>
+        <td style="font-family:var(--mono);font-weight:700;color:var(--green)">+${s.sugerido} un</td>
+      </tr>`).join('')}</tbody></table>
+      <p style="font-size:11px;color:var(--text3);margin-top:8px">💡 Cálculo simples baseado no período filtrado acima — use como referência, não como regra fixa (sazonalidade e promoções não entram na conta).</p>`;
+    })()}
   </div>`;
 }
 
@@ -5608,6 +5807,66 @@ function getMetaSemana(metaMensal, semana){
   const s5=parseFloat(metas.pctS5||0)/100;
   const pcts=[0,s1,s2,s3,s4,s5];
   return metaMensal*(pcts[semana]||0);
+}
+
+// ══════════════════════════════════
+// COMISSÕES — regras fixas definidas pela loja
+// ══════════════════════════════════
+const COMISSAO_TIERS=[ // ordem: da maior meta pra menor — usa a primeira que bater
+  {meta:'meta3',pct:2.0},
+  {meta:'meta2',pct:1.5},
+  {meta:'meta1',pct:1.0}
+];
+const BONUS_SUPER_META=500; // valor fixo pago a cada vendedora quando a loja bate a super meta no mês
+
+// Calcula, para cada semana já FECHADA (ou em andamento) do mês atual,
+// qual faixa de meta semanal (Meta 1/2/3) a loja bateu e a comissão de cada vendedora.
+// Kamilly: comissão sobre o líquido TOTAL da loja na semana.
+// Iasmim: comissão só sobre o líquido das vendas que ELA lançou na semana.
+function calcularComissoesSemanais(){
+  const hoje=new Date();
+  const ano=hoje.getFullYear(), mes=hoje.getMonth();
+  const semanas=calcularSemanasDoMes(ano,mes);
+  const mesStr=today().slice(0,7);
+  const vendasDoMes=localVendas.filter(v=>vendaValida(v)&&extrairData(v).startsWith(mesStr));
+
+  const resultado=semanas.map((s,idx)=>{
+    const semanaNum=idx+1;
+    const [diaIni,diaFim]=s;
+    const vendasSemana=vendasDoMes.filter(v=>{
+      const d=parseInt(extrairData(v).split('-')[2]);
+      return d>=diaIni&&d<=diaFim;
+    });
+    const liquidoLoja=vendasSemana.reduce((sm,v)=>sm+liquidoVenda(v),0);
+    const liquidoIasmim=vendasSemana.filter(v=>v.vendedor==='Iasmim').reduce((sm,v)=>sm+liquidoVenda(v),0);
+
+    const metaSemana1=getMetaSemana(metas.meta1||0,semanaNum);
+    const metaSemana2=getMetaSemana(metas.meta2||0,semanaNum);
+    const metaSemana3=getMetaSemana(metas.meta3||0,semanaNum);
+    const metasSemana={meta1:metaSemana1,meta2:metaSemana2,meta3:metaSemana3};
+
+    let tier=COMISSAO_TIERS.find(t=>metasSemana[t.meta]>0&&liquidoLoja>=metasSemana[t.meta]);
+    const pct=tier?tier.pct:0;
+    const nivelLabel=tier?({meta1:'Meta 1',meta2:'Meta 2',meta3:'Meta 3'})[tier.meta]:'Nenhuma meta batida';
+
+    return{
+      semanaNum,diaIni,diaFim,
+      liquidoLoja,liquidoIasmim,
+      metaSemana1,metaSemana2,metaSemana3,
+      pct,nivelLabel,
+      comissaoKamilly:liquidoLoja*pct/100,
+      comissaoIasmim:liquidoIasmim*pct/100,
+      status: diaFim<hoje.getDate()?'passada':(diaIni>hoje.getDate()?'futura':'atual')
+    };
+  });
+
+  // Super meta — avaliada só no fechamento do MÊS (total líquido do mês inteiro vs superMeta), não por semana
+  const liquidoMesTotal=vendasDoMes.reduce((sm,v)=>sm+liquidoVenda(v),0);
+  const superMetaBatida=(metas.superMeta||0)>0&&liquidoMesTotal>=metas.superMeta;
+  const ultimoDiaMes=new Date(ano,mes+1,0).getDate();
+  const mesFechado=hoje.getDate()>=ultimoDiaMes; // aproximação: considera fechado no último dia
+
+  return{semanas:resultado,liquidoMesTotal,superMetaBatida,mesFechado,bonusPorPessoa:superMetaBatida?BONUS_SUPER_META:0};
 }
 
 function getMetaDiaria(){
@@ -6343,6 +6602,15 @@ function renderConfig(c,a){
         <input type="number" class="meta-card-inp" id="cfg-meta-iasmim" value="${metas.metaIasmim||''}" step="100" placeholder="0,00">
       </div>
     </div>
+  </div>
+
+  <div class="cfg-section">
+    <div class="cfg-title"><i class="ti ti-percentage"></i> Regras de Comissão (fixas)</div>
+    <p style="font-size:13px;color:var(--text2)">
+      A comissão semanal é calculada automaticamente conforme a meta semanal batida pela loja: <strong>Meta 1 → 1%</strong>, <strong>Meta 2 → 1,5%</strong>, <strong>Meta 3 → 2%</strong> sobre o líquido recebido na semana.
+      Kamilly recebe sobre o líquido total da loja; Iasmim recebe sobre o líquido das vendas lançadas em nome dela. Ao final do mês, se a <strong>Super Meta</strong> for batida, cada uma recebe um bônus fixo de <strong>${R(BONUS_SUPER_META)}</strong>, separado da comissão semanal.
+      Veja o detalhamento semana a semana na aba <strong>Relatórios</strong>.
+    </p>
   </div>
 
   <div class="cfg-section">
