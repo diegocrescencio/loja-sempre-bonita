@@ -3255,7 +3255,7 @@ function renderEstoqueTabela(f){
         const markupColor=markup<=0?'var(--red)':markup<50?'var(--amber)':'var(--green)';
         const status=est===0?'<span class="badge badge-red">Sem Estoque</span>':est===1?'<span class="badge badge-amber">Crítico</span>':'<span class="badge badge-green">OK</span>';
         return `<tr>
-          <td><div style="display:flex;align-items:center;gap:8px">${p.foto?`<img src="${p.foto}" style="width:32px;height:32px;border-radius:6px;object-fit:cover;flex-shrink:0;background:var(--bg3)" onerror="this.style.display='none'">`:''}<div><div style="font-weight:600;color:var(--text)">${p.nome}</div><div style="font-size:10px;color:var(--text3)">${p.categoria||'—'}</div></div></div></td>
+          <td><div style="display:flex;align-items:center;gap:10px">${p.foto?`<img src="${p.foto}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;background:var(--bg3);border:1px solid var(--border)" onerror="this.style.display='none'">`:`<div style="width:44px;height:44px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center"><i class="ti ti-photo" style="color:var(--text3);font-size:16px"></i></div>`}<div><div style="font-weight:600;color:var(--text)">${p.nome}</div><div style="font-size:10px;color:var(--text3)">${p.categoria||'—'}</div></div></div></td>
           <td><span style="font-family:var(--mono);font-size:12px;color:var(--text3)">${p.sku||'—'}</span></td>
           <td>
             ${cor?`<span class="badge badge-blue" style="font-size:10px;margin-right:3px">${cor}</span>`:''}
