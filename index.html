@@ -1428,7 +1428,10 @@ body.sem-excluir .excluir-only{display:none !important;}
       <div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-input" id="cp-val" type="number" step="0.01" placeholder="0,00"></div>
       <div class="form-group"><label class="form-label">Vencimento</label><input class="form-input" id="cp-data" type="date"></div>
     </div>
-    <div class="form-group"><label class="form-label">Forma</label><select class="form-input" id="cp-forma"><option>Dinheiro</option><option>Pix</option><option>Cartão</option><option>Boleto</option></select></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Forma</label><select class="form-input" id="cp-forma"><option>Dinheiro</option><option>Pix</option><option>Cartão</option><option>Boleto</option></select></div>
+      <div class="form-group"><label class="form-label">Tipo de Despesa</label><select class="form-input" id="cp-tipo"><option value="fixa">Fixa (loja)</option><option value="variavel">Variável (loja)</option><option value="pessoal">Pessoal</option></select></div>
+    </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('m-pagar-novo')">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarContaPagar()"><i class="ti ti-check"></i>Salvar</button>
@@ -5099,28 +5102,44 @@ function confirmarBaixaReceber(){
 // ══════════════════════════════════
 // CONTAS A PAGAR
 // ══════════════════════════════════
+const TIPO_DESPESA_LABEL={fixa:'Fixa',variavel:'Variável',pessoal:'Pessoal'};
+const TIPO_DESPESA_BADGE={fixa:'badge-blue',variavel:'badge-amber',pessoal:'badge-purple'};
+let _pagarFiltroTipo='todas';
+function setPagarFiltroTipo(t){_pagarFiltroTipo=t;renderPagar(document.getElementById('content'),document.getElementById('topbar-actions'));}
 function renderPagar(c,a){
   a.innerHTML=`<button class="btn btn-primary btn-sm" onclick="openModal('m-pagar-novo')"><i class="ti ti-plus"></i>Nova Conta</button>`;
-  const pend=localPagar.filter(p=>p.status==='Pendente'),tot=pend.reduce((s,p)=>s+(p.valor||0),0);
-  c.innerHTML=`<div class="metrics" style="grid-template-columns:repeat(2,1fr)">
-    <div class="metric metric-cash"><div class="metric-label">Total a Pagar</div><div class="metric-value" style="color:var(--red)">${R(tot)}</div><i class="ti ti-receipt metric-icon"></i></div>
-    <div class="metric metric-sales"><div class="metric-label">Contas Pendentes</div><div class="metric-value">${pend.length}</div><i class="ti ti-clock metric-icon"></i></div>
+  const todasPend=localPagar.filter(p=>p.status==='Pendente');
+  const totLoja=todasPend.filter(p=>(p.tipo||'fixa')!=='pessoal').reduce((s,p)=>s+(p.valor||0),0);
+  const totPessoal=todasPend.filter(p=>p.tipo==='pessoal').reduce((s,p)=>s+(p.valor||0),0);
+  const totFixa=todasPend.filter(p=>(p.tipo||'fixa')==='fixa').reduce((s,p)=>s+(p.valor||0),0);
+  const totVar=todasPend.filter(p=>p.tipo==='variavel').reduce((s,p)=>s+(p.valor||0),0);
+  const lista=_pagarFiltroTipo==='todas'?localPagar:localPagar.filter(p=>(p.tipo||'fixa')===_pagarFiltroTipo);
+  const filtros=[['todas','Todas'],['fixa','Fixas'],['variavel','Variáveis'],['pessoal','Pessoais']];
+  c.innerHTML=`<div class="metrics" style="grid-template-columns:repeat(4,1fr)">
+    <div class="metric metric-cash"><div class="metric-label">Total Loja (Fixa+Var.)</div><div class="metric-value" style="color:var(--red)">${R(totLoja)}</div><i class="ti ti-building-store metric-icon"></i></div>
+    <div class="metric metric-sales"><div class="metric-label">Fixas</div><div class="metric-value" style="color:var(--accent)">${R(totFixa)}</div><i class="ti ti-repeat metric-icon"></i></div>
+    <div class="metric metric-sales"><div class="metric-label">Variáveis</div><div class="metric-value" style="color:var(--amber)">${R(totVar)}</div><i class="ti ti-arrows-shuffle metric-icon"></i></div>
+    <div class="metric metric-sales"><div class="metric-label">Pessoais</div><div class="metric-value" style="color:var(--purple)">${R(totPessoal)}</div><i class="ti ti-user metric-icon"></i></div>
   </div>
-  <div class="table-wrap"><table class="data-table"><thead><tr><th>Fornecedor</th><th>Vencimento</th><th>Valor</th><th>Forma</th><th>Status</th><th>Ação</th></tr></thead>
-    <tbody>${!localPagar.length?'<tr><td colspan="6"><div class="empty"><i class="ti ti-inbox"></i><div class="empty-title">Nenhuma conta</div></div></td></tr>':
-      [...localPagar].sort((a,b)=>a.vencimento>b.vencimento?1:-1).map(p=>`<tr>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0">
+    ${filtros.map(([v,l])=>`<button class="btn btn-sm ${_pagarFiltroTipo===v?'btn-primary':''}" onclick="setPagarFiltroTipo('${v}')">${l}</button>`).join('')}
+  </div>
+  <div class="table-wrap"><table class="data-table"><thead><tr><th>Fornecedor</th><th>Tipo</th><th>Vencimento</th><th>Valor</th><th>Forma</th><th>Status</th><th>Ação</th></tr></thead>
+    <tbody>${!lista.length?'<tr><td colspan="7"><div class="empty"><i class="ti ti-inbox"></i><div class="empty-title">Nenhuma conta</div></div></td></tr>':
+      [...lista].sort((a,b)=>a.vencimento>b.vencimento?1:-1).map(p=>{const tp=p.tipo||'fixa';return `<tr>
         <td>${p.fornecedor||'—'}</td>
+        <td><span class="badge ${TIPO_DESPESA_BADGE[tp]}">${TIPO_DESPESA_LABEL[tp]}</span></td>
         <td>${p.vencimento?p.vencimento.split('-').reverse().join('/'):'—'}</td>
         <td style="font-family:var(--mono)">${R(p.valor)}</td><td>${p.formaPagamento||'—'}</td>
         <td><span class="badge ${p.status==='Pago'?'badge-green':'badge-red'}">${p.status}</span></td>
         <td>${p.status==='Pendente'?`<button class="btn btn-sm btn-success" onclick="pagarConta('${p.id}')"><i class="ti ti-check"></i>Pagar</button>`:'—'}</td>
-      </tr>`).join('')}
+      </tr>`;}).join('')}
     </tbody></table></div>`;
 }
 function salvarContaPagar(){
-  const d={fornecedor:document.getElementById('cp-forn').value.trim(),valor:parseFloat(document.getElementById('cp-val').value)||0,vencimento:document.getElementById('cp-data').value,formaPagamento:document.getElementById('cp-forma').value,status:'Pendente'};
+  const d={fornecedor:document.getElementById('cp-forn').value.trim(),valor:parseFloat(document.getElementById('cp-val').value)||0,vencimento:document.getElementById('cp-data').value,formaPagamento:document.getElementById('cp-forma').value,tipo:document.getElementById('cp-tipo').value||'fixa',status:'Pendente'};
   if(!d.fornecedor){toast('Informe fornecedor','err');return;}
-  db.collection('contas_pagar').add(d).then(()=>{toast('Conta cadastrada!');closeModal('m-pagar-novo');}).catch(()=>toast('Erro','err'));
+  db.collection('contas_pagar').add(d).then(()=>{toast('Conta cadastrada!');closeModal('m-pagar-novo');document.getElementById('cp-forn').value='';document.getElementById('cp-val').value='';document.getElementById('cp-data').value='';}).catch(()=>toast('Erro','err'));
 }
 function pagarConta(id){db.collection('contas_pagar').doc(id).update({status:'Pago',dataPagamento:today()}).then(()=>toast('Pago!')).catch(()=>toast('Erro','err'));}
 
