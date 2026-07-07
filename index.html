@@ -670,12 +670,15 @@ body.sem-excluir .excluir-only{display:none !important;}
 
     <!-- FOTO DO PRODUTO -->
     <div class="form-group">
-      <label class="form-label">Foto do Produto (URL da imagem)</label>
-      <div style="display:flex;gap:10px;align-items:center">
-        <img id="fp-foto-preview" src="" style="width:56px;height:56px;border-radius:var(--radius);object-fit:cover;background:var(--bg3);border:1px solid var(--border);display:none">
-        <input class="form-input" id="fp-foto" placeholder="https://... (cole o link da foto)" oninput="atualizarPreviewFoto()" style="flex:1">
+      <label class="form-label">Foto do Produto</label>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <img id="fp-foto-preview" src="" style="width:64px;height:64px;border-radius:var(--radius);object-fit:cover;background:var(--bg3);border:1px solid var(--border);display:none">
+        <div style="flex:1;min-width:180px">
+          <input type="file" accept="image/*" class="form-input" id="fp-foto-file" onchange="onFotoProdutoSelecionada(this)" style="padding:6px">
+          <div id="fp-foto-status" style="font-size:11px;color:var(--text3);margin-top:4px">Escolha uma foto salva no computador (a imagem é comprimida automaticamente).</div>
+        </div>
+        <button type="button" class="btn btn-sm" id="fp-foto-remover-btn" onclick="removerFotoProduto()" style="display:none"><i class="ti ti-x"></i>Remover foto</button>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px">Dica: suba a foto no Google Fotos, Imgur ou Drive e cole o link público aqui.</div>
     </div>
 
     <!-- 2. GRADE DE COR E TAMANHO -->
@@ -1704,6 +1707,7 @@ function carregarMinhasPermissoes(){
 }
 let localProdutos=[], localClientes=[], localVendas=[], localReceber=[], localPagar=[], localCaixa=[], localLogAuditoria=[];
 let editProdId=null, editClId=null;
+let fotoProdutoAtual='';
 let localCondicionais=[], localCompras=[], localTrocas=[], localOperadoras=[];
 let condItens=[], editCondId=null;
 let compraItens=[], editCompraId=null;
@@ -3395,17 +3399,68 @@ function calcMarkup(){
 }
 function abrirProd(){
   document.getElementById('m-prod-title').textContent='Novo Produto';
-  ['fp-nome','fp-sku','fp-marca','fp-cor','fp-preco','fp-custo','fp-markup','fp-qtd','fp-barras','fp-foto'].forEach(id=>document.getElementById(id).value='');
+  ['fp-nome','fp-sku','fp-marca','fp-cor','fp-preco','fp-custo','fp-markup','fp-qtd','fp-barras'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fp-min').value='2';
   document.getElementById('fp-tam').value='';
-  atualizarPreviewFoto();
+  removerFotoProduto();
   openModal('m-produto');
 }
 function atualizarPreviewFoto(){
-  const url=document.getElementById('fp-foto').value.trim();
   const img=document.getElementById('fp-foto-preview');
-  if(url){img.src=url;img.style.display='';}
-  else{img.style.display='none';}
+  const btnRemover=document.getElementById('fp-foto-remover-btn');
+  if(fotoProdutoAtual){
+    img.src=fotoProdutoAtual;img.style.display='';
+    if(btnRemover)btnRemover.style.display='';
+  }else{
+    img.style.display='none';
+    if(btnRemover)btnRemover.style.display='none';
+  }
+}
+// Lê o arquivo escolhido, redimensiona (máx 500px) e comprime em JPEG antes de guardar como base64
+function processarFotoProduto(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const maxDim=500;
+        let w=img.width,h=img.height;
+        if(w>h && w>maxDim){h=Math.round(h*maxDim/w);w=maxDim;}
+        else if(h>=w && h>maxDim){w=Math.round(w*maxDim/h);h=maxDim;}
+        const canvas=document.createElement('canvas');
+        canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',0.72));
+      };
+      img.onerror=()=>reject(new Error('Não foi possível ler a imagem'));
+      img.src=e.target.result;
+    };
+    reader.onerror=()=>reject(new Error('Erro ao ler arquivo'));
+    reader.readAsDataURL(file);
+  });
+}
+function onFotoProdutoSelecionada(input){
+  const file=input.files[0];
+  if(!file)return;
+  if(file.size>10*1024*1024){toast('Imagem muito grande (máx 10MB)','err');input.value='';return;}
+  const statusEl=document.getElementById('fp-foto-status');
+  if(statusEl)statusEl.textContent='Processando imagem...';
+  processarFotoProduto(file).then(dataUrl=>{
+    fotoProdutoAtual=dataUrl;
+    atualizarPreviewFoto();
+    if(statusEl)statusEl.textContent='Foto pronta! Ela será salva junto com o produto.';
+  }).catch(()=>{
+    toast('Erro ao processar imagem','err');
+    if(statusEl)statusEl.textContent='Escolha uma foto salva no computador (a imagem é comprimida automaticamente).';
+  });
+}
+function removerFotoProduto(){
+  fotoProdutoAtual='';
+  const fileInput=document.getElementById('fp-foto-file');
+  if(fileInput)fileInput.value='';
+  const statusEl=document.getElementById('fp-foto-status');
+  if(statusEl)statusEl.textContent='Escolha uma foto salva no computador (a imagem é comprimida automaticamente).';
+  atualizarPreviewFoto();
 }
 function editarProd(id){
   const p=localProdutos.find(x=>x.id===id);if(!p)return;
@@ -3420,7 +3475,11 @@ function editarProd(id){
   document.getElementById('fp-qtd').value=p.estoque||0;
   document.getElementById('fp-min').value=p.estoqueMin||2;
   document.getElementById('fp-barras').value=p.codigoBarras||'';
-  document.getElementById('fp-foto').value=p.foto||'';
+  fotoProdutoAtual=p.foto||'';
+  const fileInputEdit=document.getElementById('fp-foto-file');
+  if(fileInputEdit)fileInputEdit.value='';
+  const statusElEdit=document.getElementById('fp-foto-status');
+  if(statusElEdit)statusElEdit.textContent=fotoProdutoAtual?'Foto atual do produto (escolha outro arquivo pra trocar).':'Escolha uma foto salva no computador (a imagem é comprimida automaticamente).';
   atualizarPreviewFoto();
   const cat=document.getElementById('fp-cat');
   for(let o of cat.options)if(o.value===p.categoria)o.selected=true;
@@ -3444,7 +3503,7 @@ function salvarProduto(){
     estoque:parseInt(document.getElementById('fp-qtd').value)||0,
     estoqueMin:parseInt(document.getElementById('fp-min').value)||2,
     codigoBarras:document.getElementById('fp-barras').value.trim(),
-    foto:document.getElementById('fp-foto').value.trim()
+    foto:fotoProdutoAtual||''
   };
   if(!d.nome){toast('Informe o nome','err');return;}
 
