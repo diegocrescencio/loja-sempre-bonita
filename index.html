@@ -1699,6 +1699,12 @@ const today=()=>{
   return br.toISOString().slice(0,10);
 };
 const nowStr=()=>new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+function addDias(dataStr,n){
+  const [y,m,d]=dataStr.split('-').map(Number);
+  const dt=new Date(y,m-1,d);
+  dt.setDate(dt.getDate()+n);
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
 function toast(msg,type='ok'){
   const t=document.getElementById('toast');
   t.className='toast show toast-'+type;
@@ -2015,6 +2021,25 @@ ${seedBanner}
     <i class="ti ti-arrow-down-left metric-icon"></i>
   </div>
 </div>
+
+${(()=>{
+  const limite7=addDias(hoje,7);
+  const proxVencimentos=localPagar.filter(p=>p.status==='Pendente'&&p.vencimento&&p.vencimento>=hoje&&p.vencimento<=limite7&&p.tipo!=='pessoal');
+  if(!proxVencimentos.length)return '';
+  const totalProx=proxVencimentos.reduce((s,p)=>s+(p.valor||0),0);
+  const cx=localCaixa.find(x=>x.status==='Aberto');
+  const saldoCaixa=cx?(cx.saldoAtual||0):0;
+  const cobre=cx?saldoCaixa>=totalProx:null;
+  return `<div class="card" style="margin-bottom:20px;border-color:var(--red);cursor:pointer" onclick="goPage('pagar')">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <i class="ti ti-alert-triangle" style="font-size:22px;color:var(--red)"></i>
+      <div style="flex:1;min-width:220px">
+        <div style="font-weight:700;color:var(--text)">⏰ ${proxVencimentos.length} conta(s) da loja vencendo nos próximos 7 dias — total ${R(totalProx)}</div>
+        ${cx?`<div style="font-size:12px;color:var(--text3);margin-top:3px">Saldo atual em caixa: ${R(saldoCaixa)} ${cobre?'— <span style="color:var(--green);font-weight:600">dá pra cobrir ✅</span>':'— <span style="color:var(--red);font-weight:600">pode não ser suficiente ⚠️</span>'}</div>`:`<div style="font-size:12px;color:var(--text3);margin-top:3px">Abra o caixa para comparar com o saldo disponível.</div>`}
+      </div>
+    </div>
+  </div>`;
+})()}
 
 <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">📆 ${semNome} (${semDatas}) — Progresso da Semana</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
@@ -5132,9 +5157,22 @@ function renderPagar(c,a){
         <td>${p.vencimento?p.vencimento.split('-').reverse().join('/'):'—'}</td>
         <td style="font-family:var(--mono)">${R(p.valor)}</td><td>${p.formaPagamento||'—'}</td>
         <td><span class="badge ${p.status==='Pago'?'badge-green':'badge-red'}">${p.status}</span></td>
-        <td>${p.status==='Pendente'?`<button class="btn btn-sm btn-success" onclick="pagarConta('${p.id}')"><i class="ti ti-check"></i>Pagar</button>`:'—'}</td>
+        <td style="display:flex;gap:4px;flex-wrap:wrap">${p.status==='Pendente'?`<button class="btn btn-sm btn-success" onclick="pagarConta('${p.id}')"><i class="ti ti-check"></i>Pagar</button>`:''}${tp!=='pessoal'?`<button class="btn btn-sm" title="Duplicar esta conta para o próximo mês" onclick="duplicarContaProxMes('${p.id}')"><i class="ti ti-repeat"></i></button>`:''}</td>
       </tr>`;}).join('')}
     </tbody></table></div>`;
+}
+function duplicarContaProxMes(id){
+  const p=localPagar.find(x=>x.id===id);
+  if(!p)return;
+  let novaData=p.vencimento;
+  if(p.vencimento){
+    const [y,m,d]=p.vencimento.split('-').map(Number);
+    const dt=new Date(y,m-1,d);
+    dt.setMonth(dt.getMonth()+1);
+    novaData=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  }
+  const d={fornecedor:p.fornecedor,valor:p.valor,vencimento:novaData,formaPagamento:p.formaPagamento,tipo:p.tipo||'fixa',status:'Pendente'};
+  db.collection('contas_pagar').add(d).then(()=>toast('Conta duplicada para '+novaData.split('-').reverse().join('/')+'!')).catch(()=>toast('Erro','err'));
 }
 function salvarContaPagar(){
   const d={fornecedor:document.getElementById('cp-forn').value.trim(),valor:parseFloat(document.getElementById('cp-val').value)||0,vencimento:document.getElementById('cp-data').value,formaPagamento:document.getElementById('cp-forma').value,tipo:document.getElementById('cp-tipo').value||'fixa',status:'Pendente'};
@@ -5284,6 +5322,34 @@ function renderRelatorios(c,a){
           <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:${dre.lucroLiq>=0?'var(--green)':'var(--red)'}">${R(dre.lucroLiq)}</div>
         </div>
       </div>`;
+    })()}
+  </div>
+
+  <!-- COMPOSIÇÃO DE DESPESAS -->
+  <div class="card lucro-only" style="margin-bottom:16px">
+    <div class="card-title"><i class="ti ti-chart-donut"></i> Composição de Despesas Pagas no Período</div>
+    ${(()=>{
+      let pagasPeriodo=localPagar.filter(p=>p.status==='Pago'&&p.dataPagamento);
+      if(relInicio)pagasPeriodo=pagasPeriodo.filter(p=>p.dataPagamento>=relInicio);
+      if(relFim)pagasPeriodo=pagasPeriodo.filter(p=>p.dataPagamento<=relFim);
+      const porTipo={fixa:0,variavel:0,pessoal:0};
+      pagasPeriodo.forEach(p=>{porTipo[p.tipo||'fixa']=(porTipo[p.tipo||'fixa']||0)+(p.valor||0);});
+      const totalGeral=porTipo.fixa+porTipo.variavel+porTipo.pessoal;
+      if(!totalGeral)return `<div style="color:var(--text3);font-size:12px">Nenhuma despesa paga registrada nesse período.</div>`;
+      const linha=(label,val,cor,badge)=>{
+        const pct=totalGeral>0?(val/totalGeral*100):0;
+        return `<div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+            <span style="color:var(--text2);font-weight:600"><span class="badge ${badge}" style="margin-right:6px">${label}</span></span>
+            <span style="font-family:var(--mono);color:${cor};font-weight:600">${R(val)} (${pct.toFixed(0)}%)</span>
+          </div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:${cor}"></div></div>
+        </div>`;
+      };
+      return `${linha('Fixas',porTipo.fixa,'var(--accent)','badge-blue')}
+        ${linha('Variáveis',porTipo.variavel,'var(--amber)','badge-amber')}
+        ${linha('Pessoais',porTipo.pessoal,'var(--purple)','badge-purple')}
+        <div style="font-size:11px;color:var(--text3);margin-top:8px">💡 Despesas pessoais não entram no Lucro Líquido da DRE acima — só aparecem aqui para você acompanhar seu próprio gasto separado do negócio.</div>`;
     })()}
   </div>
 
@@ -6017,7 +6083,7 @@ function calcularDRE(vendas, compras, pagas){
       return ss+(prod?(prod.custo||0)*i.qtd:0);
     },0);
   },0);
-  const despesas   = pagas.filter(p=>p.status==='Pago').reduce((s,p)=>s+(p.valor||0),0);
+  const despesas   = pagas.filter(p=>p.status==='Pago'&&p.tipo!=='pessoal').reduce((s,p)=>s+(p.valor||0),0);
   const lucroBruto = receita - cmv;
   const lucroLiq   = lucroBruto - despesas;
   return {receita, cmv, lucroBruto, despesas, lucroLiq};
