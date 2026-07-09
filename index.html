@@ -43,7 +43,29 @@ a{color:var(--accent);text-decoration:none}
 
 /* ── LAYOUT ── */
 #app{display:flex;height:100vh;overflow:hidden}
-.sidebar{width:var(--sidebar-w);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:transform .25s;z-index:200}
+.sidebar{width:var(--sidebar-w);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:width .22s ease,transform .25s ease;z-index:200;position:relative}
+.sidebar-collapse-btn{position:absolute;top:18px;right:-11px;width:22px;height:22px;border-radius:50%;background:var(--bg2);border:1px solid var(--border2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:201;font-size:12px;transition:transform .2s,background .15s}
+.sidebar-collapse-btn:hover{background:var(--accent-glow);color:var(--accent)}
+@media(min-width:769px){
+  .sidebar.collapsed{width:64px}
+  .sidebar.collapsed .brand-sub,
+  .sidebar.collapsed .nav-label,
+  .sidebar.collapsed .user-name,
+  .sidebar.collapsed .user-role,
+  .sidebar.collapsed .sync-row span,
+  .sidebar.collapsed .nav-badge,
+  .sidebar.collapsed .logout-btn{display:none}
+  .sidebar.collapsed .brand{padding:16px 0 14px;display:flex;justify-content:center}
+  .sidebar.collapsed .brand-logo{justify-content:center}
+  .sidebar.collapsed .brand-name{display:none}
+  .sidebar.collapsed .nav-item{font-size:0;justify-content:center;padding:9px 0}
+  .sidebar.collapsed .nav-item i{font-size:18px}
+  .sidebar.collapsed .user-card{justify-content:center;padding:8px 0}
+  .sidebar.collapsed #theme-toggle-btn{font-size:0;padding:8px 0}
+  .sidebar.collapsed #theme-toggle-btn i{font-size:16px}
+  .sidebar.collapsed .sync-row{justify-content:center}
+  .sidebar.collapsed .sidebar-collapse-btn i{transform:rotate(180deg)}
+}
 .brand{padding:16px 16px 14px;border-bottom:1px solid var(--border)}
 .brand-logo{display:flex;align-items:center;gap:10px}
 .brand-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff;flex-shrink:0}
@@ -296,6 +318,7 @@ a{color:var(--accent);text-decoration:none}
   :root{--sidebar-w:240px}
   .sidebar{position:fixed;top:0;left:0;height:100%;transform:translateX(-100%);box-shadow:var(--shadow);z-index:200}
   .sidebar.open{transform:translateX(0)}
+  .sidebar-collapse-btn{display:none}
   .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199}
   .sidebar-overlay.show{display:block}
   .hamburger{display:flex}
@@ -586,6 +609,7 @@ body.sem-excluir .excluir-only{display:none !important;}
 <div id="app" style="display:none">
   <!-- SIDEBAR -->
   <div class="sidebar" id="sidebar">
+    <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" onclick="toggleSidebarCollapse()" title="Retrair/expandir menu"><i class="ti ti-chevron-left"></i></button>
     <div class="brand">
       <div class="brand-logo">
         <div class="brand-icon" style="background:#6b1235;font-family:Georgia,serif;font-size:16px;color:#f4ede7;font-weight:700">S</div>
@@ -595,38 +619,38 @@ body.sem-excluir .excluir-only{display:none !important;}
     <nav class="nav">
       <div class="nav-section">
         <div class="nav-label">Principal</div>
-        <div class="nav-item active" id="m-dashboard" onclick="goPage('dashboard',this)"><i class="ti ti-dashboard"></i>Dashboard</div>
-        <div class="nav-item" id="m-pdv" onclick="goPage('pdv',this)"><i class="ti ti-shopping-cart"></i>PDV</div>
+        <div class="nav-item active" id="m-dashboard" onclick="goPage('dashboard',this)" title="Dashboard"><i class="ti ti-dashboard"></i>Dashboard</div>
+        <div class="nav-item" id="m-pdv" onclick="goPage('pdv',this)" title="PDV"><i class="ti ti-shopping-cart"></i>PDV</div>
       </div>
       <div class="nav-section">
         <div class="nav-label">Gestão</div>
-        <div class="nav-item" id="m-estoque" onclick="goPage('estoque',this)"><i class="ti ti-package"></i>Estoque <span id="badge-stock" class="nav-badge" style="display:none">!</span></div>
-        <div class="nav-item" id="m-compras" onclick="goPage('compras',this)"><i class="ti ti-truck-delivery"></i>Compras</div>
-        <div class="nav-item" id="m-condicionais" onclick="goPage('condicionais',this)"><i class="ti ti-briefcase"></i>Condicionais <span id="badge-cond" class="nav-badge" style="display:none">!</span></div>
-        <div class="nav-item" id="m-clientes" onclick="goPage('clientes',this)"><i class="ti ti-users"></i>Clientes</div>
-        <div class="nav-item" id="m-caixa" onclick="goPage('caixa',this)"><i class="ti ti-cash"></i>Caixa</div>
+        <div class="nav-item" id="m-estoque" onclick="goPage('estoque',this)" title="Estoque"><i class="ti ti-package"></i>Estoque <span id="badge-stock" class="nav-badge" style="display:none">!</span></div>
+        <div class="nav-item" id="m-compras" onclick="goPage('compras',this)" title="Compras"><i class="ti ti-truck-delivery"></i>Compras</div>
+        <div class="nav-item" id="m-condicionais" onclick="goPage('condicionais',this)" title="Condicionais"><i class="ti ti-briefcase"></i>Condicionais <span id="badge-cond" class="nav-badge" style="display:none">!</span></div>
+        <div class="nav-item" id="m-clientes" onclick="goPage('clientes',this)" title="Clientes"><i class="ti ti-users"></i>Clientes</div>
+        <div class="nav-item" id="m-caixa" onclick="goPage('caixa',this)" title="Caixa"><i class="ti ti-cash"></i>Caixa</div>
       </div>
       <div class="nav-section">
         <div class="nav-label">Financeiro</div>
-        <div class="nav-item" id="m-contas-financeiras" onclick="goPage('contasFinanceiras',this)"><i class="ti ti-building-bank"></i>Contas Financeiras</div>
-        <div class="nav-item" id="m-receber" onclick="goPage('receber',this)"><i class="ti ti-arrow-up-right"></i>A Receber</div>
-        <div class="nav-item" id="m-trocas" onclick="goPage('trocas',this)"><i class="ti ti-arrows-exchange"></i>Trocas e Dev.</div>
-        <div class="nav-item" id="m-pagar" onclick="goPage('pagar',this)"><i class="ti ti-arrow-down-left"></i>A Pagar</div>
+        <div class="nav-item" id="m-contas-financeiras" onclick="goPage('contasFinanceiras',this)" title="Contas Financeiras"><i class="ti ti-building-bank"></i>Contas Financeiras</div>
+        <div class="nav-item" id="m-receber" onclick="goPage('receber',this)" title="A Receber"><i class="ti ti-arrow-up-right"></i>A Receber</div>
+        <div class="nav-item" id="m-trocas" onclick="goPage('trocas',this)" title="Trocas e Devoluções"><i class="ti ti-arrows-exchange"></i>Trocas e Dev.</div>
+        <div class="nav-item" id="m-pagar" onclick="goPage('pagar',this)" title="A Pagar"><i class="ti ti-arrow-down-left"></i>A Pagar</div>
       </div>
       <div class="nav-section">
         <div class="nav-label">Análise</div>
-        <div class="nav-item" id="m-relatorios" onclick="goPage('relatorios',this)"><i class="ti ti-chart-bar"></i>Relatórios</div>
+        <div class="nav-item" id="m-relatorios" onclick="goPage('relatorios',this)" title="Relatórios"><i class="ti ti-chart-bar"></i>Relatórios</div>
         
       </div>
       <div class="nav-section">
         <div class="nav-label">Sistema</div>
-        <div class="nav-item" id="m-configuracoes" onclick="goPage('configuracoes',this)"><i class="ti ti-settings"></i>Configurações</div>
-        <div class="nav-item" id="m-acessos" onclick="goPage('acessos',this)" style="display:none"><i class="ti ti-lock-access"></i>Gerenciar Acessos</div>
-        <div class="nav-item" id="m-auditoria" onclick="goPage('auditoria',this)" style="display:none"><i class="ti ti-history"></i>Auditoria</div>
-        <div class="nav-item" id="m-importar" onclick="openModal('m-imp-estoque')"><i class="ti ti-database-import"></i>Importar Estoque</div>
-        <div class="nav-item" onclick="openModal('m-imp-cl')"><i class="ti ti-users-plus"></i>Importar Clientes</div>
-        <div class="nav-item" onclick="openModal('m-imp-vendas')"><i class="ti ti-file-upload"></i>Importar Vendas</div>
-        <div class="nav-item" onclick="openModal('m-etiquetas');carregarListaEtiq()"><i class="ti ti-tag"></i>Etiquetas</div>
+        <div class="nav-item" id="m-configuracoes" onclick="goPage('configuracoes',this)" title="Configurações"><i class="ti ti-settings"></i>Configurações</div>
+        <div class="nav-item" id="m-acessos" onclick="goPage('acessos',this)" style="display:none" title="Gerenciar Acessos"><i class="ti ti-lock-access"></i>Gerenciar Acessos</div>
+        <div class="nav-item" id="m-auditoria" onclick="goPage('auditoria',this)" style="display:none" title="Auditoria"><i class="ti ti-history"></i>Auditoria</div>
+        <div class="nav-item" id="m-importar" onclick="openModal('m-imp-estoque')" title="Importar Estoque"><i class="ti ti-database-import"></i>Importar Estoque</div>
+        <div class="nav-item" onclick="openModal('m-imp-cl')" title="Importar Clientes"><i class="ti ti-users-plus"></i>Importar Clientes</div>
+        <div class="nav-item" onclick="openModal('m-imp-vendas')" title="Importar Vendas"><i class="ti ti-file-upload"></i>Importar Vendas</div>
+        <div class="nav-item" onclick="openModal('m-etiquetas');carregarListaEtiq()" title="Etiquetas"><i class="ti ti-tag"></i>Etiquetas</div>
       </div>
     </nav>
     <div class="user-area">
@@ -1740,6 +1764,21 @@ function addDias(dataStr,n){
 // ── LOG DE AUDITORIA ──
 // Registra ações sensíveis (exclusões, alterações de cargo, pagamentos) para rastreabilidade.
 // ── TEMA CLARO/ESCURO ──
+// ── MENU LATERAL RETRÁTIL ──
+function toggleSidebarCollapse(){
+  const sb=document.getElementById('sidebar');
+  const isCollapsed=sb.classList.toggle('collapsed');
+  localStorage.setItem('sidebar_colapsado', isCollapsed?'1':'0');
+}
+(function aplicarSidebarSalvo(){
+  const salvo=localStorage.getItem('sidebar_colapsado');
+  if(salvo==='1'){
+    document.addEventListener('DOMContentLoaded',()=>{
+      const sb=document.getElementById('sidebar');
+      if(sb)sb.classList.add('collapsed');
+    });
+  }
+})();
 function toggleTheme(){
   const isDark=document.body.classList.toggle('dark-mode');
   localStorage.setItem('tema_sempre_bonita', isDark?'dark':'light');
