@@ -5664,8 +5664,21 @@ function renderRelatorios(c,a){
   // Filtrar apenas vendas válidas
   let vf=localVendas.filter(vendaValida);
   if(relInicio)vf=vf.filter(v=>extrairData(v)>=relInicio);
-  if(relPagamento)vf=vf.filter(v=>(v.formaPagamento||'')=== relPagamento);
   if(relFim)vf=vf.filter(v=>extrairData(v)<=relFim);
+  if(relPagamento){
+    // Vendas 100% naquela forma entram inteiras. Vendas mistas que TÊM uma parte naquela forma
+    // entram também, mas só com o valor da parte correspondente (não a venda inteira) —
+    // senão uma venda paga parte em dinheiro/parte em cartão desaparecia do filtro "Dinheiro".
+    vf=vf.reduce((acc,v)=>{
+      if((v.formaPagamento||'')===relPagamento){
+        acc.push(v);
+      }else if(v.formaPagamento==='misto'&&Array.isArray(v.pagamentosMistos)){
+        const parte=v.pagamentosMistos.find(p=>p.forma===relPagamento);
+        if(parte&&parte.valor>0)acc.push({...v,total:parte.valor,_valorParcialMisto:true});
+      }
+      return acc;
+    },[]);
+  }
   vf.sort((a,b)=>extrairData(b).localeCompare(extrairData(a)));
   const tot=vf.reduce((s,v)=>s+(v.total||0),0),qtd=vf.length,ticket=qtd>0?tot/qtd:0;
 
@@ -5875,7 +5888,8 @@ function renderRelatorios(c,a){
             const pagBadge=lbl?`<span class="badge ${cls}" style="font-size:10px;flex-shrink:0;margin-left:6px">${lbl}</span>`:'<span class="badge" style="font-size:10px;flex-shrink:0;margin-left:6px;background:var(--bg4);color:var(--text3)">s/ info</span>';
             const descBadge=v.desconto>0?`<span class="badge badge-red" style="font-size:10px;flex-shrink:0;margin-left:4px">Desc. ${v.descontoTipo==='%'?parseFloat(v.desconto).toFixed(1)+'%':'R$ '+parseFloat(v.desconto).toFixed(2).replace('.',',')}</span>`:'';
             const condBadge=v.condicional?`<span class="badge badge-purple" style="font-size:10px;flex-shrink:0;margin-left:4px"><i class="ti ti-briefcase" style="font-size:10px;margin-right:2px"></i>Condicional</span>`:'';
-            return pagBadge+descBadge+condBadge;
+            const parcialBadge=v._valorParcialMisto?`<span class="badge" style="font-size:10px;flex-shrink:0;margin-left:4px;background:var(--bg4);color:var(--text3)" title="Esta venda foi paga em mais de uma forma — valor abaixo é só a parte filtrada">só parte desta venda</span>`:'';
+            return pagBadge+descBadge+condBadge+parcialBadge;
           })()}
           <span style="font-family:var(--mono);font-weight:700;color:var(--green);min-width:80px;text-align:right;flex-shrink:0;margin-left:8px">${R(v.total)}</span>
           <i class="ti ti-chevron-down" style="color:var(--text3);font-size:13px;margin-left:6px;flex-shrink:0"></i>
